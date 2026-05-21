@@ -25,7 +25,7 @@ export default function InspectionPoint({ point }) {
   // Auto-collapse when point becomes complete
   useEffect(() => {
     if (isComplete) {
-      const timer = setTimeout(() => setCollapsed(true), 600)
+      const timer = setTimeout(() => setCollapsed(true), 800)
       return () => clearTimeout(timer)
     } else {
       setCollapsed(false)
