@@ -28,33 +28,34 @@ export default function Login() {
       <div className="absolute bottom-0 -right-20 w-96 h-96 bg-crown-gold/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-32 h-32 mb-4 bg-white rounded-2xl shadow-2xl shadow-crown-gold/20 p-3">
-            <img src="/crown-logo.png" alt="Crown Xpress" className="w-full h-full object-contain" />
-          </div>
-          <h1 className="text-white text-3xl font-display font-bold tracking-wide">CROWN XPRESS</h1>
-          <p className="text-crown-gold text-sm font-semibold tracking-widest uppercase mt-1">
-            {t('inspectionTitle')}
-          </p>
-          <p className="text-slate-300 text-xs mt-1">{t('appSubtitle')}</p>
-        </div>
-
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-2xl border border-white/20 p-8 backdrop-blur">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-            <div className="w-12 h-12 bg-gradient-to-br from-crown-navy to-crown-navy-dark rounded-xl flex items-center justify-center shadow-md">
-              <Shield className="w-6 h-6 text-crown-gold" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">
-                {language === 'es' ? 'Iniciar Sesión' : 'Sign In'}
-              </h2>
-              <p className="text-sm text-slate-500">
-                {language === 'es' ? 'Ingrese sus credenciales' : 'Enter your credentials'}
+        <div className="bg-white rounded-3xl shadow-2xl border border-white/20 overflow-hidden backdrop-blur">
+          {/* Header with Logo */}
+          <div className="bg-gradient-to-br from-crown-navy via-crown-navy-dark to-slate-900 px-8 pt-8 pb-10 text-center relative">
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: 'radial-gradient(circle at 20% 50%, #c9a961 0%, transparent 50%), radial-gradient(circle at 80% 80%, #c9a961 0%, transparent 50%)'
+            }} />
+            <div className="relative">
+              <div className="inline-flex items-center justify-center w-28 h-28 mb-3 bg-white rounded-2xl shadow-xl p-2">
+                <img src="/crown-logo.png" alt="Crown Xpress" className="w-full h-full object-contain" />
+              </div>
+              <h1 className="text-white text-2xl font-display font-bold tracking-wide">CROWN XPRESS</h1>
+              <p className="text-crown-gold text-xs font-semibold tracking-widest uppercase mt-0.5">
+                {t('inspectionTitle')}
               </p>
             </div>
           </div>
+
+          {/* Form */}
+          <div className="px-8 pt-6 pb-8">
+            <div className="mb-6 text-center">
+              <h2 className="text-xl font-bold text-slate-800">
+                {language === 'es' ? 'Iniciar Sesión' : 'Sign In'}
+              </h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {language === 'es' ? 'Ingrese sus credenciales' : 'Enter your credentials'}
+              </p>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Username */}
@@ -150,6 +151,7 @@ export default function Login() {
                 <span className="text-crown-gold font-medium">Admin</span>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
