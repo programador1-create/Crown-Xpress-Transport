@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply font-sans bg-gradient-to-br from-slate-50 via-stone-50 to-amber-50/30 text-slate-800 min-h-screen;
+  }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-100;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-crown-navy/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-crown-navy/50;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-crown-navy text-white hover:bg-crown-navy-dark shadow-md hover:shadow-lg active:scale-95;
+  }
+  .btn-gold {
+    @apply btn bg-crown-gold text-white hover:bg-crown-gold-dark shadow-md hover:shadow-lg active:scale-95;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-crown-navy border-2 border-crown-navy/20 hover:border-crown-navy hover:bg-crown-navy/5;
+  }
+  .btn-success {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg;
+  }
+  .btn-danger {
+    @apply btn bg-rose-600 text-white hover:bg-rose-700 shadow-md hover:shadow-lg;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-crown border border-slate-100 overflow-hidden;
+  }
+  .card-header {
+    @apply px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-crown-navy-dark to-crown-navy text-white;
+  }
+  .card-body {
+    @apply p-6;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg border-2 border-slate-200 bg-white text-slate-800 transition-all duration-200 focus:border-crown-navy focus:ring-4 focus:ring-crown-navy/10 focus:outline-none placeholder:text-slate-400;
+  }
+  .label {
+    @apply block text-sm font-semibold text-slate-700 mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-good { @apply badge bg-emerald-100 text-emerald-700; }
+  .badge-bad { @apply badge bg-rose-100 text-rose-700; }
+  .badge-pending { @apply badge bg-slate-100 text-slate-600; }
+}
+
+/* Print styles */
+@media print {
+  body { background: white !important; }
+  .no-print { display: none !important; }
+}

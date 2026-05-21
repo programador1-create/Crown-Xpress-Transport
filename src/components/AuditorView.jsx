@@ -1,0 +1,362 @@
+import { useState, useEffect, useMemo } from 'react'
+import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X } from 'lucide-react'
+import { useLanguage } from '../context/LanguageContext'
+import { useAuth } from '../context/AuthContext'
+import { listInspections, downloadPdf } from '../utils/api'
+import AuditTrail from './AuditTrail'
+
+export default function AuditorView() {
+  const { t, language } = useLanguage()
+  const { user } = useAuth()
+  const [inspections, setInspections] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
+
+  // Filters
+  const [filterYard, setFilterYard] = useState('')
+  const [filterGuard, setFilterGuard] = useState('')
+  const [filterTrailer, setFilterTrailer] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+  const [groupBy, setGroupBy] = useState('yard') // yard, guard, trailer, none
+
+  useEffect(() => {
+    load()
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await listInspections({ limit: 500 })
+        setInspections(res.data || [])
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  // Unique values for filter dropdowns
+  const yards = useMemo(() => [...new Set(inspections.map(i => i.location).filter(Boolean))].sort(), [inspections])
+  const guards = useMemo(() => [...new Set(inspections.map(i => i.guard_name).filter(Boolean))].sort(), [inspections])
+
+  // Filtered results
+  const filtered = useMemo(() => {
+    return inspections.filter(i => {
+      if (filterYard && i.location !== filterYard) return false
+      if (filterGuard && i.guard_name !== filterGuard) return false
+      if (filterTrailer && !i.trailer_number?.toLowerCase().includes(filterTrailer.toLowerCase())) return false
+      if (filterStatus && i.status !== filterStatus) return false
+      if (filterDateFrom && new Date(i.created_at) < new Date(filterDateFrom)) return false
+      if (filterDateTo && new Date(i.created_at) > new Date(filterDateTo + 'T23:59:59')) return false
+      return true
+    })
+  }, [inspections, filterYard, filterGuard, filterTrailer, filterStatus, filterDateFrom, filterDateTo])
+
+  // Grouped
+  const grouped = useMemo(() => {
+    if (groupBy === 'none') return { [language === 'es' ? 'Todas' : 'All']: filtered }
+    const key = groupBy === 'yard' ? 'location' : groupBy === 'guard' ? 'guard_name' : 'trailer_number'
+    return filtered.reduce((acc, item) => {
+      const k = item[key] || (language === 'es' ? '(Sin asignar)' : '(Unassigned)')
+      if (!acc[k]) acc[k] = []
+      acc[k].push(item)
+      return acc
+    }, {})
+  }, [filtered, groupBy, language])
+
+  const clearFilters = () => {
+    setFilterYard('')
+    setFilterGuard('')
+    setFilterTrailer('')
+    setFilterStatus('')
+    setFilterDateFrom('')
+    setFilterDateTo('')
+  }
+
+  const handleDownload = async (id, filename) => {
+    try {
+      const blob = await downloadPdf(id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || `inspection-${id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert(language === 'es' ? 'Error descargando PDF' : 'Error downloading PDF')
+    }
+  }
+
+  const stats = {
+    total: filtered.length,
+    audited: filtered.filter(i => i.status === 'audited').length,
+    pending: filtered.filter(i => i.status === 'completed').length,
+    failures: filtered.reduce((sum, i) => sum + (i.total_bad || 0), 0),
+  }
+
+  if (loading) {
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-body text-center py-12">
+          <div className="animate-spin w-8 h-8 border-2 border-crown-navy/30 border-t-crown-navy rounded-full mx-auto mb-3" />
+          <p className="text-slate-500">{language === 'es' ? 'Cargando inspecciones...' : 'Loading inspections...'}</p>
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-body text-center py-12 text-rose-600">
+          <p>{error}</p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-xs text-slate-500 uppercase">{language === 'es' ? 'Total' : 'Total'}</div>
+          <div className="text-2xl font-bold text-slate-800">{stats.total}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-emerald-200 p-4">
+          <div className="text-xs text-emerald-700 uppercase">{language === 'es' ? 'Auditadas' : 'Audited'}</div>
+          <div className="text-2xl font-bold text-emerald-700">{stats.audited}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-blue-200 p-4">
+          <div className="text-xs text-blue-700 uppercase">{language === 'es' ? 'Pendientes' : 'Pending'}</div>
+          <div className="text-2xl font-bold text-blue-700">{stats.pending}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-rose-200 p-4">
+          <div className="text-xs text-rose-700 uppercase">{language === 'es' ? 'Fallas' : 'Failures'}</div>
+          <div className="text-2xl font-bold text-rose-700">{stats.failures}</div>
+        </div>
+      </section>
+
+      {/* Filters */}
+      <section className="card">
+        <div className="card-header flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-crown-gold" />
+            <h2 className="font-bold uppercase text-sm tracking-wide">
+              {language === 'es' ? 'Filtros y Agrupación' : 'Filters & Grouping'}
+            </h2>
+          </div>
+          <button
+            onClick={clearFilters}
+            className="text-xs px-2 py-1 text-slate-500 hover:text-slate-800 flex items-center gap-1"
+          >
+            <X className="w-3 h-3" /> {language === 'es' ? 'Limpiar' : 'Clear'}
+          </button>
+        </div>
+        <div className="card-body">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Yard */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> {language === 'es' ? 'Yarda' : 'Yard'}
+              </label>
+              <select
+                value={filterYard}
+                onChange={e => setFilterYard(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+              >
+                <option value="">{language === 'es' ? 'Todas' : 'All'}</option>
+                {yards.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+
+            {/* Guard */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                <User className="w-3 h-3" /> {language === 'es' ? 'Guardia' : 'Guard'}
+              </label>
+              <select
+                value={filterGuard}
+                onChange={e => setFilterGuard(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+              >
+                <option value="">{language === 'es' ? 'Todos' : 'All'}</option>
+                {guards.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+
+            {/* Trailer */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                <Truck className="w-3 h-3" /> Trailer
+              </label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                <input
+                  type="text"
+                  value={filterTrailer}
+                  onChange={e => setFilterTrailer(e.target.value)}
+                  placeholder="T-12345"
+                  className="w-full pl-7 pr-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+                />
+              </div>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1">
+                {language === 'es' ? 'Estado' : 'Status'}
+              </label>
+              <select
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+              >
+                <option value="">{language === 'es' ? 'Todos' : 'All'}</option>
+                <option value="completed">{language === 'es' ? 'Completada' : 'Completed'}</option>
+                <option value="audited">{language === 'es' ? 'Auditada' : 'Audited'}</option>
+                <option value="reconfirmed">{language === 'es' ? 'Reconfirmada' : 'Reconfirmed'}</option>
+              </select>
+            </div>
+
+            {/* Date from */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1">
+                {language === 'es' ? 'Desde' : 'From'}
+              </label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={e => setFilterDateFrom(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+              />
+            </div>
+
+            {/* Date to */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 mb-1">
+                {language === 'es' ? 'Hasta' : 'To'}
+              </label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={e => setFilterDateTo(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded-lg"
+              />
+            </div>
+
+            {/* Group By */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-slate-600 mb-1">
+                {language === 'es' ? 'Agrupar por' : 'Group by'}
+              </label>
+              <div className="flex gap-1">
+                {[
+                  { id: 'yard', label: language === 'es' ? 'Yarda' : 'Yard' },
+                  { id: 'guard', label: language === 'es' ? 'Guardia' : 'Guard' },
+                  { id: 'trailer', label: 'Trailer' },
+                  { id: 'none', label: language === 'es' ? 'Sin grupo' : 'None' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setGroupBy(opt.id)}
+                    className={`flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg ${
+                      groupBy === opt.id
+                        ? 'bg-crown-navy text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Grouped Results */}
+      <section className="space-y-3">
+        {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([groupKey, items]) => (
+          <div key={groupKey} className="card">
+            <div className="card-header flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {groupBy === 'yard' && <MapPin className="w-4 h-4 text-crown-gold" />}
+                {groupBy === 'guard' && <User className="w-4 h-4 text-crown-gold" />}
+                {groupBy === 'trailer' && <Truck className="w-4 h-4 text-crown-gold" />}
+                <h3 className="font-bold text-sm">{groupKey}</h3>
+              </div>
+              <span className="text-xs text-slate-500">
+                {items.length} {language === 'es' ? 'inspecciones' : 'inspections'}
+              </span>
+            </div>
+            <div className="card-body p-0">
+              <div className="divide-y divide-slate-100">
+                {items.map(insp => (
+                  <div key={insp.id}>
+                    <button
+                      onClick={() => setSelectedId(selectedId === insp.id ? null : insp.id)}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${
+                          selectedId === insp.id ? 'rotate-90' : ''
+                        }`} />
+                        <div className="text-left min-w-0">
+                          <div className="font-semibold text-sm text-slate-800 truncate">
+                            {insp.trailer_number} · {insp.driver_name}
+                          </div>
+                          <div className="text-xs text-slate-500 truncate">
+                            {new Date(insp.created_at).toLocaleString()} · {insp.guard_name}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {insp.total_bad > 0 && (
+                          <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">
+                            {insp.total_bad} ❌
+                          </span>
+                        )}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          insp.status === 'audited' ? 'bg-emerald-100 text-emerald-700' :
+                          insp.status === 'reconfirmed' ? 'bg-amber-100 text-amber-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>
+                          {insp.status}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDownload(insp.id, insp.pdf_filename) }}
+                          className="p-1 rounded hover:bg-slate-200"
+                        >
+                          <Download className="w-4 h-4 text-slate-600" />
+                        </button>
+                      </div>
+                    </button>
+                    {selectedId === insp.id && (
+                      <div className="px-4 py-4 bg-slate-50">
+                        <AuditTrail inspectionId={insp.id} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+        {Object.keys(grouped).length === 0 && (
+          <div className="card">
+            <div className="card-body text-center py-12">
+              <FileText className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p className="text-slate-500">{language === 'es' ? 'No se encontraron inspecciones' : 'No inspections found'}</p>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
