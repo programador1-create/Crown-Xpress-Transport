@@ -34,20 +34,33 @@ export default function Login() {
           {/* Top accent bar */}
           <div className="h-1 bg-gradient-to-r from-crown-gold via-crown-gold-dark to-crown-gold" />
 
-          <div className="px-8 pt-10 pb-8">
-            {/* Logo + App name */}
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-24 h-24 mb-4 flex items-center justify-center">
-                <img src="/crown-logo.png" alt="Crown Xpress" className="w-full h-full object-contain" />
+          {/* Logo header section with subtle background */}
+          <div className="relative bg-gradient-to-b from-slate-50 to-white px-8 pt-10 pb-6 border-b border-slate-100">
+            {/* Decorative circles */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-40 bg-crown-gold/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative flex flex-col items-center text-center">
+              {/* Logo with elegant frame */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-crown-gold/20 to-crown-navy/10 rounded-full blur-xl scale-110" />
+                <div className="relative w-32 h-32 flex items-center justify-center bg-white rounded-full shadow-lg ring-1 ring-slate-100">
+                  <img src="/crown-logo.png" alt="Crown Xpress" className="w-24 h-24 object-contain" />
+                </div>
               </div>
-              <p className="text-[11px] font-bold tracking-[0.25em] text-crown-gold-dark uppercase">
-                {language === 'es' ? 'Lista de Inspección' : 'Inspection Checklist'}
-              </p>
-              <p className="text-[10px] font-semibold tracking-[0.3em] text-slate-400 uppercase mt-0.5">
+              {/* App name with divider lines */}
+              <div className="flex items-center gap-3 w-full max-w-[260px]">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent to-crown-gold/40" />
+                <p className="text-[11px] font-bold tracking-[0.3em] text-crown-gold-dark uppercase whitespace-nowrap">
+                  {language === 'es' ? 'Lista de Inspección' : 'Inspection Checklist'}
+                </p>
+                <div className="flex-1 h-px bg-gradient-to-l from-transparent to-crown-gold/40" />
+              </div>
+              <p className="text-[10px] font-semibold tracking-[0.4em] text-slate-400 uppercase mt-1.5">
                 {language === 'es' ? '20 Puntos' : '20 Points'}
               </p>
             </div>
+          </div>
 
+          <div className="px-8 pt-7 pb-8">
             {/* Sign In header */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
