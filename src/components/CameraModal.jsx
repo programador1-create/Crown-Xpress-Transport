@@ -97,8 +97,8 @@ export default function CameraModal({ open, onClose, onConfirm, title }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden shadow-crown-lg">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4 animate-fade-in">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[100vh] sm:max-h-[95vh] flex flex-col overflow-hidden shadow-crown-lg">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-crown-navy-dark to-crown-navy text-white">
           <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export default function CameraModal({ open, onClose, onConfirm, title }) {
         </div>
 
         {/* Camera/Preview area */}
-        <div className="relative bg-black aspect-[4/3] flex items-center justify-center">
+        <div className="relative bg-black aspect-[4/3] sm:aspect-[16/9] flex items-center justify-center flex-1 min-h-0">
           {error ? (
             <div className="text-white text-center p-6">
               <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-amber-400" />
@@ -143,6 +143,14 @@ export default function CameraModal({ open, onClose, onConfirm, title }) {
                 title="Switch camera"
               >
                 <RotateCw className="w-4 h-4" />
+              </button>
+              {/* Floating capture button for mobile/tablet */}
+              <button
+                onClick={handleCapture}
+                disabled={!!error}
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-crown-gold hover:bg-crown-gold/90 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center sm:hidden"
+              >
+                <Camera className="w-6 h-6" />
               </button>
             </>
           )}
@@ -182,25 +190,25 @@ export default function CameraModal({ open, onClose, onConfirm, title }) {
         )}
 
         {/* Actions */}
-        <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex gap-2 flex-wrap">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 bg-slate-50 border-t border-slate-100 flex gap-2 flex-wrap">
           {!captured ? (
             <>
-              <button onClick={handleClose} className="btn-secondary">
-                <X className="w-4 h-4" /> {t('cancel')}
+              <button onClick={handleClose} className="btn-secondary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2">
+                <X className="w-4 h-4" /> <span className="hidden sm:inline">{t('cancel')}</span>
               </button>
-              <button onClick={handleCapture} disabled={!!error} className="btn-gold ml-auto">
+              <button onClick={handleCapture} disabled={!!error} className="btn-gold ml-auto text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2 hidden sm:flex">
                 <Camera className="w-4 h-4" /> {t('capture')}
               </button>
             </>
           ) : (
             <>
-              <button onClick={handleRetake} className="btn-secondary">
-                <RotateCw className="w-4 h-4" /> {t('retake')}
+              <button onClick={handleRetake} className="btn-secondary text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2">
+                <RotateCw className="w-4 h-4" /> <span className="hidden sm:inline">{t('retake')}</span>
               </button>
               <button 
                 onClick={handleConfirm} 
                 disabled={validating || !validation?.valid} 
-                className="btn-success ml-auto"
+                className="btn-success ml-auto text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2"
               >
                 <Check className="w-4 h-4" /> {t('confirm')}
               </button>
