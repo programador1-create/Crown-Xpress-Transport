@@ -12,11 +12,29 @@ const YARDS = [
   { id: 5, name: 'Yard E - San Antonio' },
 ]
 
-export default function UnitInfoEnhanced() {
+export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange }) {
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo } = useInspection()
   const { user } = useAuth()
   const [hasContainer, setHasContainer] = useState(false)
+  const [hasSeal, setHasSeal] = useState(true)
+  const [hasLock, setHasLock] = useState(false)
+
+  // Notify parent when checkbox states change
+  const handleContainerChange = (checked) => {
+    setHasContainer(checked)
+    if (onContainerChange) onContainerChange(checked)
+  }
+
+  const handleSealChange = (checked) => {
+    setHasSeal(checked)
+    if (onSealChange) onSealChange(checked)
+  }
+
+  const handleLockChange = (checked) => {
+    setHasLock(checked)
+    if (onLockChange) onLockChange(checked)
+  }
 
   // Auto-fill date and guard name on mount
   useEffect(() => {
@@ -31,6 +49,12 @@ export default function UnitInfoEnhanced() {
 
   const validateField = (field) => {
     if (field === 'containerNumber' && !hasContainer) {
+      return 'border-slate-200 focus:border-crown-navy'
+    }
+    if (field === 'sealNumber' && !hasSeal) {
+      return 'border-slate-200 focus:border-crown-navy'
+    }
+    if (field === 'lockNumber' && !hasLock) {
       return 'border-slate-200 focus:border-crown-navy'
     }
     if (!unitInfo[field] || unitInfo[field].trim() === '') {
@@ -73,7 +97,7 @@ export default function UnitInfoEnhanced() {
                 id="hasContainer"
                 checked={hasContainer}
                 onChange={(e) => {
-                  setHasContainer(e.target.checked)
+                  handleContainerChange(e.target.checked)
                   if (!e.target.checked) {
                     update('containerNumber', '')
                   }
@@ -102,35 +126,84 @@ export default function UnitInfoEnhanced() {
             )}
           </div>
 
-          {/* Seal Number */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              {t('sealNumber')} <span className="text-rose-500">*</span>
+          {/* Seal Checkbox and Number */}
+          <div className="col-span-1 sm:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              {language === 'es' ? '¿Tiene sello de seguridad?' : 'Has security seal?'}
             </label>
-            <input
-              type="text"
-              value={unitInfo.sealNumber || ''}
-              onChange={e => update('sealNumber', e.target.value.toUpperCase())}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 ${validateField('sealNumber')}`}
-              placeholder={language === 'es' ? 'Ej: S-98765' : 'Ex: S-98765'}
-              required
-            />
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="checkbox"
+                id="hasSeal"
+                checked={hasSeal}
+                onChange={(e) => {
+                  handleSealChange(e.target.checked)
+                  if (!e.target.checked) {
+                    update('sealNumber', '')
+                  }
+                }}
+                className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
+              />
+              <label htmlFor="hasSeal" className="text-sm text-slate-600 cursor-pointer">
+                {language === 'es' ? 'Sí, tiene sello' : 'Yes, has seal'}
+              </label>
+            </div>
+            {hasSeal && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  {t('sealNumber')} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={unitInfo.sealNumber || ''}
+                  onChange={e => update('sealNumber', e.target.value.toUpperCase())}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 ${validateField('sealNumber')}`}
+                  placeholder={language === 'es' ? 'Ej: S-98765' : 'Ex: S-98765'}
+                  required={hasSeal}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Lock Number */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              {language === 'es' ? 'Número de Candado (si aplica)' : 'Lock Number (if applicable)'}
+          {/* Lock Checkbox and Number */}
+          <div className="col-span-1 sm:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              {language === 'es' ? '¿Tiene candado?' : 'Has lock?'}
             </label>
-            <input
-              type="text"
-              value={unitInfo.lockNumber || ''}
-              onChange={e => update('lockNumber', e.target.value.toUpperCase())}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-              placeholder={language === 'es' ? 'Ej: L-54321' : 'Ex: L-54321'}
-            />
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                type="checkbox"
+                id="hasLock"
+                checked={hasLock}
+                onChange={(e) => {
+                  handleLockChange(e.target.checked)
+                  if (!e.target.checked) {
+                    update('lockNumber', '')
+                  }
+                }}
+                className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
+              />
+              <label htmlFor="hasLock" className="text-sm text-slate-600 cursor-pointer">
+                {language === 'es' ? 'Sí, tiene candado' : 'Yes, has lock'}
+              </label>
+            </div>
+            {hasLock && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  {language === 'es' ? 'Número de Candado' : 'Lock Number'} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={unitInfo.lockNumber || ''}
+                  onChange={e => update('lockNumber', e.target.value.toUpperCase())}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 ${validateField('lockNumber')}`}
+                  placeholder={language === 'es' ? 'Ej: L-54321' : 'Ex: L-54321'}
+                  required={hasLock}
+                />
+              </div>
+            )}
           </div>
 
           {/* Operator Name */}

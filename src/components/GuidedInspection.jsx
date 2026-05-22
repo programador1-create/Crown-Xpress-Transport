@@ -12,16 +12,25 @@ export default function GuidedInspection() {
   const { unitInfo, points, completedCount } = useInspection()
   const [currentStage, setCurrentStage] = useState('unitInfo') // unitInfo, inspection, seal, signatures
   const [unitInfoValid, setUnitInfoValid] = useState(false)
+  const [hasContainer, setHasContainer] = useState(false)
+  const [hasSeal, setHasSeal] = useState(true)
+  const [hasLock, setHasLock] = useState(false)
 
   const totalPoints = 20
   const allPointsCompleted = completedCount === totalPoints
 
   // Check if unit info is valid
   useEffect(() => {
-    const required = ['trailerNumber', 'sealNumber', 'driverName', 'location']
+    const required = ['trailerNumber', 'driverName', 'location']
+    const optional = []
+    
+    if (hasSeal) required.push('sealNumber')
+    if (hasContainer) required.push('containerNumber')
+    if (hasLock) required.push('lockNumber')
+    
     const isValid = required.every(field => unitInfo[field] && unitInfo[field].trim() !== '')
     setUnitInfoValid(isValid)
-  }, [unitInfo])
+  }, [unitInfo, hasSeal, hasContainer, hasLock])
 
   // Auto-advance stages
   useEffect(() => {
@@ -109,7 +118,11 @@ export default function GuidedInspection() {
       {/* Stage content */}
       {currentStage === 'unitInfo' && (
         <div>
-          <UnitInfoEnhanced />
+          <UnitInfoEnhanced 
+            onContainerChange={setHasContainer}
+            onSealChange={setHasSeal}
+            onLockChange={setHasLock}
+          />
           {unitInfoValid && (
             <div className="mt-4 flex justify-end">
               <button
