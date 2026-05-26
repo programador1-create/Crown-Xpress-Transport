@@ -46,6 +46,14 @@ export default function SignatureSection() {
             </h3>
           </div>
           
+          {/* Show logged in user name */}
+          <div className="bg-slate-50 rounded-lg px-3 py-2 mb-3">
+            <p className="text-xs text-slate-500 mb-1">
+              {language === 'es' ? 'Firmando como:' : 'Signing as:'}
+            </p>
+            <p className="font-semibold text-crown-navy">{user?.full_name || '—'}</p>
+          </div>
+          
           {guardSignature.signature ? (
             <div className="space-y-3">
               <div className="border border-slate-200 rounded p-2 bg-white">
