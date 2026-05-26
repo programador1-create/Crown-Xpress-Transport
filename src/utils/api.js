@@ -79,16 +79,15 @@ export async function getInspectionChain(id) {
 
 /** Build payload for createInspection */
 export function buildPayload(ctx, pdfBase64, pdfFilename) {
-  const { unitInfo, points, sealPhoto, guardSignature, auditorSignature, language, completedCount, failedCount, goodCount } = ctx
+  const { unitInfo, points, sealPhoto, guardSignature, auditorSignature, completedCount, failedCount, goodCount } = ctx
   // Map points to API shape
   const pointsPayload = {}
   for (const [id, p] of Object.entries(points)) {
-    const issue = p.issueId ? { id: p.issueId, text: ctx.t ? ctx.t(`issue_${p.issueId}`) : null } : null
     pointsPayload[id] = {
-      status: p.status,
-      issueId: p.issueId,
-      issueText: issue?.text,
-      photo: p.photo,
+      status: p.status || 'pending',
+      issueId: p.issueId || null,
+      issueText: null,
+      photo: p.photo || null,
     }
   }
   return {
@@ -96,9 +95,14 @@ export function buildPayload(ctx, pdfBase64, pdfFilename) {
     points: pointsPayload,
     guardSignature,
     auditorSignature,
-    language,
+    sealPhoto,
+    language: 'es',
     pdfBase64,
     pdfFilename,
-    counts: { good: goodCount, bad: failedCount, pending: 20 - completedCount },
+    counts: { 
+      good: goodCount || 0, 
+      bad: failedCount || 0, 
+      pending: 20 - (completedCount || 0) 
+    },
   }
 }

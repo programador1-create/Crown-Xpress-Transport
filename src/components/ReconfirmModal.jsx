@@ -25,11 +25,21 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
     if (open && originalInspection) {
       // Pre-populate with original point states
       const initial = {}
-      for (const p of originalInspection.points || []) {
-        initial[p.point_number] = {
-          original: { status: p.status, issueId: p.issue_id, hasPhoto: p.has_photo },
-          status: p.status,
-          issueId: p.issue_id,
+      const originalPoints = originalInspection.points || []
+      
+      // Initialize all 20 inspection points
+      for (let i = 1; i <= 20; i++) {
+        // Find the point data from the original inspection (uses point_id from DB)
+        const pointData = originalPoints.find(p => p.point_id === i)
+        
+        initial[i] = {
+          original: { 
+            status: pointData?.status || 'pending', 
+            issueId: pointData?.issue_id || null, 
+            hasPhoto: !!pointData?.photo 
+          },
+          status: pointData?.status || 'pending',
+          issueId: pointData?.issue_id || null,
           photo: null, // Will be re-captured
           modified: false,
         }
