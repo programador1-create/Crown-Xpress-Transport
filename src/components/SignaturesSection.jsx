@@ -10,12 +10,12 @@ export default function SignaturesSection() {
   const { user } = useAuth()
   const { guardSignature, setGuardSignature, auditorSignature, setAuditorSignature } = useInspection()
 
-  // Auto-fill guard name from logged in user
+  // Auto-fill guard name from logged in user on mount
   useEffect(() => {
-    if (user?.full_name && !guardSignature.name) {
+    if (user?.full_name) {
       setGuardSignature(prev => ({ ...prev, name: user.full_name }))
     }
-  }, [user, guardSignature.name, setGuardSignature])
+  }, [user?.full_name, setGuardSignature])
 
   return (
     <section className="card animate-slide-up">
