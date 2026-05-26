@@ -47,7 +47,8 @@ export default function GuardHistory() {
     
     return originals.map(orig => ({
       original: orig,
-      reconfirmations: reconfirms.filter(r => r.original_inspection_id === orig.id)
+      // Compare as numbers to handle type mismatches
+      reconfirmations: reconfirms.filter(r => Number(r.original_inspection_id) === Number(orig.id))
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     }))
   }, [inspections])

@@ -90,15 +90,54 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
 
   const handleSubmit = () => {
     if (!canSubmit) return
+    
+    // Build points payload with all 20 points
+    const pointsPayload = {}
+    let goodCount = 0
+    let badCount = 0
+    let pendingCount = 0
+    
+    for (const [id, p] of Object.entries(reconfirmPoints)) {
+      pointsPayload[id] = {
+        status: p.status || 'pending',
+        issueId: p.issueId || null,
+        issueText: null,
+        photo: p.photo || null,
+        modified: p.modified || false,
+      }
+      if (p.status === 'good') goodCount++
+      else if (p.status === 'bad') badCount++
+      else pendingCount++
+    }
+    
+    // Get original inspection data
+    const orig = originalInspection.inspection || originalInspection
+    
     onSubmit({
-      original_inspection_id: originalInspection.inspection?.id || originalInspection.id,
+      original_inspection_id: orig.id,
+      unitInfo: {
+        trailerNumber: orig.trailer_number,
+        containerNumber: orig.container_number,
+        sealNumber: orig.seal_number,
+        lockNumber: orig.lock_number,
+        driverName: orig.driver_name,
+        odometer: orig.odometer,
+        location: orig.location,
+        inspectionDate: new Date().toISOString(),
+        highSecuritySeal: orig.high_security_seal,
+        sealAffixed: orig.seal_affixed,
+      },
+      points: pointsPayload,
+      guardSignature: {
+        name: user.full_name,
+        signature: null, // Reconfirmations don't require new signature
+        signedAt: new Date().toISOString(),
+      },
+      auditorSignature: null,
+      sealPhoto: null,
+      language: language,
+      counts: { good: goodCount, bad: badCount, pending: pendingCount },
       reason,
-      modifications: modifiedPoints.map(([id, p]) => ({
-        point_number: parseInt(id),
-        new_status: p.status,
-        new_issue_id: p.issueId,
-        new_photo: p.photo,
-      })),
       reconfirmed_by: user.id,
       reconfirmed_by_name: user.full_name,
     })
