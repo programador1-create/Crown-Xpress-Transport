@@ -65,68 +65,91 @@ Respond in JSON format with:
   "recommendation": "recommendation if image is not valid"
 }`
 
-  try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: language === 'es' 
-                  ? `Analiza esta imagen para el punto de inspección "${pointName}". ¿La imagen muestra correctamente este componente? ¿Detectas alguna falla?`
-                  : `Analyze this image for the inspection point "${pointName}". Does the image correctly show this component? Do you detect any issues?`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`,
-                  detail: 'low'
+  // Retry logic for rate limiting
+  const maxRetries = 2
+  let lastError = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Wait before retry (exponential backoff)
+      if (attempt > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)))
+      }
+
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: language === 'es' 
+                    ? `Analiza esta imagen para el punto de inspección "${pointName}". ¿La imagen muestra correctamente este componente? ¿Detectas alguna falla?`
+                    : `Analyze this image for the inspection point "${pointName}". Does the image correctly show this component? Do you detect any issues?`
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`,
+                    detail: 'low'
+                  }
                 }
-              }
-            ]
-          }
-        ],
-        max_tokens: 500,
-        response_format: { type: 'json_object' }
+              ]
+            }
+          ],
+          max_tokens: 500,
+          response_format: { type: 'json_object' }
+        })
       })
-    })
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        console.warn(`Rate limited (attempt ${attempt + 1}/${maxRetries + 1})`)
+        lastError = new Error('Rate limited')
+        continue
+      }
 
-    const data = await response.json()
-    const result = JSON.parse(data.choices[0].message.content)
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
 
-    return {
-      valid: result.valid ?? true,
-      confidence: result.confidence ?? 0,
-      message: result.message || '',
-      suggestedIssues: result.detectedIssues || [],
-      recommendation: result.recommendation || ''
+      const data = await response.json()
+      const result = JSON.parse(data.choices[0].message.content)
+
+      return {
+        valid: result.valid ?? true,
+        confidence: result.confidence ?? 0,
+        message: result.message || '',
+        suggestedIssues: result.detectedIssues || [],
+        recommendation: result.recommendation || ''
+      }
+    } catch (error) {
+      console.error(`Image verification error (attempt ${attempt + 1}):`, error)
+      lastError = error
     }
-  } catch (error) {
-    console.error('Image verification error:', error)
-    return {
-      valid: true,
-      confidence: 0,
-      message: language === 'es' 
-        ? 'Error al verificar imagen' 
-        : 'Error verifying image',
-      suggestedIssues: []
-    }
+  }
+
+  // All retries failed - return graceful fallback
+  console.warn('AI verification unavailable, skipping')
+  return {
+    valid: true,
+    confidence: 0,
+    message: language === 'es' 
+      ? 'Verificación IA no disponible' 
+      : 'AI verification unavailable',
+    suggestedIssues: [],
+    skipped: true
   }
 }
 
