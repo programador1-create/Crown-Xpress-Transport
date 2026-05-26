@@ -276,6 +276,8 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
         onClose={() => setIssueOpen(false)}
         onSelect={(id) => { setIssue(activePointId, id); setIssueOpen(false) }}
         currentIssueId={activePointId ? reconfirmPoints[activePointId]?.issueId : null}
+        pointId={activePointId}
+        pointName={activePointId ? inspectionPoints.find(p => p.id === activePointId)?.[language] : ''}
       />
     </div>
   )
