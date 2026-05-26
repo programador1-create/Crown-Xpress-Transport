@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { inspectionPoints, errorReports } from '../data/inspectionPoints'
+import { inspectionPoints, getIssuesForPoint } from '../data/inspectionPoints'
+import { CROWN_LOGO_SVG } from './crownLogo'
 
 const COLORS = {
   navy: [30, 91, 122],
@@ -153,7 +154,8 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const tableBody = inspectionPoints.map(p => {
     const state = points[p.id] || { status: null, issueId: null }
     const statusText = state.status === 'good' ? T.good : state.status === 'bad' ? T.bad : T.pending
-    const issue = errorReports.find(e => e.id === state.issueId)
+    const pointIssues = getIssuesForPoint(p.id)
+    const issue = pointIssues.find(e => e.id === state.issueId)
     return [
       p.id.toString(),
       p[language],
@@ -217,7 +219,8 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     for (let i = 0; i < failures.length; i++) {
       const p = failures[i]
       const state = points[p.id]
-      const issue = errorReports.find(e => e.id === state.issueId)
+      const pointIssues = getIssuesForPoint(p.id)
+      const issue = pointIssues.find(e => e.id === state.issueId)
       const col = i % cols
       const row = Math.floor(i / cols)
       const x = startX + col * (photoW + gap)
@@ -316,21 +319,74 @@ function drawHeader(doc, T, pageWidth, margin) {
   doc.setFillColor(...COLORS.gold)
   doc.rect(0, 28, pageWidth, 1.5, 'F')
 
-  // Crown emblem
-  doc.setDrawColor(...COLORS.gold)
+  // Crown emblem - improved crown logo
+  const logoX = margin + 2
+  const logoY = 5
+  const logoSize = 18
+  
+  // Draw crown shape
   doc.setFillColor(...COLORS.gold)
-  const cx = margin + 6, cy = 14
-  doc.triangle(cx - 6, cy + 6, cx, cy - 8, cx + 6, cy + 6, 'F')
+  doc.setDrawColor(...COLORS.goldDark)
+  doc.setLineWidth(0.3)
+  
+  // Crown body (5-point crown)
+  const scale = logoSize / 20
+  const points = [
+    [logoX + 2 * scale, logoY + 15 * scale],     // bottom left
+    [logoX + 4 * scale, logoY + 6 * scale],      // left peak
+    [logoX + 7 * scale, logoY + 11 * scale],     // left valley
+    [logoX + 10 * scale, logoY + 3 * scale],     // center peak (highest)
+    [logoX + 13 * scale, logoY + 11 * scale],    // right valley
+    [logoX + 16 * scale, logoY + 6 * scale],     // right peak
+    [logoX + 18 * scale, logoY + 15 * scale],    // bottom right
+  ]
+  
+  // Draw crown using triangle method (jsPDF compatible)
+  doc.triangle(
+    points[0][0], points[0][1],
+    points[1][0], points[1][1],
+    points[2][0], points[2][1], 'F'
+  )
+  doc.triangle(
+    points[0][0], points[0][1],
+    points[2][0], points[2][1],
+    points[3][0], points[3][1], 'F'
+  )
+  doc.triangle(
+    points[0][0], points[0][1],
+    points[3][0], points[3][1],
+    points[4][0], points[4][1], 'F'
+  )
+  doc.triangle(
+    points[0][0], points[0][1],
+    points[4][0], points[4][1],
+    points[5][0], points[5][1], 'F'
+  )
+  doc.triangle(
+    points[0][0], points[0][1],
+    points[5][0], points[5][1],
+    points[6][0], points[6][1], 'F'
+  )
+  
+  // Peak jewels (circles)
+  const jewelRadius = 1.2 * scale
+  doc.circle(points[1][0], points[1][1] - 1, jewelRadius, 'F')
+  doc.circle(points[3][0], points[3][1] - 1, jewelRadius, 'F')
+  doc.circle(points[5][0], points[5][1] - 1, jewelRadius, 'F')
+  
+  // Crown base bar
+  doc.setFillColor(...COLORS.navy)
+  doc.rect(logoX + 2 * scale, logoY + 15 * scale, 16 * scale, 2 * scale, 'F')
 
   // Title
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
-  doc.text('CROWN XPRESS', margin + 18, 14)
+  doc.text('CROWN XPRESS', margin + 24, 14)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(201, 169, 97)
-  doc.text('TRANSPORT · LOGISTICS', margin + 18, 19)
+  doc.text('TRANSPORT · LOGISTICS', margin + 24, 19)
 
   // Right side title
   doc.setFont('helvetica', 'bold')
