@@ -5,7 +5,7 @@ import { useInspection } from '../context/InspectionContext'
 import { inspectionPoints } from '../data/inspectionPoints'
 import InspectionPoint from './InspectionPoint'
 
-export default function StepByStepInspection() {
+export default function StepByStepInspection({ onAllCompleted }) {
   const { t, language } = useLanguage()
   const { points, goodCount, failedCount, completedCount } = useInspection()
   const [currentStep, setCurrentStep] = useState(0)
@@ -16,6 +16,7 @@ export default function StepByStepInspection() {
   const isFirstStep = currentStep === 0
   const currentPoint = inspectionPoints[currentStep]
   const currentState = points[currentPoint.id]
+  const allPointsCompleted = completedCount === totalPoints
 
   // Auto-advance to next step when current point is completed
   useEffect(() => {
@@ -28,12 +29,7 @@ export default function StepByStepInspection() {
       }, 1500)
       return () => clearTimeout(timer)
     }
-
-    // Show summary when all points are completed
-    if (completedCount === totalPoints && !showSummary) {
-      setShowSummary(true)
-    }
-  }, [currentState, isLastStep, completedCount, totalPoints, showSummary])
+  }, [currentState, isLastStep, showSummary])
 
   const goToNext = () => {
     if (!isLastStep) {
@@ -62,7 +58,10 @@ export default function StepByStepInspection() {
             <div>
               <h2 className="font-bold tracking-wide uppercase text-sm">{t('inspectionSummary')}</h2>
               <p className="text-[10px] text-white/60 uppercase tracking-widest">
-                {language === 'es' ? 'Todos los puntos completados' : 'All points completed'}
+                {allPointsCompleted 
+                  ? (language === 'es' ? 'Todos los puntos completados' : 'All points completed')
+                  : (language === 'es' ? `${completedCount} de ${totalPoints} completados` : `${completedCount} of ${totalPoints} completed`)
+                }
               </p>
             </div>
           </div>
@@ -87,12 +86,23 @@ export default function StepByStepInspection() {
             ))}
           </div>
           
-          <button
-            onClick={() => setShowSummary(false)}
-            className="btn-secondary w-full"
-          >
-            {language === 'es' ? 'Continuar editando' : 'Continue editing'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowSummary(false)}
+              className="btn-secondary flex-1"
+            >
+              {language === 'es' ? 'Continuar editando' : 'Continue editing'}
+            </button>
+            {allPointsCompleted && onAllCompleted && (
+              <button
+                onClick={onAllCompleted}
+                className="btn-gold flex-1 flex items-center justify-center gap-2"
+              >
+                {language === 'es' ? 'Continuar a Foto del Sello' : 'Continue to Seal Photo'}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </section>
     )
@@ -214,13 +224,22 @@ export default function StepByStepInspection() {
 
         {/* Quick jump buttons */}
         {completedCount > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
+          <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
             <button
               onClick={() => setShowSummary(true)}
               className="btn-secondary w-full text-sm"
             >
               {language === 'es' ? 'Ver resumen de inspección' : 'View inspection summary'}
             </button>
+            {allPointsCompleted && onAllCompleted && (
+              <button
+                onClick={onAllCompleted}
+                className="btn-gold w-full flex items-center justify-center gap-2"
+              >
+                {language === 'es' ? 'Continuar a Foto del Sello' : 'Continue to Seal Photo'}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
       </div>

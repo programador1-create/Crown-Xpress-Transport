@@ -86,7 +86,11 @@ export default function GuidedInspection() {
             const Icon = stage.icon
             const isActive = stage.id === currentStage
             const isCompleted = index < currentStageIndex
-            const canAccess = index <= currentStageIndex || (index === 1 && unitInfoValid)
+            // Allow access to: current stage, completed stages, inspection if unitInfo valid, seal/signatures if all points completed
+            const canAccess = index <= currentStageIndex || 
+                              (index === 1 && unitInfoValid) || 
+                              (index === 2 && allPointsCompleted) ||
+                              (index === 3 && allPointsCompleted)
             
             return (
               <div key={stage.id} className="flex items-center flex-1">
@@ -139,7 +143,7 @@ export default function GuidedInspection() {
 
       {currentStage === 'inspection' && (
         <div>
-          <StepByStepInspection />
+          <StepByStepInspection onAllCompleted={() => setCurrentStage('seal')} />
         </div>
       )}
 
