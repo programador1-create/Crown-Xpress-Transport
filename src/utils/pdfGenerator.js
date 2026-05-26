@@ -1,7 +1,9 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { inspectionPoints, getIssuesForPoint } from '../data/inspectionPoints'
-import { CROWN_LOGO_SVG } from './crownLogo'
+
+// Crown Xpress logo will be loaded from public folder
+const CROWN_LOGO_URL = '/crown-logo.png'
 
 const COLORS = {
   navy: [30, 91, 122],
@@ -14,7 +16,27 @@ const COLORS = {
   slateLight: [148, 163, 184],
 }
 
+// Load logo image as base64
+async function loadLogoImage() {
+  try {
+    const response = await fetch(CROWN_LOGO_URL)
+    const blob = await response.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch (e) {
+    console.warn('Could not load logo:', e)
+    return null
+  }
+}
+
 export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guardSignature, auditorSignature, language = 'es' }) {
+  // Pre-load logo
+  const logoBase64 = await loadLogoImage()
+  
   const T = language === 'es' ? {
     title: 'INSPECCIÓN DE 20 PUNTOS',
     subtitle: 'Crown Xpress Transport · Logistics',
@@ -99,7 +121,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const margin = 14
 
   // ===== HEADER =====
-  drawHeader(doc, T, pageWidth, margin)
+  drawHeader(doc, T, pageWidth, margin, logoBase64)
 
   let y = 38
 
@@ -198,7 +220,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   if (failures.length > 0) {
     if (y > pageHeight - 60) {
       doc.addPage()
-      drawHeader(doc, T, pageWidth, margin)
+      drawHeader(doc, T, pageWidth, margin, logoBase64)
       y = 38
     }
 
@@ -228,7 +250,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
 
       if (cellY + photoH + 22 > pageHeight - 25) {
         doc.addPage()
-        drawHeader(doc, T, pageWidth, margin)
+        drawHeader(doc, T, pageWidth, margin, logoBase64)
         y = 38
         continue
       }
@@ -272,7 +294,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   // ===== SEAL PHOTO + SIGNATURES =====
   if (y > pageHeight - 70) {
     doc.addPage()
-    drawHeader(doc, T, pageWidth, margin)
+    drawHeader(doc, T, pageWidth, margin, logoBase64)
     y = 38
   }
 
@@ -310,7 +332,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   return { filename, doc }
 }
 
-function drawHeader(doc, T, pageWidth, margin) {
+function drawHeader(doc, T, pageWidth, margin, logoBase64 = null) {
   // Top navy bar
   doc.setFillColor(...COLORS.navyDark)
   doc.rect(0, 0, pageWidth, 28, 'F')
@@ -319,76 +341,25 @@ function drawHeader(doc, T, pageWidth, margin) {
   doc.setFillColor(...COLORS.gold)
   doc.rect(0, 28, pageWidth, 1.5, 'F')
 
-  // Crown emblem - improved crown logo
-  const logoX = margin + 2
-  const logoY = 5
-  const logoSize = 18
+  // Crown Xpress Logo (PNG image)
+  const logoWidth = 55
+  const logoHeight = 20
+  const logoX = margin
+  const logoY = 4
   
-  // Draw crown shape
-  doc.setFillColor(...COLORS.gold)
-  doc.setDrawColor(...COLORS.goldDark)
-  doc.setLineWidth(0.3)
-  
-  // Crown body (5-point crown)
-  const scale = logoSize / 20
-  const points = [
-    [logoX + 2 * scale, logoY + 15 * scale],     // bottom left
-    [logoX + 4 * scale, logoY + 6 * scale],      // left peak
-    [logoX + 7 * scale, logoY + 11 * scale],     // left valley
-    [logoX + 10 * scale, logoY + 3 * scale],     // center peak (highest)
-    [logoX + 13 * scale, logoY + 11 * scale],    // right valley
-    [logoX + 16 * scale, logoY + 6 * scale],     // right peak
-    [logoX + 18 * scale, logoY + 15 * scale],    // bottom right
-  ]
-  
-  // Draw crown using triangle method (jsPDF compatible)
-  doc.triangle(
-    points[0][0], points[0][1],
-    points[1][0], points[1][1],
-    points[2][0], points[2][1], 'F'
-  )
-  doc.triangle(
-    points[0][0], points[0][1],
-    points[2][0], points[2][1],
-    points[3][0], points[3][1], 'F'
-  )
-  doc.triangle(
-    points[0][0], points[0][1],
-    points[3][0], points[3][1],
-    points[4][0], points[4][1], 'F'
-  )
-  doc.triangle(
-    points[0][0], points[0][1],
-    points[4][0], points[4][1],
-    points[5][0], points[5][1], 'F'
-  )
-  doc.triangle(
-    points[0][0], points[0][1],
-    points[5][0], points[5][1],
-    points[6][0], points[6][1], 'F'
-  )
-  
-  // Peak jewels (circles)
-  const jewelRadius = 1.2 * scale
-  doc.circle(points[1][0], points[1][1] - 1, jewelRadius, 'F')
-  doc.circle(points[3][0], points[3][1] - 1, jewelRadius, 'F')
-  doc.circle(points[5][0], points[5][1] - 1, jewelRadius, 'F')
-  
-  // Crown base bar
-  doc.setFillColor(...COLORS.navy)
-  doc.rect(logoX + 2 * scale, logoY + 15 * scale, 16 * scale, 2 * scale, 'F')
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight)
+    } catch (e) {
+      // Fallback to text if image fails
+      drawFallbackLogo(doc, margin)
+    }
+  } else {
+    // Fallback to text-based logo
+    drawFallbackLogo(doc, margin)
+  }
 
-  // Title
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('CROWN XPRESS', margin + 24, 14)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(201, 169, 97)
-  doc.text('TRANSPORT · LOGISTICS', margin + 24, 19)
-
-  // Right side title
+  // Right side - inspection title and form code
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(255, 255, 255)
@@ -397,6 +368,25 @@ function drawHeader(doc, T, pageWidth, margin) {
   doc.setFontSize(7.5)
   doc.setTextColor(201, 169, 97)
   doc.text(T.formCode, pageWidth - margin, 18, { align: 'right' })
+}
+
+// Fallback logo when PNG is not available
+function drawFallbackLogo(doc, margin) {
+  // Draw simple crown shape
+  doc.setFillColor(...COLORS.gold)
+  const cx = margin + 10
+  const cy = 14
+  doc.triangle(cx - 8, cy + 6, cx, cy - 6, cx + 8, cy + 6, 'F')
+  
+  // Title text
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.text('CROWN XPRESS', margin + 22, 13)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(201, 169, 97)
+  doc.text('TRANSPORT · LOGISTICS', margin + 22, 18)
 }
 
 function drawFooter(doc, T, pageWidth, pageHeight, margin) {
