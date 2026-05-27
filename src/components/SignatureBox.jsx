@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Eraser, Check } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
-export default function SignatureBox({ value, onChange, label, name, onNameChange, namePlaceholder, accent = 'navy', readOnly = false, optional = false, optionalLabel }) {
+export default function SignatureBox({ value, onChange, label, name, onNameChange, namePlaceholder, accent = 'navy', readOnly = false, nameReadOnly = false, optional = false, optionalLabel }) {
   const { t } = useLanguage()
   const canvasRef = useRef(null)
   const ctxRef = useRef(null)
@@ -113,8 +113,9 @@ export default function SignatureBox({ value, onChange, label, name, onNameChang
           value={name}
           onChange={(e) => onNameChange?.(e.target.value)}
           placeholder={namePlaceholder}
-          className="input"
-          disabled={readOnly}
+          className={`input ${nameReadOnly ? 'bg-slate-100 cursor-not-allowed' : ''}`}
+          disabled={readOnly || nameReadOnly}
+          readOnly={nameReadOnly}
         />
         <div className="relative bg-slate-50 rounded-lg border border-slate-200">
           {!hasSigned && (

@@ -40,6 +40,7 @@ export default function SignaturesSection() {
             signedAt: sig ? new Date().toISOString() : null
           }))}
           accent="navy"
+          nameReadOnly={true}
         />
         <SignatureBox
           label={
