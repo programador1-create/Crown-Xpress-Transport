@@ -1,5 +1,6 @@
 import { Languages, RotateCcw, LogOut, User } from 'lucide-react'
 import Logo from './Logo'
+import ThemeToggle from './ThemeToggle'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
@@ -43,6 +44,9 @@ export default function Header() {
               <div className="text-xs text-slate-500 capitalize">{user?.role} · {user?.location_name}</div>
             </div>
           </div>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* Language */}
           <button

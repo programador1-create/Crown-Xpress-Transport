@@ -117,35 +117,18 @@ export function AuthProvider({ children }) {
   }, [user, resetInactivityTimer])
 
   const login = async (username, password) => {
-    // TODO: Replace with real API call
-    const mockUsers = [
-      // Guardias
-      { id: 101, username: 'guardia01', password: '1234', full_name: 'Carlos Mendoza', role: 'guard', location_id: 1, location_name: 'Yard A - Laredo' },
-      { id: 102, username: 'guardia02', password: '1234', full_name: 'Luis Hernandez', role: 'guard', location_id: 1, location_name: 'Yard A - Laredo' },
-      { id: 103, username: 'guardia03', password: '1234', full_name: 'Miguel Torres', role: 'guard', location_id: 2, location_name: 'Yard B - El Paso' },
-      { id: 104, username: 'guardia04', password: '1234', full_name: 'Pedro Ramirez', role: 'guard', location_id: 2, location_name: 'Yard B - El Paso' },
-      { id: 105, username: 'guardia05', password: '1234', full_name: 'Juan Lopez', role: 'guard', location_id: 3, location_name: 'Yard C - Dallas' },
-      // Inspectores
-      { id: 201, username: 'inspector01', password: '1234', full_name: 'Alberto Vargas', role: 'inspector', location_id: 1, location_name: 'Yard A - Laredo' },
-      { id: 202, username: 'inspector02', password: '1234', full_name: 'Daniel Castro', role: 'inspector', location_id: 2, location_name: 'Yard B - El Paso' },
-      // Auditores
-      { id: 301, username: 'auditor01', password: '1234', full_name: 'Roberto Sanchez', role: 'auditor', location_id: 1, location_name: 'Yard A - Laredo' },
-      { id: 302, username: 'auditor02', password: '1234', full_name: 'Guillermo Ortiz', role: 'auditor', location_id: 1, location_name: 'Yard A - Laredo' },
-      // Admin
-      { id: 401, username: 'admin', password: 'admin', full_name: 'Admin Crown', role: 'admin', location_id: 1, location_name: 'Yard A - Laredo' },
-    ]
-
-    const found = mockUsers.find(u => u.username === username && u.password === password)
-    if (!found) throw new Error('Usuario o contraseña incorrectos')
-
-    const session = {
-      id: found.id,
-      username: found.username,
-      full_name: found.full_name,
-      role: found.role,
-      location_id: found.location_id,
-      location_name: found.location_name,
-    }
+    const API_BASE = import.meta.env.VITE_API_URL || '/api'
+    
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+    
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Login failed')
+    
+    const session = data.user
     setUser(session)
     localStorage.setItem('crown_user', JSON.stringify(session))
     return session

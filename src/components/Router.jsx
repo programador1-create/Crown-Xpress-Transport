@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClipboardCheck, History, Home, ShieldCheck, FileText } from 'lucide-react'
+import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users } from 'lucide-react'
 import GuidedInspection from './GuidedInspection'
 import UnitInfo from './UnitInfoEnhanced'
 import TruckDiagram from './TruckDiagram'
@@ -11,6 +11,8 @@ import SuccessModal from './SuccessModal'
 import InspectionHistory from './InspectionHistory'
 import GuardHistory from './GuardHistory'
 import AuditorView from './AuditorView'
+import UserManagement from './UserManagement'
+import ThemeToggle from './ThemeToggle'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
@@ -40,6 +42,7 @@ export default function Router() {
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
     canViewAll() && { id: 'auditor', label: language === 'es' ? 'Vista Auditor' : 'Auditor View', icon: ShieldCheck },
+    user?.role === 'admin' && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
   ].filter(Boolean)
 
   const Nav = () => (
@@ -90,6 +93,7 @@ export default function Router() {
         )}
         {page === 'my-history' && canEdit() && <GuardHistory />}
         {page === 'auditor' && canViewAll() && <AuditorView />}
+        {page === 'users' && user?.role === 'admin' && <UserManagement />}
       </div>
 
       <footer className="border-t border-slate-200 bg-white/50 backdrop-blur py-4 mt-2 no-print">
