@@ -97,7 +97,7 @@ export default function UserManagement() {
 
   const handleUpdate = async (id, updates) => {
     try {
-      const res = await fetch(`${API_BASE}/employees/${id}`, {
+      const res = await fetch(`${API_BASE}/employees?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -116,7 +116,7 @@ export default function UserManagement() {
     if (!confirm(language === 'es' ? '¿Desactivar este usuario?' : 'Deactivate this user?')) return
     
     try {
-      const res = await fetch(`${API_BASE}/employees/${id}`, {
+      const res = await fetch(`${API_BASE}/employees?id=${id}`, {
         method: 'DELETE',
       })
       const data = await res.json()
