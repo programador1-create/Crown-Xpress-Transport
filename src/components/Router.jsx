@@ -89,7 +89,6 @@ export default function Router() {
         {page === 'guided' && canEdit() && (
           <div className="space-y-5">
             <GuidedInspection />
-            <SubmitBar onSuccess={handleSuccess} />
           </div>
         )}
         {page === 'my-history' && canEdit() && <GuardHistory />}

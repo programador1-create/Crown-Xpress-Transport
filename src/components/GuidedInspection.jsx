@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ClipboardCheck, ArrowRight, CheckCircle } from 'lucide-react'
+import { ClipboardCheck, ArrowRight, CheckCircle, Truck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import UnitInfoEnhanced from './UnitInfoEnhanced'
@@ -7,6 +7,7 @@ import StepByStepInspection from './StepByStepInspection'
 import SealPhotoSection from './SealPhotoSection'
 import SignatureSection from './SignatureSection'
 import SubmitBar from './SubmitBar'
+import TruckDiagramVisual from './TruckDiagramVisual'
 
 export default function GuidedInspection() {
   const { t, language } = useLanguage()
@@ -143,7 +144,21 @@ export default function GuidedInspection() {
       )}
 
       {currentStage === 'inspection' && (
-        <div>
+        <div className="space-y-6">
+          {/* Truck Diagram Visual */}
+          <div className="card">
+            <div className="card-header flex items-center gap-3">
+              <Truck className="w-5 h-5 text-crown-gold" />
+              <h2 className="font-bold tracking-wide uppercase text-sm">
+                {language === 'es' ? 'Diagrama del Camión' : 'Truck Diagram'}
+              </h2>
+            </div>
+            <div className="card-body p-4">
+              <TruckDiagramVisual compact />
+            </div>
+          </div>
+          
+          {/* Step by Step Inspection */}
           <StepByStepInspection onAllCompleted={() => setCurrentStage('seal')} />
         </div>
       )}
