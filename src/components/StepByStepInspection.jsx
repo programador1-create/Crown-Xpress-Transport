@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronRight, ChevronLeft, CheckCircle, Circle, AlertTriangle } from 'lucide-react'
+import { ChevronRight, ChevronLeft, CheckCircle, Circle, AlertTriangle, MessageSquare } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { inspectionPoints } from '../data/inspectionPoints'
@@ -7,7 +7,7 @@ import InspectionPoint from './InspectionPoint'
 
 export default function StepByStepInspection({ onAllCompleted }) {
   const { t, language } = useLanguage()
-  const { points, goodCount, failedCount, completedCount } = useInspection()
+  const { points, goodCount, failedCount, completedCount, unitInfo, updateUnitInfo } = useInspection()
   const [currentStep, setCurrentStep] = useState(0)
   const [showSummary, setShowSummary] = useState(false)
 
@@ -231,10 +231,33 @@ export default function StepByStepInspection({ onAllCompleted }) {
             >
               {language === 'es' ? 'Ver resumen de inspección' : 'View inspection summary'}
             </button>
-            {allPointsCompleted && onAllCompleted && (
+          </div>
+        )}
+
+        {/* Comments section - only shows when all 20 points are completed */}
+        {allPointsCompleted && (
+          <div className="mt-6 pt-6 border-t-2 border-emerald-200 bg-emerald-50/50 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-semibold text-emerald-800">
+                {language === 'es' ? 'Comentarios de la Inspección' : 'Inspection Comments'}
+              </h3>
+              <span className="text-xs text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">
+                {language === 'es' ? 'Opcional' : 'Optional'}
+              </span>
+            </div>
+            <textarea
+              value={unitInfo.notes || ''}
+              onChange={e => updateUnitInfo('notes', e.target.value)}
+              className="w-full px-3 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none bg-white"
+              rows={3}
+              placeholder={language === 'es' ? 'Agregue comentarios adicionales sobre la inspección...' : 'Add additional comments about the inspection...'}
+            />
+            
+            {onAllCompleted && (
               <button
                 onClick={onAllCompleted}
-                className="btn-gold w-full flex items-center justify-center gap-2"
+                className="btn-gold w-full flex items-center justify-center gap-2 mt-4"
               >
                 {language === 'es' ? 'Continuar a Foto del Sello' : 'Continue to Seal Photo'}
                 <ChevronRight className="w-4 h-4" />

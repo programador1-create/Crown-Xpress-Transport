@@ -272,19 +272,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           </div>
         </div>
 
-        {/* Notes */}
-        <div className="mt-4">
-          <label className="block text-sm font-semibold text-slate-700 mb-1">
-            {t('notes')} ({language === 'es' ? 'opcional' : 'optional'})
-          </label>
-          <textarea
-            value={unitInfo.notes || ''}
-            onChange={e => update('notes', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 resize-none"
-            rows={2}
-            placeholder={language === 'es' ? 'Notas adicionales...' : 'Additional notes...'}
-          />
-        </div>
       </div>
     </section>
   )
