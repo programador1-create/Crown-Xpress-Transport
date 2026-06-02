@@ -15,7 +15,7 @@ export default function SubmitBar({ onSuccess }) {
   if (!validation.allPointsEvaluated) issues.push(t('completeAllPoints'))
   if (!validation.failuresHaveIssue) issues.push(t('selectIssueForFailures'))
   if (!validation.failuresHavePhoto) issues.push(t('addPhotoForFailures'))
-  if (!validation.hasSealPhoto) issues.push(t('captureSealPhoto'))
+  // Seal photo is now optional - removed from validation
   if (!validation.guardSigned) issues.push(t('guardMustSign'))
 
   const handleSubmit = async () => {

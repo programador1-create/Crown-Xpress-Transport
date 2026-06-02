@@ -88,15 +88,15 @@ export function InspectionProvider({ children }) {
   const goodCount = Object.values(points).filter(p => p.status === 'good').length
   const progressPercent = Math.round((completedCount / inspectionPoints.length) * 100)
 
-  // Validation: all points evaluated, all bad have issueId+photo, seal photo, guard signed
+  // Validation: all points evaluated, all bad have issueId+photo, guard signed (seal photo is optional)
   const validation = {
     allPointsEvaluated: completedCount === inspectionPoints.length,
     failuresHaveIssue: Object.values(points).every(p => p.status !== 'bad' || p.issueId),
     failuresHavePhoto: Object.values(points).every(p => p.status !== 'bad' || p.photo),
-    hasSealPhoto: !!sealPhoto,
+    hasSealPhoto: !!sealPhoto, // Optional - not required for submission
     guardSigned: !!(guardSignature.signature && guardSignature.name.trim()),
   }
-  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.hasSealPhoto && validation.guardSigned
+  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned
 
   return (
     <InspectionContext.Provider value={{
