@@ -256,20 +256,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             </select>
           </div>
 
-          {/* Odometer */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
-              {language === 'es' ? 'Odómetro' : 'Odometer'}
-            </label>
-            <input
-              type="text"
-              value={unitInfo.odometer || ''}
-              onChange={e => update('odometer', e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-              placeholder={language === 'es' ? 'Ej: 123456' : 'Ex: 123456'}
-            />
-          </div>
-
           {/* Guard Name (readonly) */}
           <div className="col-span-1">
             <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
