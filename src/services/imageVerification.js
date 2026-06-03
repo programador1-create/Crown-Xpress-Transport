@@ -1,7 +1,7 @@
 // Image Verification Service using AI (Gemini)
 // This service validates that captured photos match the expected inspection point
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent'
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
 
 /**
  * Verify if an image matches the expected inspection point using Google Gemini
