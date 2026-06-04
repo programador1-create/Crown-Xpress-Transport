@@ -38,13 +38,27 @@ export default function SubmitBar({ onSuccess }) {
       const payload = buildPayload(ctx, pdfBase64, pdfFilename)
       const uploadResult = await createInspection(payload)
 
-      // 3. Return combined result (frontend still needs filename for modal)
-      onSuccess?.({ filename: pdfFilename, ...uploadResult })
+      // 3. Show PDF in new window for 4 seconds, then download and close
+      const pdfBlob = pdfResult.doc.output('blob')
+      const pdfUrl = URL.createObjectURL(pdfBlob)
+      const pdfWindow = window.open(pdfUrl, '_blank', 'width=800,height=600')
+      
+      // Download the PDF
+      pdfResult.doc.save(pdfFilename)
+      
+      // Close preview window after 4 seconds and trigger success
+      setTimeout(() => {
+        if (pdfWindow && !pdfWindow.closed) {
+          pdfWindow.close()
+        }
+        URL.revokeObjectURL(pdfUrl)
+        onSuccess?.({ filename: pdfFilename, ...uploadResult })
+      }, 4000)
+      
     } catch (e) {
       console.error('Submit error:', e)
       const msg = e.message || String(e)
       alert(language === 'es' ? `Error al guardar: ${msg}` : `Error saving: ${msg}`)
-    } finally {
       setGenerating(false)
     }
   }

@@ -320,6 +320,82 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   drawSignatureBox(doc, sigX, sigSectionY, sigBoxW, 28, T.guardSig, guardSignature, T)
   drawSignatureBox(doc, sigX, sigSectionY + 28, sigBoxW, 28, T.auditorSig, auditorSignature, T)
 
+  // ===== PAGE 2: TRUCK DIAGRAM =====
+  doc.addPage()
+  drawHeader(doc, T, pageWidth, margin, logoBase64)
+  
+  let diagramY = 38
+  
+  // Title
+  doc.setFillColor(...COLORS.navy)
+  doc.rect(margin, diagramY, pageWidth - margin * 2, 6, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text(language === 'es' ? 'DIAGRAMA DE INSPECCIÓN' : 'INSPECTION DIAGRAM', margin + 2, diagramY + 4)
+  diagramY += 10
+
+  // Legend for B/W printing
+  doc.setFontSize(7)
+  doc.setTextColor(30, 41, 59)
+  doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo | P = Pendiente' : 'Legend: G = Good | B = Bad | P = Pending', margin, diagramY)
+  diagramY += 6
+
+  // Draw truck diagram representation for PDF (B/W friendly)
+  drawTruckDiagramPDF(doc, margin, diagramY, pageWidth - margin * 2, 120, points, language, T)
+  diagramY += 130
+
+  // Points summary table
+  doc.setFillColor(...COLORS.navyDark)
+  doc.rect(margin, diagramY, pageWidth - margin * 2, 6, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text(language === 'es' ? 'RESUMEN DE PUNTOS' : 'POINTS SUMMARY', margin + 2, diagramY + 4)
+  diagramY += 6
+
+  // Create summary table with status text
+  const summaryBody = inspectionPoints.map(p => {
+    const state = points[p.id] || { status: null }
+    const statusText = state.status === 'good' 
+      ? (language === 'es' ? 'BUENO' : 'GOOD')
+      : state.status === 'bad' 
+        ? (language === 'es' ? 'MALO' : 'BAD')
+        : (language === 'es' ? 'PENDIENTE' : 'PENDING')
+    return [p.id.toString(), p[language], statusText]
+  })
+
+  autoTable(doc, {
+    startY: diagramY,
+    head: [[
+      '#', 
+      language === 'es' ? 'Punto de Inspección' : 'Inspection Point',
+      language === 'es' ? 'Estado' : 'Status'
+    ]],
+    body: summaryBody,
+    theme: 'grid',
+    styles: { fontSize: 7, cellPadding: 1.2, lineColor: [200, 210, 220] },
+    headStyles: { fillColor: COLORS.navyDark, textColor: 255, fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center', fontStyle: 'bold' },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 2) {
+        const cellText = data.cell.text[0]
+        if (cellText === 'BUENO' || cellText === 'GOOD') {
+          data.cell.styles.textColor = [0, 0, 0]
+          data.cell.styles.fillColor = [240, 240, 240]
+        } else if (cellText === 'MALO' || cellText === 'BAD') {
+          data.cell.styles.textColor = [0, 0, 0]
+          data.cell.styles.fillColor = [200, 200, 200]
+        }
+      }
+    },
+    margin: { left: margin, right: margin }
+  })
+
   // ===== FOOTER =====
   drawFooter(doc, T, pageWidth, pageHeight, margin)
 
@@ -328,7 +404,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const trailer = (unitInfo.trailerNumber || 'NA').replace(/[^a-z0-9-]/gi, '_')
   const filename = `Inspeccion_${trailer}_${ts}.pdf`
 
-  doc.save(filename)
+  // Return doc without saving - let caller handle display/download
   return { filename, doc }
 }
 
@@ -480,4 +556,143 @@ function formatDate(value) {
   } catch {
     return value
   }
+}
+
+// Draw truck diagram for PDF with B/W friendly labels
+function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T) {
+  // Draw truck outline (simplified schematic)
+  const tractorW = w * 0.35
+  const trailerW = w * 0.60
+  const gap = w * 0.05
+  const truckH = h * 0.6
+  const startY = y + 10
+
+  // Tractor outline
+  doc.setDrawColor(30, 41, 59)
+  doc.setLineWidth(0.8)
+  doc.rect(x, startY, tractorW, truckH)
+  
+  // Tractor cab
+  doc.setFillColor(241, 245, 249)
+  doc.rect(x, startY, tractorW * 0.4, truckH * 0.7, 'FD')
+  
+  // Trailer outline
+  doc.rect(x + tractorW + gap, startY, trailerW, truckH)
+  
+  // Labels
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.setTextColor(30, 41, 59)
+  doc.text(language === 'es' ? 'TRACTOR' : 'TRACTOR', x + tractorW / 2, startY - 3, { align: 'center' })
+  doc.text(language === 'es' ? 'REMOLQUE' : 'TRAILER', x + tractorW + gap + trailerW / 2, startY - 3, { align: 'center' })
+
+  // Point positions for schematic (relative to sections)
+  const tractorPoints = [
+    { id: 1, relX: 0.15, relY: 0.2, label: '1' },
+    { id: 2, relX: 0.5, relY: 0.85, label: '2' },
+    { id: 3, relX: 0.25, relY: 0.5, label: '3' },
+    { id: 4, relX: 0.7, relY: 0.5, label: '4' },
+    { id: 5, relX: 0.25, relY: 0.3, label: '5' },
+    { id: 6, relX: 0.7, relY: 0.7, label: '6' },
+    { id: 7, relX: 0.9, relY: 0.5, label: '7' },
+    { id: 8, relX: 0.5, relY: 0.7, label: '8' },
+    { id: 9, relX: 0.15, relY: 0.7, label: '9' },
+    { id: 10, relX: 0.15, relY: 0.4, label: '10' },
+  ]
+
+  const trailerPoints = [
+    { id: 11, relX: 0.1, relY: 0.85, label: '11' },
+    { id: 12, relX: 0.95, relY: 0.5, label: '12' },
+    { id: 13, relX: 0.7, relY: 0.85, label: '13' },
+    { id: 14, relX: 0.5, relY: 0.1, label: '14' },
+    { id: 15, relX: 0.1, relY: 0.3, label: '15' },
+    { id: 16, relX: 0.3, relY: 0.85, label: '16' },
+    { id: 17, relX: 0.5, relY: 0.5, label: '17' },
+    { id: 18, relX: 0.1, relY: 0.6, label: '18' },
+    { id: 19, relX: 0.1, relY: 0.15, label: '19' },
+    { id: 20, relX: 0.85, relY: 0.3, label: '20' },
+  ]
+
+  // Draw tractor points
+  tractorPoints.forEach(p => {
+    const px = x + p.relX * tractorW
+    const py = startY + p.relY * truckH
+    const state = points[p.id] || { status: null }
+    drawPointMarker(doc, px, py, p.id, state.status, language)
+  })
+
+  // Draw trailer points
+  trailerPoints.forEach(p => {
+    const px = x + tractorW + gap + p.relX * trailerW
+    const py = startY + p.relY * truckH
+    const state = points[p.id] || { status: null }
+    drawPointMarker(doc, px, py, p.id, state.status, language)
+  })
+
+  // Draw legend below diagram
+  const legendY = startY + truckH + 15
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  
+  // Good legend
+  doc.setFillColor(255, 255, 255)
+  doc.setDrawColor(0, 0, 0)
+  doc.circle(x + 10, legendY, 4, 'FD')
+  doc.setTextColor(0, 0, 0)
+  doc.setFont('helvetica', 'bold')
+  doc.text('B', x + 10, legendY + 1.5, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.text(language === 'es' ? '= Bueno' : '= Good', x + 18, legendY + 1)
+
+  // Bad legend
+  doc.setFillColor(180, 180, 180)
+  doc.circle(x + 55, legendY, 4, 'FD')
+  doc.setFont('helvetica', 'bold')
+  doc.text('M', x + 55, legendY + 1.5, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.text(language === 'es' ? '= Malo' : '= Bad', x + 63, legendY + 1)
+
+  // Pending legend
+  doc.setFillColor(220, 220, 220)
+  doc.circle(x + 100, legendY, 4, 'FD')
+  doc.setFont('helvetica', 'bold')
+  doc.text('P', x + 100, legendY + 1.5, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.text(language === 'es' ? '= Pendiente' : '= Pending', x + 108, legendY + 1)
+}
+
+// Draw individual point marker with B/W friendly status
+function drawPointMarker(doc, x, y, id, status, language) {
+  const radius = 5
+  
+  // Set fill based on status (B/W friendly)
+  if (status === 'good') {
+    doc.setFillColor(255, 255, 255) // White for good
+  } else if (status === 'bad') {
+    doc.setFillColor(180, 180, 180) // Gray for bad
+  } else {
+    doc.setFillColor(220, 220, 220) // Light gray for pending
+  }
+  
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.5)
+  doc.circle(x, y, radius, 'FD')
+  
+  // Status letter
+  doc.setTextColor(0, 0, 0)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(6)
+  
+  let statusLetter = 'P'
+  if (status === 'good') {
+    statusLetter = language === 'es' ? 'B' : 'G'
+  } else if (status === 'bad') {
+    statusLetter = 'M'
+  }
+  
+  doc.text(statusLetter, x, y + 1.5, { align: 'center' })
+  
+  // Point number below
+  doc.setFontSize(5)
+  doc.text(id.toString(), x, y + radius + 3, { align: 'center' })
 }
