@@ -46,25 +46,6 @@ export default function InspectionHistory() {
   const handleDownload = async (id, filename) => {
     try {
       const blob = await downloadPdf(id)
-      
-      // Check if blob is valid
-      if (!blob || blob.size === 0) {
-        throw new Error('PDF vacío o no disponible')
-      }
-      
-      // Check if it's actually a PDF (should start with %PDF)
-      const firstBytes = await blob.slice(0, 4).text()
-      if (!firstBytes.startsWith('%PDF')) {
-        // Try to parse as JSON error
-        const text = await blob.text()
-        try {
-          const error = JSON.parse(text)
-          throw new Error(error.error || 'PDF no disponible')
-        } catch {
-          throw new Error('El archivo no es un PDF válido')
-        }
-      }
-      
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -74,8 +55,7 @@ export default function InspectionHistory() {
       a.remove()
       URL.revokeObjectURL(url)
     } catch (e) {
-      console.error('Download error:', e)
-      alert(language === 'es' ? `Error: ${e.message}` : `Error: ${e.message}`)
+      alert(language === 'es' ? 'Error descargando PDF' : 'Error downloading PDF')
     }
   }
 

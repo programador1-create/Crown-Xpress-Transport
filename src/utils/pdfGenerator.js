@@ -348,38 +348,36 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   drawSignatureBox(doc, margin + sigBoxW3 + 4, sigSectionY + (sealPhoto ? 58 : 0), sigBoxW3, 28, T.guardSig, guardSignature, T)
   drawSignatureBox(doc, margin + (sigBoxW3 + 4) * 2, sigSectionY + (sealPhoto ? 58 : 0), sigBoxW3, 28, T.auditorSig, auditorSignature, T)
 
-  // ===== PAGE 2: TRUCK DIAGRAM (LANDSCAPE - FULL PAGE) =====
-  doc.addPage([297, 210], 'landscape') // A4 landscape dimensions in mm
+  // ===== PAGE 2: TRUCK DIAGRAM (LANDSCAPE) =====
+  doc.addPage('landscape')
   const landscapeWidth = doc.internal.pageSize.getWidth()
   const landscapeHeight = doc.internal.pageSize.getHeight()
-  const smallMargin = 8
   
   // Draw header for landscape page
-  drawHeader(doc, T, landscapeWidth, smallMargin, logoBase64)
+  drawHeader(doc, T, landscapeWidth, margin, logoBase64)
   
-  let diagramY = 28
+  let diagramY = 38
   
   // Title
   doc.setFillColor(...COLORS.navy)
-  doc.rect(smallMargin, diagramY, landscapeWidth - smallMargin * 2, 5, 'F')
+  doc.rect(margin, diagramY, landscapeWidth - margin * 2, 6, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.text(language === 'es' ? 'DIAGRAMA DE INSPECCIÓN' : 'INSPECTION DIAGRAM', smallMargin + 2, diagramY + 3.5)
-  diagramY += 7
+  doc.setFontSize(8)
+  doc.text(language === 'es' ? 'DIAGRAMA DE INSPECCIÓN' : 'INSPECTION DIAGRAM', margin + 2, diagramY + 4)
+  diagramY += 10
 
   // Legend for B/W printing
-  doc.setFontSize(6)
+  doc.setFontSize(7)
   doc.setTextColor(30, 41, 59)
-  doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo | P = Pendiente' : 'Legend: G = Good | B = Bad | P = Pending', smallMargin, diagramY)
-  diagramY += 4
+  doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo | P = Pendiente' : 'Legend: G = Good | B = Bad | P = Pending', margin, diagramY)
+  diagramY += 6
 
-  // Draw truck diagram with real image - FULL WIDTH and HEIGHT to fill the page
-  const availableHeight = landscapeHeight - diagramY - 15 // Leave space for footer
-  drawTruckDiagramPDF(doc, smallMargin, diagramY, landscapeWidth - smallMargin * 2, availableHeight, points, language, T, truckDiagramBase64)
+  // Draw truck diagram with real image and point markers - wider in landscape
+  drawTruckDiagramPDF(doc, margin, diagramY, landscapeWidth - margin * 2, 130, points, language, T, truckDiagramBase64)
 
-  // ===== FOOTER for landscape page =====
-  drawFooter(doc, T, landscapeWidth, landscapeHeight, smallMargin)
+  // ===== FOOTER =====
+  drawFooter(doc, T, pageWidth, pageHeight, margin)
 
   // Generate filename
   const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
@@ -545,8 +543,8 @@ function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramB
   // Draw the truck diagram image
   if (truckDiagramBase64) {
     try {
-      // Use most of the available height for the image
-      const imgHeight = h * 0.90
+      // Image aspect ratio is approximately 2.5:1, adjust height accordingly
+      const imgHeight = h * 0.85
       doc.addImage(truckDiagramBase64, 'JPEG', x, y, w, imgHeight)
       
       // Point positions matching the TruckDiagramVisual.jsx positions (in percentages)
