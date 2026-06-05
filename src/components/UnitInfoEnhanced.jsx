@@ -38,7 +38,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // Auto-fill date and guard name on mount
   useEffect(() => {
-    updateUnitInfo('inspectionDate', new Date().toISOString().slice(0, 16))
+    // Set today's date in YYYY-MM-DD format for date input
+    const today = new Date().toISOString().slice(0, 10)
+    updateUnitInfo('inspectionDate', today)
     updateUnitInfo('driverName', user?.full_name || '')
     updateUnitInfo('location', user?.location_id ? YARDS.find(y => y.id === user.location_id)?.name || '' : '')
   }, [user, updateUnitInfo])
