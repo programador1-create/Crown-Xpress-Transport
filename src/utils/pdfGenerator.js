@@ -348,15 +348,19 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   drawSignatureBox(doc, margin + sigBoxW3 + 4, sigSectionY + (sealPhoto ? 58 : 0), sigBoxW3, 28, T.guardSig, guardSignature, T)
   drawSignatureBox(doc, margin + (sigBoxW3 + 4) * 2, sigSectionY + (sealPhoto ? 58 : 0), sigBoxW3, 28, T.auditorSig, auditorSignature, T)
 
-  // ===== PAGE 2: TRUCK DIAGRAM =====
-  doc.addPage()
-  drawHeader(doc, T, pageWidth, margin, logoBase64)
+  // ===== PAGE 2: TRUCK DIAGRAM (LANDSCAPE) =====
+  doc.addPage('landscape')
+  const landscapeWidth = doc.internal.pageSize.getWidth()
+  const landscapeHeight = doc.internal.pageSize.getHeight()
+  
+  // Draw header for landscape page
+  drawHeader(doc, T, landscapeWidth, margin, logoBase64)
   
   let diagramY = 38
   
   // Title
   doc.setFillColor(...COLORS.navy)
-  doc.rect(margin, diagramY, pageWidth - margin * 2, 6, 'F')
+  doc.rect(margin, diagramY, landscapeWidth - margin * 2, 6, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
@@ -369,8 +373,8 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo | P = Pendiente' : 'Legend: G = Good | B = Bad | P = Pending', margin, diagramY)
   diagramY += 6
 
-  // Draw truck diagram with real image and point markers
-  drawTruckDiagramPDF(doc, margin, diagramY, pageWidth - margin * 2, 160, points, language, T, truckDiagramBase64)
+  // Draw truck diagram with real image and point markers - wider in landscape
+  drawTruckDiagramPDF(doc, margin, diagramY, landscapeWidth - margin * 2, 130, points, language, T, truckDiagramBase64)
 
   // ===== FOOTER =====
   drawFooter(doc, T, pageWidth, pageHeight, margin)
@@ -641,11 +645,11 @@ function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramB
   }
 }
 
-// Draw individual point marker with B/W friendly status - shows number and status letter
+// Draw individual point marker with status letter (B/M/P or G/B/P in English)
 function drawPointMarker(doc, x, y, id, status, language) {
   const radius = 5
   
-  // Set fill based on status (B/W friendly) - using colors similar to the reference image
+  // Set fill based on status - using colors similar to the reference image
   if (status === 'good') {
     doc.setFillColor(5, 150, 105) // Emerald green for good
     doc.setDrawColor(4, 120, 87)
@@ -660,9 +664,16 @@ function drawPointMarker(doc, x, y, id, status, language) {
   doc.setLineWidth(0.5)
   doc.circle(x, y, radius, 'FD')
   
-  // Point number inside circle (always white for visibility)
+  // Status letter inside circle (B=Bueno/G=Good, M=Malo/B=Bad, P=Pendiente/Pending)
+  let statusLetter = 'P'
+  if (status === 'good') {
+    statusLetter = language === 'es' ? 'B' : 'G'
+  } else if (status === 'bad') {
+    statusLetter = language === 'es' ? 'M' : 'B'
+  }
+  
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.text(id.toString(), x, y + 2, { align: 'center' })
+  doc.setFontSize(8)
+  doc.text(statusLetter, x, y + 2.5, { align: 'center' })
 }

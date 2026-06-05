@@ -71,24 +71,17 @@ export default function SubmitBar({ onSuccess }) {
         const payload = buildPayload(ctx, pdfBase64, pdfFilename)
         const uploadResult = await createInspection(payload)
 
-        // 3. Show PDF in new window for 10 seconds, then download and close
+        // 3. Show PDF in new window (no download, just preview)
         const pdfBlob = pdfResult.doc.output('blob')
         const pdfUrl = URL.createObjectURL(pdfBlob)
-        const pdfWindow = window.open(pdfUrl, '_blank', 'width=900,height=700')
+        window.open(pdfUrl, '_blank', 'width=1000,height=800')
         
-        // Download the PDF
-        pdfResult.doc.save(pdfFilename)
-        
-        // Close preview window after 10 seconds and trigger success (reset inspection)
+        // Reset inspection for new one after showing PDF
         setTimeout(() => {
-          if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.close()
-          }
-          URL.revokeObjectURL(pdfUrl)
           // Reset inspection for new one
           ctx.resetInspection()
           onSuccess?.({ filename: pdfFilename, ...uploadResult })
-        }, 10000)
+        }, 2000)
         
       } catch (e) {
         console.error('Submit error:', e)
