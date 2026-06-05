@@ -55,6 +55,16 @@ export default async function handler(req, res) {
         sealPhoto
       } = req.body
 
+      // Log for debugging
+      console.log('POST /api/inspections - Received data:', {
+        hasUnitInfo: !!unitInfo,
+        hasPoints: !!points,
+        hasPdfBase64: !!pdfBase64,
+        pdfBase64Length: pdfBase64?.length || 0,
+        pdfFilename,
+        hasSealPhoto: !!sealPhoto
+      })
+
       // Insert inspection
       const [inspection] = await sql`
         INSERT INTO inspections (
