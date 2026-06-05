@@ -62,10 +62,22 @@ export default async function handler(req, res) {
         hasPdfBase64: !!pdfBase64,
         pdfBase64Length: pdfBase64?.length || 0,
         pdfFilename,
-        hasSealPhoto: !!sealPhoto
+        hasSealPhoto: !!sealPhoto,
+        unitInfo: unitInfo ? {
+          trailerNumber: unitInfo.trailerNumber,
+          driverName: unitInfo.driverName,
+          location: unitInfo.location
+        } : null
       })
 
+      // Validate required data
+      if (!unitInfo) {
+        console.error('Missing unitInfo')
+        return res.status(400).json({ error: 'Missing unit info' })
+      }
+
       // Insert inspection (using only columns that exist in the original schema)
+      console.log('Inserting inspection...')
       const [inspection] = await sql`
         INSERT INTO inspections (
           trailer_number, container_number, seal_number, lock_number,
@@ -134,6 +146,8 @@ export default async function handler(req, res) {
         )
       `
 
+      console.log('Inspection created successfully:', inspection)
+
       return res.status(201).json({
         success: true,
         id: inspection.id,
@@ -144,7 +158,10 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
-    console.error('API Error:', error)
-    return res.status(500).json({ error: error.message })
+    console.error('API Error:', error.message, error.stack)
+    return res.status(500).json({ 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
   }
 }
