@@ -29,16 +29,10 @@ export default function InspectionHistory() {
     }
   }, [])
 
-  // Search across all relevant fields
-  const searchLower = search.toLowerCase()
   const filtered = inspections.filter(i =>
-    i.trailer_number?.toLowerCase().includes(searchLower) ||
-    i.container_number?.toLowerCase().includes(searchLower) ||
-    i.seal_number?.toLowerCase().includes(searchLower) ||
-    i.lock_number?.toLowerCase().includes(searchLower) ||
-    i.driver_name?.toLowerCase().includes(searchLower) ||
-    i.guard_name?.toLowerCase().includes(searchLower) ||
-    i.location?.toLowerCase().includes(searchLower)
+    i.trailer_number?.toLowerCase().includes(search.toLowerCase()) ||
+    i.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
+    i.location?.toLowerCase().includes(search.toLowerCase())
   )
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
@@ -94,9 +88,9 @@ export default function InspectionHistory() {
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value.toUpperCase())}
-            placeholder={language === 'es' ? 'BUSCAR: TRAILER, CONTENEDOR, SELLO, OPERADOR, GUARDIA...' : 'SEARCH: TRAILER, CONTAINER, SEAL, OPERATOR, GUARD...'}
-            className="pl-9 pr-3 py-1.5 w-80 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 uppercase"
+            onChange={e => setSearch(e.target.value)}
+            placeholder={language === 'es' ? 'Buscar trailer, operador...' : 'Search trailer, operator...'}
+            className="pl-9 pr-3 py-1.5 w-56 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
           />
         </div>
       </div>
@@ -145,35 +139,6 @@ export default function InspectionHistory() {
                 {/* Expanded details */}
                 {expanded[insp.id] && (
                   <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
-                    {/* Unit Info Details */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs">
-                      {insp.container_number && (
-                        <div className="bg-white rounded-lg p-2 border border-slate-200">
-                          <div className="text-slate-500">{language === 'es' ? 'CONTENEDOR' : 'CONTAINER'}</div>
-                          <div className="font-bold text-slate-800">{insp.container_number}</div>
-                        </div>
-                      )}
-                      {insp.seal_number && (
-                        <div className="bg-white rounded-lg p-2 border border-slate-200">
-                          <div className="text-slate-500">{language === 'es' ? 'SELLO' : 'SEAL'}</div>
-                          <div className="font-bold text-slate-800">{insp.seal_number}</div>
-                        </div>
-                      )}
-                      {insp.lock_number && (
-                        <div className="bg-white rounded-lg p-2 border border-slate-200">
-                          <div className="text-slate-500">{language === 'es' ? 'CANDADO' : 'LOCK'}</div>
-                          <div className="font-bold text-slate-800">{insp.lock_number}</div>
-                        </div>
-                      )}
-                      {insp.guard_name && (
-                        <div className="bg-white rounded-lg p-2 border border-slate-200">
-                          <div className="text-slate-500">{language === 'es' ? 'GUARDIA' : 'GUARD'}</div>
-                          <div className="font-bold text-slate-800">{insp.guard_name}</div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Stats */}
                     <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                       <div className="bg-emerald-50 rounded-lg p-2">
                         <div className="text-lg font-bold text-emerald-700">{insp.total_good}</div>

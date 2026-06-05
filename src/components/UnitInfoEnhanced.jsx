@@ -79,14 +79,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     return <span className="text-emerald-500 text-xs font-bold">✓</span>
   }
 
-  // Combine employee number and name for operator display
-  const getOperatorDisplay = () => {
-    const empNum = unitInfo.operatorEmployeeNumber || ''
-    const name = unitInfo.driverName || ''
-    if (empNum && name) return `${empNum} - ${name}`
-    return name || empNum || ''
-  }
-
   return (
     <section className="card animate-slide-up">
       <div className="card-header flex items-center gap-3">
@@ -238,25 +230,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 />
               </div>
             )}
-          </div>
-
-          {/* Operator Employee Number */}
-          <div className="col-span-1">
-            <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between uppercase">
-              <span className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {language === 'es' ? 'NO. EMPLEADO OPERADOR' : 'OPERATOR EMPLOYEE NO.'} <span className="text-rose-500">*</span>
-              </span>
-              {getFieldIcon('operatorEmployeeNumber')}
-            </label>
-            <input
-              type="text"
-              value={unitInfo.operatorEmployeeNumber || ''}
-              onChange={e => update('operatorEmployeeNumber', e.target.value.toUpperCase())}
-              className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 uppercase transition-colors ${validateField('operatorEmployeeNumber')}`}
-              placeholder={language === 'es' ? 'EJ: EMP-12345' : 'EX: EMP-12345'}
-              required
-            />
           </div>
 
           {/* Operator Name */}
