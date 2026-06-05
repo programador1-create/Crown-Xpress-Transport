@@ -81,7 +81,8 @@ export default function SubmitBar({ onSuccess }) {
         
         // Reset inspection for new one after showing PDF
         setTimeout(() => {
-          // Reset inspection for new one
+          // Reset generating state and inspection
+          setGenerating(false)
           ctx.resetInspection()
           onSuccess?.({ filename: pdfFilename, ...uploadResult })
         }, 2000)
