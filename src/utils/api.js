@@ -4,18 +4,30 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 /** Helper to handle fetch errors */
 async function fetchJson(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || err.message || `HTTP ${res.status}`)
+  console.log('API Request:', url, options.method || 'GET')
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+    })
+    console.log('API Response status:', res.status)
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('API Error response:', errText)
+      let err = {}
+      try { err = JSON.parse(errText) } catch(e) {}
+      throw new Error(err.error || err.message || `HTTP ${res.status}: ${errText.slice(0, 100)}`)
+    }
+    if (res.headers.get('content-type')?.includes('application/json')) {
+      const data = await res.json()
+      console.log('API Response data:', data)
+      return data
+    }
+    return res
+  } catch (e) {
+    console.error('API fetch error:', e)
+    throw e
   }
-  if (res.headers.get('content-type')?.includes('application/json')) {
-    return await res.json()
-  }
-  return res
 }
 
 /** Upload inspection + PDF to backend */
