@@ -5,6 +5,14 @@
       "maxDuration": 30
     }
   },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "x-vercel-protection-bypass", "value": "true" }
+      ]
+    }
+  ],
   "builds": [
     {
       "src": "package.json",
