@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch, CheckCircle, X } from 'lucide-react'
+import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch, CheckCircle, X, Filter, Calendar, Truck, User, Tag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, getInspection, reconfirmInspection } from '../utils/api'
@@ -22,6 +22,13 @@ export default function GuardHistory() {
   const [search, setSearch] = useState('')
   const [reconfirmTarget, setReconfirmTarget] = useState(null)
   const [successModal, setSuccessModal] = useState(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    status: '',
+    inspectionType: ''
+  })
 
   useEffect(() => {
     load()
@@ -59,12 +66,39 @@ export default function GuardHistory() {
     }))
   }, [inspections])
 
-  const filteredGroups = groupedInspections.filter(g =>
-    !search ||
-    g.original.trailer_number?.toLowerCase().includes(search.toLowerCase()) ||
-    g.original.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
-    g.original.seal_number?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredGroups = groupedInspections.filter(g => {
+    const orig = g.original
+    
+    // Text search
+    const searchMatch = !search ||
+      orig.trailer_number?.toLowerCase().includes(search.toLowerCase()) ||
+      orig.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
+      orig.seal_number?.toLowerCase().includes(search.toLowerCase()) ||
+      orig.location?.toLowerCase().includes(search.toLowerCase()) ||
+      orig.guard_name?.toLowerCase().includes(search.toLowerCase())
+    
+    // Date filters
+    const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null
+    const dateTo = filters.dateTo ? new Date(filters.dateTo + 'T23:59:59') : null
+    const inspDate = new Date(orig.created_at)
+    const dateMatch = (!dateFrom || inspDate >= dateFrom) && (!dateTo || inspDate <= dateTo)
+    
+    // Status filter
+    const statusMatch = !filters.status || orig.status === filters.status
+    
+    // Inspection type filter
+    const typeMatch = !filters.inspectionType || orig.inspection_type === filters.inspectionType
+    
+    return searchMatch && dateMatch && statusMatch && typeMatch
+  })
+  
+  // Clear all filters
+  const clearFilters = () => {
+    setSearch('')
+    setFilters({ dateFrom: '', dateTo: '', status: '', inspectionType: '' })
+  }
+  
+  const hasActiveFilters = search || filters.dateFrom || filters.dateTo || filters.status || filters.inspectionType
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
 
@@ -174,24 +208,125 @@ export default function GuardHistory() {
             <FileText className="w-5 h-5 text-crown-gold" />
             <div>
               <h2 className="font-bold uppercase text-sm tracking-wide">
-                {language === 'es' ? 'Mi Historial' : 'My History'}
+                {language === 'es' ? 'MI HISTORIAL' : 'MY HISTORY'}
               </h2>
               <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                 <Lock className="w-3 h-3" />
-                {language === 'es' ? 'Solo lectura · No se puede editar ni borrar' : 'Read only · Cannot edit or delete'}
+                {language === 'es' ? 'SOLO LECTURA · NO SE PUEDE EDITAR NI BORRAR' : 'READ ONLY · CANNOT EDIT OR DELETE'}
               </p>
             </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={language === 'es' ? 'Buscar trailer, sello...' : 'Search trailer, seal...'}
-              className="pl-9 pr-3 py-1.5 w-56 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-            />
+          <div className="flex items-center gap-2">
+            {/* Search input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={language === 'es' ? 'BUSCAR...' : 'SEARCH...'}
+                className="pl-9 pr-3 py-1.5 w-48 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 uppercase"
+              />
+            </div>
+            {/* Filter toggle button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                showFilters || hasActiveFilters
+                  ? 'bg-crown-navy text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              {language === 'es' ? 'FILTROS' : 'FILTERS'}
+              {hasActiveFilters && (
+                <span className="w-4 h-4 bg-crown-gold text-crown-navy rounded-full text-[10px] flex items-center justify-center font-bold">
+                  !
+                </span>
+              )}
+            </button>
           </div>
+        </div>
+        
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Date From */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">
+                  {language === 'es' ? 'DESDE' : 'FROM'}
+                </label>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                />
+              </div>
+              {/* Date To */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">
+                  {language === 'es' ? 'HASTA' : 'TO'}
+                </label>
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                />
+              </div>
+              {/* Status */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">
+                  {language === 'es' ? 'ESTADO' : 'STATUS'}
+                </label>
+                <select
+                  value={filters.status}
+                  onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 uppercase"
+                >
+                  <option value="">{language === 'es' ? 'TODOS' : 'ALL'}</option>
+                  <option value="completed">{language === 'es' ? 'COMPLETADO' : 'COMPLETED'}</option>
+                  <option value="pending">{language === 'es' ? 'PENDIENTE' : 'PENDING'}</option>
+                </select>
+              </div>
+              {/* Inspection Type */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">
+                  {language === 'es' ? 'TIPO' : 'TYPE'}
+                </label>
+                <select
+                  value={filters.inspectionType}
+                  onChange={e => setFilters(f => ({ ...f, inspectionType: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 uppercase"
+                >
+                  <option value="">{language === 'es' ? 'TODOS' : 'ALL'}</option>
+                  <option value="LOADED">{language === 'es' ? 'CARGADO' : 'LOADED'}</option>
+                  <option value="EMPTY">{language === 'es' ? 'VACÍO' : 'EMPTY'}</option>
+                  <option value="BOBTAIL">{language === 'es' ? 'BOTADO' : 'BOBTAIL'}</option>
+                </select>
+              </div>
+            </div>
+            {/* Clear filters button */}
+            {hasActiveFilters && (
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1 px-3 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  {language === 'es' ? 'LIMPIAR FILTROS' : 'CLEAR FILTERS'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Results count */}
+        <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+          {filteredGroups.length} {language === 'es' ? 'INSPECCIONES ENCONTRADAS' : 'INSPECTIONS FOUND'}
+          {hasActiveFilters && ` (${language === 'es' ? 'FILTRADO' : 'FILTERED'})`}
         </div>
         <div className="card-body">
           {filteredGroups.length === 0 ? (
