@@ -3,6 +3,7 @@ import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, L
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, getInspection, reconfirmInspection } from '../utils/api'
+import { generateInspectionPDF } from '../utils/pdfGenerator'
 import AuditTrail from './AuditTrail'
 import ReconfirmModal from './ReconfirmModal'
 
@@ -100,7 +101,33 @@ export default function GuardHistory() {
 
   const handleReconfirmSubmit = async (data) => {
     try {
-      const result = await reconfirmInspection(data.original_inspection_id, data)
+      // Generate PDF for reconfirmation
+      const pdfResult = await generateInspectionPDF({
+        unitInfo: data.unitInfo,
+        points: data.points,
+        sealPhoto: data.sealPhoto,
+        guardSignature: data.guardSignature,
+        auditorSignature: data.auditorSignature,
+        operatorSignature: null,
+        language: data.language || language
+      })
+
+      // Convert PDF to base64
+      const pdfBlob = pdfResult.doc.output('blob')
+      const pdfBase64 = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result.split(',')[1])
+        reader.readAsDataURL(pdfBlob)
+      })
+
+      // Add PDF data to the request
+      const dataWithPdf = {
+        ...data,
+        pdfBase64,
+        pdfFilename: pdfResult.filename
+      }
+
+      const result = await reconfirmInspection(data.original_inspection_id, dataWithPdf)
       setReconfirmTarget(null)
       setSuccessModal({
         id: result.id,
@@ -109,6 +136,7 @@ export default function GuardHistory() {
       })
       load()
     } catch (e) {
+      console.error('Reconfirm error:', e)
       alert(
         language === 'es'
           ? `Error: ${e.message}`
