@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
-import { inspectionPoints } from '../data/inspectionPoints'
+import { inspectionPoints, getApplicablePoints } from '../data/inspectionPoints'
 import truckImage from '../assets/Gemini_Generated_Image_nwvt4xnwvt4xnwvt.jpg'
 
 // Position definitions for each inspection point on the truck diagram
@@ -39,7 +40,16 @@ const pointPositions = [
 
 export default function TruckDiagramVisual({ onPointClick, compact = false }) {
   const { language } = useLanguage()
-  const { points } = useInspection()
+  const { points, unitInfo } = useInspection()
+  
+  // Get applicable points based on inspection type
+  const applicablePoints = useMemo(() => {
+    return getApplicablePoints(unitInfo?.inspectionType)
+  }, [unitInfo?.inspectionType])
+  
+  const applicablePointIds = useMemo(() => {
+    return applicablePoints.map(p => p.id)
+  }, [applicablePoints])
 
   const getPointStatus = (pointId) => {
     const point = points[pointId]
@@ -108,9 +118,9 @@ export default function TruckDiagramVisual({ onPointClick, compact = false }) {
           draggable={false}
         />
         
-        {/* Inspection Points Overlay */}
+        {/* Inspection Points Overlay - only show applicable points */}
         <div className="absolute inset-0">
-          {pointPositions.map((pos) => {
+          {pointPositions.filter(pos => applicablePointIds.includes(pos.id)).map((pos) => {
             const status = getPointStatus(pos.id)
             const statusColor = getStatusColor(status)
             const statusRing = getStatusRing(status)
@@ -164,21 +174,21 @@ export default function TruckDiagramVisual({ onPointClick, compact = false }) {
       <div className="mt-4 flex items-center justify-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-emerald-600">
-            {Object.values(points).filter(p => p.status === 'good').length}
+            {applicablePointIds.filter(id => points[id]?.status === 'good').length}
           </span>
           <span className="text-slate-500">{language === 'es' ? 'Buenos' : 'Good'}</span>
         </div>
         <div className="w-px h-4 bg-slate-300"></div>
         <div className="flex items-center gap-2">
           <span className="font-semibold text-rose-600">
-            {Object.values(points).filter(p => p.status === 'bad').length}
+            {applicablePointIds.filter(id => points[id]?.status === 'bad').length}
           </span>
           <span className="text-slate-500">{language === 'es' ? 'Malos' : 'Bad'}</span>
         </div>
         <div className="w-px h-4 bg-slate-300"></div>
         <div className="flex items-center gap-2">
           <span className="font-semibold text-slate-500">
-            {20 - Object.values(points).filter(p => p.status === 'good' || p.status === 'bad').length}
+            {applicablePoints.length - applicablePointIds.filter(id => points[id]?.status === 'good' || points[id]?.status === 'bad').length}
           </span>
           <span className="text-slate-500">{language === 'es' ? 'Pendientes' : 'Pending'}</span>
         </div>

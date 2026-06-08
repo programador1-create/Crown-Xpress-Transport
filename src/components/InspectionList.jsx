@@ -1,25 +1,31 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ClipboardCheck, CheckCircle2, XCircle, Circle, Filter, Eye, CheckCheck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
-import { inspectionPoints } from '../data/inspectionPoints'
+import { inspectionPoints, getApplicablePoints } from '../data/inspectionPoints'
 import InspectionPoint from './InspectionPoint'
 
 export default function InspectionList() {
   const { t, language } = useLanguage()
-  const { points, goodCount, failedCount, completedCount, setPointStatus } = useInspection()
+  const { points, goodCount, failedCount, completedCount, setPointStatus, unitInfo } = useInspection()
   const [showOnlyProblems, setShowOnlyProblems] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
-  const pendingCount = inspectionPoints.length - completedCount
+  
+  // Get applicable points based on inspection type
+  const applicablePoints = useMemo(() => {
+    return getApplicablePoints(unitInfo?.inspectionType)
+  }, [unitInfo?.inspectionType])
+  
+  const pendingCount = applicablePoints.length - completedCount
 
-  // Filter points based on view mode
+  // Filter points based on view mode - only show applicable points
   const displayPoints = showOnlyProblems 
-    ? inspectionPoints.filter(point => points[point.id]?.status === 'bad')
-    : inspectionPoints
+    ? applicablePoints.filter(point => points[point.id]?.status === 'bad')
+    : applicablePoints
 
-  // Mark all points as good
+  // Mark all applicable points as good
   const handleMarkAllGood = () => {
-    inspectionPoints.forEach(point => {
+    applicablePoints.forEach(point => {
       setPointStatus(point.id, 'good')
     })
     setShowConfirmAllOk(false)
