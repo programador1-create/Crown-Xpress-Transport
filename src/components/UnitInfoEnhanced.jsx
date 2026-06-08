@@ -278,57 +278,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             />
           </div>
 
-          {/* Container Checkbox and Number - Only for LOADED and EMPTY */}
-          {inspectionType !== 'BOBTAIL' && (
-            <div className="col-span-1 sm:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                {language === 'es' ? '¿Lleva contenedor?' : 'Has container?'}
-              </label>
-              <div className="flex items-center gap-3 mb-3">
-                <input
-                  type="checkbox"
-                  id="hasContainer"
-                  checked={hasContainer}
-                  onChange={(e) => {
-                    handleContainerChange(e.target.checked)
-                    if (!e.target.checked) {
-                      update('containerNumber', '')
-                    }
-                  }}
-                  className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
-                />
-                <label htmlFor="hasContainer" className="text-sm text-slate-600 cursor-pointer">
-                  {language === 'es' ? 'Sí, lleva contenedor' : 'Yes, has container'}
-                </label>
-              </div>
-              {hasContainer && (
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Package className="w-3 h-3" />
-                      {language === 'es' ? 'NÚMERO DE CONTENEDOR' : 'CONTAINER NUMBER'} <span className="text-rose-500">*</span>
-                    </span>
-                    {getFieldIcon('containerNumber')}
-                  </label>
-                  <input
-                    type="text"
-                    value={unitInfo.containerNumber || ''}
-                    onChange={e => update('containerNumber', e.target.value.toUpperCase())}
-                    className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('containerNumber')}`}
-                    placeholder={language === 'es' ? 'EJ: MSKU1234567' : 'EX: MSKU1234567'}
-                    required={hasContainer}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Seal Checkbox and Number - Only for LOADED */}
           {inspectionType === 'LOADED' && (
             <div className="col-span-1 sm:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                {language === 'es' ? '¿Tiene sello de seguridad?' : 'Has security seal?'}
-                {!hasSeal && !hasLock && <span className="text-rose-500 ml-2 text-xs">(Requiere sello O candado)</span>}
+              <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase">
+                {language === 'es' ? '¿TIENE SELLO DE SEGURIDAD?' : 'HAS SECURITY SEAL?'}
+                {!hasSeal && !hasLock && <span className="text-rose-500 ml-2 text-xs">(REQUIERE SELLO O CANDADO)</span>}
               </label>
               <div className="flex items-center gap-3 mb-3">
                 <input
@@ -343,8 +298,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                   }}
                   className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
                 />
-                <label htmlFor="hasSeal" className="text-sm text-slate-600 cursor-pointer">
-                  {language === 'es' ? 'Sí, tiene sello' : 'Yes, has seal'}
+                <label htmlFor="hasSeal" className="text-sm text-slate-600 cursor-pointer uppercase">
+                  {language === 'es' ? 'SÍ, TIENE SELLO' : 'YES, HAS SEAL'}
                 </label>
               </div>
               {hasSeal && (
@@ -372,8 +327,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           {/* Lock Checkbox and Number - Only for LOADED */}
           {inspectionType === 'LOADED' && (
             <div className="col-span-1 sm:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                {language === 'es' ? '¿Tiene candado?' : 'Has lock?'}
+              <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase">
+                {language === 'es' ? '¿TIENE CANDADO?' : 'HAS LOCK?'}
               </label>
               <div className="flex items-center gap-3 mb-3">
                 <input
@@ -388,8 +343,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                   }}
                   className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
                 />
-                <label htmlFor="hasLock" className="text-sm text-slate-600 cursor-pointer">
-                  {language === 'es' ? 'Sí, tiene candado' : 'Yes, has lock'}
+                <label htmlFor="hasLock" className="text-sm text-slate-600 cursor-pointer uppercase">
+                  {language === 'es' ? 'SÍ, TIENE CANDADO' : 'YES, HAS LOCK'}
                 </label>
               </div>
               {hasLock && (
