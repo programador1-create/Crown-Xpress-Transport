@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronRight, ChevronLeft, CheckCircle, Circle, AlertTriangle, MessageSquare } from 'lucide-react'
+import { ChevronRight, ChevronLeft, CheckCircle, Circle, AlertTriangle, MessageSquare, CheckCheck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { inspectionPoints } from '../data/inspectionPoints'
@@ -7,9 +7,10 @@ import InspectionPoint from './InspectionPoint'
 
 export default function StepByStepInspection({ onAllCompleted }) {
   const { t, language } = useLanguage()
-  const { points, goodCount, failedCount, completedCount, unitInfo, updateUnitInfo } = useInspection()
+  const { points, goodCount, failedCount, completedCount, unitInfo, updateUnitInfo, setPointStatus } = useInspection()
   const [currentStep, setCurrentStep] = useState(0)
   const [showSummary, setShowSummary] = useState(false)
+  const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
 
   const totalPoints = inspectionPoints.length
   const isLastStep = currentStep === totalPoints - 1
@@ -46,6 +47,14 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const goToStep = (stepIndex) => {
     setCurrentStep(stepIndex)
     setShowSummary(false)
+  }
+
+  // Mark all points as good
+  const handleMarkAllGood = () => {
+    inspectionPoints.forEach(point => {
+      setPointStatus(point.id, 'good')
+    })
+    setShowConfirmAllOk(false)
   }
 
   // Show summary view
@@ -145,6 +154,53 @@ export default function StepByStepInspection({ onAllCompleted }) {
           </div>
         </div>
       </div>
+
+      {/* TODO OK Button */}
+      <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-white">
+        <button
+          onClick={() => setShowConfirmAllOk(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <CheckCheck className="w-5 h-5" />
+          {language === 'es' ? 'MARCAR TODO COMO BUENO' : 'MARK ALL AS GOOD'}
+        </button>
+      </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmAllOk && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-4 text-white text-center">
+              <CheckCheck className="w-10 h-10 mx-auto mb-2" />
+              <h3 className="font-bold text-lg">
+                {language === 'es' ? '¿MARCAR TODO COMO BUENO?' : 'MARK ALL AS GOOD?'}
+              </h3>
+            </div>
+            <div className="p-5">
+              <p className="text-center text-slate-600 mb-4">
+                {language === 'es' 
+                  ? 'ESTO MARCARÁ LOS 20 PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?' 
+                  : 'THIS WILL MARK ALL 20 INSPECTION POINTS AS "GOOD". ARE YOU SURE?'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmAllOk(false)}
+                  className="flex-1 py-3 px-4 border-2 border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition"
+                >
+                  {language === 'es' ? 'CANCELAR' : 'CANCEL'}
+                </button>
+                <button
+                  onClick={handleMarkAllGood}
+                  className="flex-1 py-3 px-4 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+                >
+                  <CheckCheck className="w-4 h-4" />
+                  {language === 'es' ? 'SÍ, CONFIRMAR' : 'YES, CONFIRM'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card-body">
         {/* Current Point */}
