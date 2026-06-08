@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, User, Lock, Languages } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -6,6 +6,12 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { t, language, toggleLanguage } = useLanguage()
   const { login, loading } = useAuth()
+
+  // Add login-page class to body to disable uppercase transform
+  useEffect(() => {
+    document.body.classList.add('login-page')
+    return () => document.body.classList.remove('login-page')
+  }, [])
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)

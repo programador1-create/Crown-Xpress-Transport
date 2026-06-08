@@ -10,6 +10,17 @@
     @apply font-sans bg-gradient-to-br from-slate-50 via-stone-50 to-amber-50/30 text-slate-800 min-h-screen;
   }
   
+  /* Force uppercase on all inputs and text (except login) */
+  body:not(.login-page) input:not([type="password"]):not([type="email"]),
+  body:not(.login-page) textarea,
+  body:not(.login-page) select {
+    text-transform: uppercase;
+  }
+  body:not(.login-page) input::placeholder,
+  body:not(.login-page) textarea::placeholder {
+    text-transform: uppercase;
+  }
+  
   /* Scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
