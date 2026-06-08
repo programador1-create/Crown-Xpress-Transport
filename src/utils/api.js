@@ -64,7 +64,7 @@ export async function healthCheck() {
 
 /** Search operator by employee number */
 export async function searchOperator(employeeNumber) {
-  const res = await fetchJson(`${API_BASE}/operators/search?employee_number=${encodeURIComponent(employeeNumber)}`)
+  const res = await fetchJson(`${API_BASE}/employees?employee_number=${encodeURIComponent(employeeNumber)}`)
   return res // { success, operator: { id, employeeNumber, fullName, ... } }
 }
 

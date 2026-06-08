@@ -10,8 +10,38 @@ export default async function handler(req, res) {
   }
 
   try {
-    // GET - List all employees
+    // GET - List employees OR search operator by employee_number
     if (req.method === 'GET') {
+      const { employee_number } = req.query
+      
+      // If employee_number is provided, search for operator
+      if (employee_number) {
+        const [operator] = await sql`
+          SELECT id, employee_number, full_name, license_number, license_expiry, phone, status
+          FROM operators
+          WHERE employee_number = ${employee_number.toUpperCase()}
+          AND status = 'active'
+        `
+        
+        if (!operator) {
+          return res.status(404).json({ error: 'Operator not found' })
+        }
+        
+        return res.status(200).json({
+          success: true,
+          operator: {
+            id: operator.id,
+            employeeNumber: operator.employee_number,
+            fullName: operator.full_name,
+            licenseNumber: operator.license_number,
+            licenseExpiry: operator.license_expiry,
+            phone: operator.phone,
+            status: operator.status
+          }
+        })
+      }
+      
+      // Otherwise, list all employees
       const employees = await sql`
         SELECT id, username, full_name, role, location_id, location_name, active, created_at
         FROM employees
