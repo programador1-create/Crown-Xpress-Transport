@@ -7,7 +7,7 @@ import CameraModal from './CameraModal'
 import PhotoViewerModal from './PhotoViewerModal'
 import IssueSelectModal from './IssueSelectModal'
 
-export default function InspectionPoint({ point }) {
+export default function InspectionPoint({ point, displayNumber }) {
   const { t, language } = useLanguage()
   const { points, setPointStatus, setPointIssue, setPointPhoto } = useInspection()
   const state = points[point.id]
@@ -51,7 +51,7 @@ export default function InspectionPoint({ point }) {
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${
               isBad ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
             }`}>
-              {point.id}
+              {displayNumber ?? point.id}
             </div>
             <div className="flex-1 min-w-0 text-left">
               <div className="font-semibold text-slate-700 text-sm truncate">
@@ -102,7 +102,7 @@ export default function InspectionPoint({ point }) {
             isGood ? 'bg-emerald-600 text-white' :
             'bg-gradient-to-br from-crown-navy-dark to-crown-navy text-crown-gold'
           }`}>
-            {point.id}
+            {displayNumber ?? point.id}
           </div>
 
           {/* Content */}

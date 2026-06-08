@@ -120,11 +120,12 @@ export default function TruckDiagramVisual({ onPointClick, compact = false }) {
         
         {/* Inspection Points Overlay - only show applicable points */}
         <div className="absolute inset-0">
-          {pointPositions.filter(pos => applicablePointIds.includes(pos.id)).map((pos) => {
+          {pointPositions.filter(pos => applicablePointIds.includes(pos.id)).map((pos, index) => {
             const status = getPointStatus(pos.id)
             const statusColor = getStatusColor(status)
             const statusRing = getStatusRing(status)
             const fullLabel = getPointLabel(pos.id)
+            const displayNumber = index + 1
             
             return (
               <div
@@ -146,7 +147,7 @@ export default function TruckDiagramVisual({ onPointClick, compact = false }) {
                   `}
                   title={fullLabel}
                 >
-                  {pos.id}
+                  {displayNumber}
                 </button>
                 
                 {/* Tooltip Label */}

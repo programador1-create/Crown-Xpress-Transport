@@ -88,8 +88,8 @@ export default function InspectionList() {
             <div className="p-5">
               <p className="text-center text-slate-600 mb-4">
                 {language === 'es' 
-                  ? 'ESTO MARCARÁ LOS 20 PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?' 
-                  : 'THIS WILL MARK ALL 20 INSPECTION POINTS AS "GOOD". ARE YOU SURE?'}
+                  ? `ESTO MARCARÁ LOS ${applicablePoints.length} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?` 
+                  : `THIS WILL MARK ALL ${applicablePoints.length} INSPECTION POINTS AS "GOOD". ARE YOU SURE?`}
               </p>
               <div className="flex gap-3">
                 <button
@@ -120,8 +120,8 @@ export default function InspectionList() {
             </p>
           </div>
         ) : (
-          displayPoints.map(point => (
-            <InspectionPoint key={point.id} point={point} />
+          displayPoints.map((point, index) => (
+            <InspectionPoint key={point.id} point={point} displayNumber={index + 1} />
           ))
         )}
       </div>

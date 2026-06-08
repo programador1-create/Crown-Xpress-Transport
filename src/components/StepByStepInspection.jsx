@@ -109,8 +109,8 @@ export default function StepByStepInspection({ onAllCompleted }) {
         
         <div className="card-body">
           <div className="space-y-2.5 mb-6">
-            {applicablePoints.map(point => (
-              <InspectionPoint key={point.id} point={point} />
+            {applicablePoints.map((point, index) => (
+              <InspectionPoint key={point.id} point={point} displayNumber={index + 1} />
             ))}
           </div>
           
@@ -224,7 +224,7 @@ export default function StepByStepInspection({ onAllCompleted }) {
       <div className="card-body">
         {/* Current Point */}
         <div className="mb-6">
-          <InspectionPoint point={currentPoint} />
+          <InspectionPoint point={currentPoint} displayNumber={currentStep + 1} />
         </div>
 
         {/* Navigation */}
