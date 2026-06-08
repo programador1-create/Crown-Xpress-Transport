@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch } from 'lucide-react'
+import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch, CheckCircle, X } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, getInspection, reconfirmInspection } from '../utils/api'
@@ -20,6 +20,7 @@ export default function GuardHistory() {
   const [expanded, setExpanded] = useState({})
   const [search, setSearch] = useState('')
   const [reconfirmTarget, setReconfirmTarget] = useState(null)
+  const [successModal, setSuccessModal] = useState(null)
 
   useEffect(() => {
     load()
@@ -100,12 +101,12 @@ export default function GuardHistory() {
   const handleReconfirmSubmit = async (data) => {
     try {
       const result = await reconfirmInspection(data.original_inspection_id, data)
-      alert(
-        language === 'es'
-          ? `Reconfirmación creada exitosamente (ID #${result.id}, ${result.modifications} puntos corregidos)`
-          : `Reconfirmation created (ID #${result.id}, ${result.modifications} points corrected)`
-      )
       setReconfirmTarget(null)
+      setSuccessModal({
+        id: result.id,
+        modifications: result.modifications || 0,
+        originalId: data.original_inspection_id
+      })
       load()
     } catch (e) {
       alert(
@@ -288,6 +289,66 @@ export default function GuardHistory() {
         onClose={() => setReconfirmTarget(null)}
         onSubmit={handleReconfirmSubmit}
       />
+
+      {/* Success Modal */}
+      {successModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">
+                {language === 'es' ? '¡Reconfirmación Exitosa!' : 'Reconfirmation Successful!'}
+              </h2>
+            </div>
+            
+            {/* Body */}
+            <div className="px-6 py-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                  <span className="text-slate-600">
+                    {language === 'es' ? 'ID de Reconfirmación' : 'Reconfirmation ID'}
+                  </span>
+                  <span className="font-bold text-emerald-600 text-lg">#{successModal.id}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                  <span className="text-slate-600">
+                    {language === 'es' ? 'Inspección Original' : 'Original Inspection'}
+                  </span>
+                  <span className="font-semibold text-slate-800">#{successModal.originalId}</span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-slate-600">
+                    {language === 'es' ? 'Puntos Corregidos' : 'Points Corrected'}
+                  </span>
+                  <span className="font-bold text-amber-600 text-lg">{successModal.modifications}</span>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                <p className="text-sm text-emerald-700 text-center">
+                  {language === 'es' 
+                    ? 'La reconfirmación ha sido registrada correctamente en el sistema.' 
+                    : 'The reconfirmation has been successfully recorded in the system.'}
+                </p>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setSuccessModal(null)}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                {language === 'es' ? 'ACEPTAR' : 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
