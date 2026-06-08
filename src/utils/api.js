@@ -12,10 +12,12 @@ async function fetchJson(url, options = {}) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.error || err.message || `HTTP ${res.status}`)
   }
-  if (res.headers.get('content-type')?.includes('application/json')) {
+  // Always try to parse as JSON first
+  try {
     return await res.json()
+  } catch {
+    return res
   }
-  return res
 }
 
 /** Upload inspection + PDF to backend */
