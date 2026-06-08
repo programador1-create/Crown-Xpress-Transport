@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { MapPin, Calendar, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { MapPin, Calendar, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2, Truck, Box, PackageX } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
 import { searchOperator } from '../utils/api'
+import { INSPECTION_TYPES } from '../data/inspectionPoints'
 
 const YARDS = [
   { id: 1, name: 'Yard A - Laredo' },
@@ -13,17 +14,57 @@ const YARDS = [
   { id: 5, name: 'Yard E - San Antonio' },
 ]
 
-export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange }) {
+export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange, onInspectionTypeChange }) {
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo } = useInspection()
   const { user } = useAuth()
+  const [inspectionType, setInspectionType] = useState(null) // null = not selected yet
   const [hasContainer, setHasContainer] = useState(false)
-  const [hasSeal, setHasSeal] = useState(true)
+  const [hasSeal, setHasSeal] = useState(false)
   const [hasLock, setHasLock] = useState(false)
   const [employeeNumber, setEmployeeNumber] = useState('')
   const [operatorSearching, setOperatorSearching] = useState(false)
   const [operatorFound, setOperatorFound] = useState(null)
   const [operatorError, setOperatorError] = useState(null)
+
+  // Handle inspection type selection
+  const handleInspectionTypeChange = (type) => {
+    setInspectionType(type)
+    updateUnitInfo('inspectionType', type)
+    
+    const typeConfig = INSPECTION_TYPES[type]
+    
+    // Reset fields based on type
+    if (type === 'BOBTAIL') {
+      // Bobtail: No container, no seal, no lock
+      setHasContainer(false)
+      setHasSeal(false)
+      setHasLock(false)
+      updateUnitInfo('containerNumber', '')
+      updateUnitInfo('sealNumber', '')
+      updateUnitInfo('lockNumber', '')
+      if (onContainerChange) onContainerChange(false)
+      if (onSealChange) onSealChange(false)
+      if (onLockChange) onLockChange(false)
+    } else if (type === 'EMPTY') {
+      // Empty: Has container option, no seal, no lock
+      setHasContainer(false)
+      setHasSeal(false)
+      setHasLock(false)
+      updateUnitInfo('sealNumber', '')
+      updateUnitInfo('lockNumber', '')
+      if (onSealChange) onSealChange(false)
+      if (onLockChange) onLockChange(false)
+    } else if (type === 'LOADED') {
+      // Loaded: Has container option, requires seal OR lock
+      setHasContainer(false)
+      setHasSeal(true) // Default to seal
+      setHasLock(false)
+      if (onSealChange) onSealChange(true)
+    }
+    
+    if (onInspectionTypeChange) onInspectionTypeChange(type)
+  }
 
   // Notify parent when checkbox states change
   const handleContainerChange = (checked) => {
@@ -116,18 +157,115 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     return <span className="text-emerald-500 text-xs font-bold">✓</span>
   }
 
+  // If no inspection type selected, show type selector
+  if (!inspectionType) {
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-header flex items-center gap-3">
+          <Tag className="w-5 h-5 text-crown-gold" />
+          <h2 className="font-bold tracking-wide uppercase text-sm">
+            {language === 'es' ? 'TIPO DE INSPECCIÓN' : 'INSPECTION TYPE'}
+          </h2>
+        </div>
+        <div className="card-body">
+          <p className="text-sm text-slate-600 mb-4">
+            {language === 'es' 
+              ? 'Seleccione el tipo de inspección para continuar:' 
+              : 'Select the inspection type to continue:'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* LOADED */}
+            <button
+              type="button"
+              onClick={() => handleInspectionTypeChange('LOADED')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                <Box className="w-8 h-8 text-emerald-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'CARGADO' : 'LOADED'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' 
+                  ? 'Trailer con carga. Requiere sello O candado.' 
+                  : 'Trailer with cargo. Requires seal OR lock.'}
+              </span>
+              <span className="text-xs font-semibold text-emerald-600">20 {language === 'es' ? 'puntos' : 'points'}</span>
+            </button>
+
+            {/* EMPTY */}
+            <button
+              type="button"
+              onClick={() => handleInspectionTypeChange('EMPTY')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <PackageX className="w-8 h-8 text-amber-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'VACÍO' : 'EMPTY'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' 
+                  ? 'Trailer sin carga. Sin sello ni candado.' 
+                  : 'Empty trailer. No seal or lock.'}
+              </span>
+              <span className="text-xs font-semibold text-amber-600">17 {language === 'es' ? 'puntos' : 'points'}</span>
+            </button>
+
+            {/* BOBTAIL */}
+            <button
+              type="button"
+              onClick={() => handleInspectionTypeChange('BOBTAIL')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <Truck className="w-8 h-8 text-blue-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'BOTADO' : 'BOBTAIL'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' 
+                  ? 'Solo tractor. Sin trailer ni contenedor.' 
+                  : 'Tractor only. No trailer or container.'}
+              </span>
+              <span className="text-xs font-semibold text-blue-600">10 {language === 'es' ? 'puntos' : 'points'}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="card animate-slide-up">
       <div className="card-header flex items-center gap-3">
         <Tag className="w-5 h-5 text-crown-gold" />
         <h2 className="font-bold tracking-wide uppercase text-sm">{t('unitInfo')}</h2>
+        {/* Show selected type badge */}
+        <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+          inspectionType === 'LOADED' ? 'bg-emerald-100 text-emerald-700' :
+          inspectionType === 'EMPTY' ? 'bg-amber-100 text-amber-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {INSPECTION_TYPES[inspectionType]?.[language] || inspectionType}
+        </span>
+        <button
+          type="button"
+          onClick={() => setInspectionType(null)}
+          className="text-xs text-slate-500 hover:text-slate-700 underline"
+        >
+          {language === 'es' ? 'Cambiar' : 'Change'}
+        </button>
       </div>
       <div className="card-body">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Trailer Number */}
           <div className="col-span-1">
             <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span>{t('trailerNumber')} <span className="text-rose-500">*</span></span>
+              <span>{inspectionType === 'BOBTAIL' ? (language === 'es' ? 'Número de Tractor' : 'Tractor Number') : t('trailerNumber')} <span className="text-rose-500">*</span></span>
               {getFieldIcon('trailerNumber')}
             </label>
             <input
@@ -135,139 +273,146 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               value={unitInfo.trailerNumber || ''}
               onChange={e => update('trailerNumber', e.target.value.toUpperCase())}
               className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('trailerNumber')}`}
-              placeholder={language === 'es' ? 'EJ: T-12345' : 'EX: T-12345'}
+              placeholder={inspectionType === 'BOBTAIL' ? (language === 'es' ? 'EJ: TR-12345' : 'EX: TR-12345') : (language === 'es' ? 'EJ: T-12345' : 'EX: T-12345')}
               required
             />
           </div>
 
-          {/* Container Checkbox and Number */}
-          <div className="col-span-1 sm:col-span-2">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              {language === 'es' ? '¿Lleva contenedor?' : 'Has container?'}
-            </label>
-            <div className="flex items-center gap-3 mb-3">
-              <input
-                type="checkbox"
-                id="hasContainer"
-                checked={hasContainer}
-                onChange={(e) => {
-                  handleContainerChange(e.target.checked)
-                  if (!e.target.checked) {
-                    update('containerNumber', '')
-                  }
-                }}
-                className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
-              />
-              <label htmlFor="hasContainer" className="text-sm text-slate-600 cursor-pointer">
-                {language === 'es' ? 'Sí, lleva contenedor' : 'Yes, has container'}
+          {/* Container Checkbox and Number - Only for LOADED and EMPTY */}
+          {inspectionType !== 'BOBTAIL' && (
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                {language === 'es' ? '¿Lleva contenedor?' : 'Has container?'}
               </label>
-            </div>
-            {hasContainer && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Package className="w-3 h-3" />
-                    {language === 'es' ? 'NÚMERO DE CONTENEDOR' : 'CONTAINER NUMBER'} <span className="text-rose-500">*</span>
-                  </span>
-                  {getFieldIcon('containerNumber')}
-                </label>
+              <div className="flex items-center gap-3 mb-3">
                 <input
-                  type="text"
-                  value={unitInfo.containerNumber || ''}
-                  onChange={e => update('containerNumber', e.target.value.toUpperCase())}
-                  className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('containerNumber')}`}
-                  placeholder={language === 'es' ? 'EJ: MSKU1234567' : 'EX: MSKU1234567'}
-                  required={hasContainer}
+                  type="checkbox"
+                  id="hasContainer"
+                  checked={hasContainer}
+                  onChange={(e) => {
+                    handleContainerChange(e.target.checked)
+                    if (!e.target.checked) {
+                      update('containerNumber', '')
+                    }
+                  }}
+                  className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
                 />
+                <label htmlFor="hasContainer" className="text-sm text-slate-600 cursor-pointer">
+                  {language === 'es' ? 'Sí, lleva contenedor' : 'Yes, has container'}
+                </label>
               </div>
-            )}
-          </div>
+              {hasContainer && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Package className="w-3 h-3" />
+                      {language === 'es' ? 'NÚMERO DE CONTENEDOR' : 'CONTAINER NUMBER'} <span className="text-rose-500">*</span>
+                    </span>
+                    {getFieldIcon('containerNumber')}
+                  </label>
+                  <input
+                    type="text"
+                    value={unitInfo.containerNumber || ''}
+                    onChange={e => update('containerNumber', e.target.value.toUpperCase())}
+                    className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('containerNumber')}`}
+                    placeholder={language === 'es' ? 'EJ: MSKU1234567' : 'EX: MSKU1234567'}
+                    required={hasContainer}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Seal Checkbox and Number */}
-          <div className="col-span-1 sm:col-span-2">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              {language === 'es' ? '¿Tiene sello de seguridad?' : 'Has security seal?'}
-            </label>
-            <div className="flex items-center gap-3 mb-3">
-              <input
-                type="checkbox"
-                id="hasSeal"
-                checked={hasSeal}
-                onChange={(e) => {
-                  handleSealChange(e.target.checked)
-                  if (!e.target.checked) {
-                    update('sealNumber', '')
-                  }
-                }}
-                className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
-              />
-              <label htmlFor="hasSeal" className="text-sm text-slate-600 cursor-pointer">
-                {language === 'es' ? 'Sí, tiene sello' : 'Yes, has seal'}
+          {/* Seal Checkbox and Number - Only for LOADED */}
+          {inspectionType === 'LOADED' && (
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                {language === 'es' ? '¿Tiene sello de seguridad?' : 'Has security seal?'}
+                {!hasSeal && !hasLock && <span className="text-rose-500 ml-2 text-xs">(Requiere sello O candado)</span>}
               </label>
-            </div>
-            {hasSeal && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3" />
-                    {t('sealNumber').toUpperCase()} <span className="text-rose-500">*</span>
-                  </span>
-                  {getFieldIcon('sealNumber')}
-                </label>
+              <div className="flex items-center gap-3 mb-3">
                 <input
-                  type="text"
-                  value={unitInfo.sealNumber || ''}
-                  onChange={e => update('sealNumber', e.target.value.toUpperCase())}
-                  className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('sealNumber')}`}
-                  placeholder={language === 'es' ? 'EJ: S-98765' : 'EX: S-98765'}
-                  required={hasSeal}
+                  type="checkbox"
+                  id="hasSeal"
+                  checked={hasSeal}
+                  onChange={(e) => {
+                    handleSealChange(e.target.checked)
+                    if (!e.target.checked) {
+                      update('sealNumber', '')
+                    }
+                  }}
+                  className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
                 />
+                <label htmlFor="hasSeal" className="text-sm text-slate-600 cursor-pointer">
+                  {language === 'es' ? 'Sí, tiene sello' : 'Yes, has seal'}
+                </label>
               </div>
-            )}
-          </div>
+              {hasSeal && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {t('sealNumber').toUpperCase()} <span className="text-rose-500">*</span>
+                    </span>
+                    {getFieldIcon('sealNumber')}
+                  </label>
+                  <input
+                    type="text"
+                    value={unitInfo.sealNumber || ''}
+                    onChange={e => update('sealNumber', e.target.value.toUpperCase())}
+                    className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('sealNumber')}`}
+                    placeholder={language === 'es' ? 'EJ: S-98765' : 'EX: S-98765'}
+                    required={hasSeal}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Lock Checkbox and Number */}
-          <div className="col-span-1 sm:col-span-2">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              {language === 'es' ? '¿Tiene candado?' : 'Has lock?'}
-            </label>
-            <div className="flex items-center gap-3 mb-3">
-              <input
-                type="checkbox"
-                id="hasLock"
-                checked={hasLock}
-                onChange={(e) => {
-                  handleLockChange(e.target.checked)
-                  if (!e.target.checked) {
-                    update('lockNumber', '')
-                  }
-                }}
-                className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
-              />
-              <label htmlFor="hasLock" className="text-sm text-slate-600 cursor-pointer">
-                {language === 'es' ? 'Sí, tiene candado' : 'Yes, has lock'}
+          {/* Lock Checkbox and Number - Only for LOADED */}
+          {inspectionType === 'LOADED' && (
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                {language === 'es' ? '¿Tiene candado?' : 'Has lock?'}
               </label>
-            </div>
-            {hasLock && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3" />
-                    {language === 'es' ? 'NÚMERO DE CANDADO' : 'LOCK NUMBER'} <span className="text-rose-500">*</span>
-                  </span>
-                  {getFieldIcon('lockNumber')}
-                </label>
+              <div className="flex items-center gap-3 mb-3">
                 <input
-                  type="text"
-                  value={unitInfo.lockNumber || ''}
-                  onChange={e => update('lockNumber', e.target.value.toUpperCase())}
-                  className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('lockNumber')}`}
-                  placeholder={language === 'es' ? 'EJ: L-54321' : 'EX: L-54321'}
-                  required={hasLock}
+                  type="checkbox"
+                  id="hasLock"
+                  checked={hasLock}
+                  onChange={(e) => {
+                    handleLockChange(e.target.checked)
+                    if (!e.target.checked) {
+                      update('lockNumber', '')
+                    }
+                  }}
+                  className="w-4 h-4 text-crown-gold border-slate-300 rounded focus:ring-crown-gold focus:ring-2"
                 />
+                <label htmlFor="hasLock" className="text-sm text-slate-600 cursor-pointer">
+                  {language === 'es' ? 'Sí, tiene candado' : 'Yes, has lock'}
+                </label>
               </div>
-            )}
-          </div>
+              {hasLock && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {language === 'es' ? 'NÚMERO DE CANDADO' : 'LOCK NUMBER'} <span className="text-rose-500">*</span>
+                    </span>
+                    {getFieldIcon('lockNumber')}
+                  </label>
+                  <input
+                    type="text"
+                    value={unitInfo.lockNumber || ''}
+                    onChange={e => update('lockNumber', e.target.value.toUpperCase())}
+                    className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('lockNumber')}`}
+                    placeholder={language === 'es' ? 'EJ: L-54321' : 'EX: L-54321'}
+                    required={hasLock}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Operator - Employee Number Search */}
           <div className="col-span-1">

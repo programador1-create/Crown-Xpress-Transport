@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { ChevronRight, ChevronLeft, CheckCircle, Circle, AlertTriangle, MessageSquare, CheckCheck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
-import { inspectionPoints } from '../data/inspectionPoints'
+import { inspectionPoints, INSPECTION_TYPES } from '../data/inspectionPoints'
 import InspectionPoint from './InspectionPoint'
 
 export default function StepByStepInspection({ onAllCompleted }) {
@@ -12,12 +12,29 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const [showSummary, setShowSummary] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
 
-  const totalPoints = inspectionPoints.length
+  // Filter inspection points based on inspection type
+  const applicablePoints = useMemo(() => {
+    const inspectionType = unitInfo?.inspectionType || 'LOADED'
+    const typeConfig = INSPECTION_TYPES[inspectionType]
+    if (!typeConfig) return inspectionPoints
+    return inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
+  }, [unitInfo?.inspectionType])
+
+  const totalPoints = applicablePoints.length
   const isLastStep = currentStep === totalPoints - 1
   const isFirstStep = currentStep === 0
-  const currentPoint = inspectionPoints[currentStep]
-  const currentState = points[currentPoint.id]
-  const allPointsCompleted = completedCount === totalPoints
+  const currentPoint = applicablePoints[currentStep]
+  const currentState = currentPoint ? points[currentPoint.id] : null
+  
+  // Calculate completed count for applicable points only
+  const applicableCompletedCount = useMemo(() => {
+    return applicablePoints.filter(p => {
+      const state = points[p.id]
+      return state?.status === 'good' || (state?.status === 'bad' && state?.issueId && state?.photo)
+    }).length
+  }, [applicablePoints, points])
+  
+  const allPointsCompleted = applicableCompletedCount === totalPoints
 
   // Auto-advance to next step when current point is completed
   useEffect(() => {
@@ -49,9 +66,9 @@ export default function StepByStepInspection({ onAllCompleted }) {
     setShowSummary(false)
   }
 
-  // Mark all points as good
+  // Mark all applicable points as good
   const handleMarkAllGood = () => {
-    inspectionPoints.forEach(point => {
+    applicablePoints.forEach(point => {
       setPointStatus(point.id, 'good')
     })
     setShowConfirmAllOk(false)
@@ -90,7 +107,7 @@ export default function StepByStepInspection({ onAllCompleted }) {
         
         <div className="card-body">
           <div className="space-y-2.5 mb-6">
-            {inspectionPoints.map(point => (
+            {applicablePoints.map(point => (
               <InspectionPoint key={point.id} point={point} />
             ))}
           </div>
@@ -179,8 +196,8 @@ export default function StepByStepInspection({ onAllCompleted }) {
             <div className="p-5">
               <p className="text-center text-slate-600 mb-4">
                 {language === 'es' 
-                  ? 'ESTO MARCARÁ LOS 20 PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?' 
-                  : 'THIS WILL MARK ALL 20 INSPECTION POINTS AS "GOOD". ARE YOU SURE?'}
+                  ? `ESTO MARCARÁ LOS ${totalPoints} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?` 
+                  : `THIS WILL MARK ALL ${totalPoints} INSPECTION POINTS AS "GOOD". ARE YOU SURE?`}
               </p>
               <div className="flex gap-3">
                 <button
@@ -213,7 +230,7 @@ export default function StepByStepInspection({ onAllCompleted }) {
           {/* Step indicators - scrollable on mobile */}
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-1 max-w-full overflow-x-auto py-2 px-1">
-              {inspectionPoints.map((point, index) => {
+              {applicablePoints.map((point, index) => {
                 const state = points[point.id]
                 const isActive = index === currentStep
                 const isCompleted = state?.status === 'good' || (state?.status === 'bad' && state?.issueId && state?.photo)

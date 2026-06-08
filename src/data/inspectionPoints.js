@@ -1,3 +1,49 @@
+// Inspection types and their applicable points
+export const INSPECTION_TYPES = {
+  LOADED: {
+    id: 'loaded',
+    es: 'CARGADO',
+    en: 'LOADED',
+    description: {
+      es: 'Trailer con carga - Requiere sello O candado',
+      en: 'Trailer with cargo - Requires seal OR lock'
+    },
+    requiresSealOrLock: true,
+    hasContainer: true,
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  },
+  EMPTY: {
+    id: 'empty',
+    es: 'VACÍO',
+    en: 'EMPTY',
+    description: {
+      es: 'Trailer sin carga - Sin sello ni candado',
+      en: 'Empty trailer - No seal or lock'
+    },
+    requiresSealOrLock: false,
+    hasContainer: true,
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19] // Excluye: 15 (pared frontal), 17 (piso interior), 20 (limpieza)
+  },
+  BOBTAIL: {
+    id: 'bobtail',
+    es: 'BOTADO',
+    en: 'BOBTAIL',
+    description: {
+      es: 'Solo tractor - Sin trailer ni contenedor',
+      en: 'Tractor only - No trailer or container'
+    },
+    requiresSealOrLock: false,
+    hasContainer: false,
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] // Solo puntos del tractor
+  }
+}
+
+// Helper to get applicable points for an inspection type
+export const getApplicablePoints = (inspectionType) => {
+  const type = INSPECTION_TYPES[inspectionType?.toUpperCase()] || INSPECTION_TYPES.LOADED
+  return inspectionPoints.filter(p => type.applicablePoints.includes(p.id))
+}
+
 // 20 Point Inspection - Bilingual (ES/EN) with specific issues per point
 export const inspectionPoints = [
   { 

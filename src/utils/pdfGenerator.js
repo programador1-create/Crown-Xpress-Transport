@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { inspectionPoints, getIssuesForPoint } from '../data/inspectionPoints'
+import { inspectionPoints, getIssuesForPoint, INSPECTION_TYPES } from '../data/inspectionPoints'
 
 // Crown Xpress logo will be loaded from public folder
 const CROWN_LOGO_URL = '/crown-logo.png'
@@ -143,8 +143,15 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 14
 
+  // Get applicable points based on inspection type
+  const inspectionType = unitInfo?.inspectionType || 'LOADED'
+  const typeConfig = INSPECTION_TYPES[inspectionType]
+  const applicablePoints = typeConfig 
+    ? inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
+    : inspectionPoints
+
   // ===== HEADER =====
-  drawHeader(doc, T, pageWidth, margin, logoBase64)
+  drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
 
   let y = 38
 
@@ -180,9 +187,10 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   y = doc.lastAutoTable.finalY + 4
 
   // ===== SUMMARY BAR =====
-  const goodCount = Object.values(points).filter(p => p.status === 'good').length
-  const badCount = Object.values(points).filter(p => p.status === 'bad').length
-  const pendingCount = inspectionPoints.length - goodCount - badCount
+  // Count only applicable points
+  const goodCount = applicablePoints.filter(p => points[p.id]?.status === 'good').length
+  const badCount = applicablePoints.filter(p => points[p.id]?.status === 'bad').length
+  const pendingCount = applicablePoints.length - goodCount - badCount
 
   drawSummaryBar(doc, margin, y, pageWidth - margin * 2, T, goodCount, badCount, pendingCount)
   y += 12
@@ -193,10 +201,13 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
-  doc.text(T.inspectionTitle, margin + 2, y + 4)
+  const inspectionTitle = language === 'es' 
+    ? `REVISIÓN DE ${applicablePoints.length} PUNTOS` 
+    : `${applicablePoints.length}-POINT INSPECTION REVIEW`
+  doc.text(inspectionTitle, margin + 2, y + 4)
   y += 6
 
-  const tableBody = inspectionPoints.map(p => {
+  const tableBody = applicablePoints.map(p => {
     const state = points[p.id] || { status: null, issueId: null, issueCustomText: null }
     const statusText = state.status === 'good' ? T.good : state.status === 'bad' ? T.bad : T.pending
     const pointIssues = getIssuesForPoint(p.id)
@@ -399,7 +410,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   return { filename, doc }
 }
 
-function drawHeader(doc, T, pageWidth, margin, logoBase64 = null) {
+function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, inspectionType = 'LOADED', language = 'es') {
   // Top navy bar
   doc.setFillColor(...COLORS.navyDark)
   doc.rect(0, 0, pageWidth, 28, 'F')
@@ -430,11 +441,19 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(255, 255, 255)
-  doc.text(T.title, pageWidth - margin, 13, { align: 'right' })
+  doc.text(T.title, pageWidth - margin, 10, { align: 'right' })
+  
+  // Inspection type badge
+  const typeConfig = INSPECTION_TYPES[inspectionType]
+  const typeLabel = typeConfig ? typeConfig[language] : inspectionType
+  doc.setFontSize(8)
+  doc.setTextColor(201, 169, 97)
+  doc.text(`[ ${typeLabel} ]`, pageWidth - margin, 16, { align: 'right' })
+  
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
-  doc.setTextColor(201, 169, 97)
-  doc.text(T.formCode, pageWidth - margin, 18, { align: 'right' })
+  doc.setTextColor(180, 180, 180)
+  doc.text(T.formCode, pageWidth - margin, 22, { align: 'right' })
 }
 
 // Fallback logo when PNG is not available
