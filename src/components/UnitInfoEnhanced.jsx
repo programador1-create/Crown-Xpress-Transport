@@ -254,7 +254,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </span>
         <button
           type="button"
-          onClick={() => setInspectionType(null)}
+          onClick={() => {
+            setInspectionType(null)
+            updateUnitInfo('inspectionType', null)
+          }}
           className="text-xs text-white/80 hover:text-white underline"
         >
           {language === 'es' ? 'CAMBIAR' : 'CHANGE'}
