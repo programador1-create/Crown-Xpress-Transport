@@ -25,10 +25,10 @@ export default function Router() {
   
   // Check if inspection type and trailer info has been selected
   // For BOBTAIL: only need inspectionType
-  // For LOADED/EMPTY: need inspectionType + trailerType + trailerSize
+  // For LOADED/EMPTY: need inspectionType + trailerType + trailerSize + equipmentOwner
   const inspectionTypeSelected = !!unitInfo?.inspectionType && (
     unitInfo.inspectionType === 'BOBTAIL' || 
-    (!!unitInfo?.trailerType && !!unitInfo?.trailerSize)
+    (!!unitInfo?.trailerType && !!unitInfo?.trailerSize && !!unitInfo?.equipmentOwner)
   )
 
   const handleSuccess = (payload) => {

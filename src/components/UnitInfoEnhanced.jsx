@@ -36,6 +36,20 @@ const TRAILER_TYPES = {
   }
 }
 
+// Equipment owner options
+const EQUIPMENT_OWNERS = {
+  CROWN: {
+    es: 'CROWN',
+    en: 'CROWN',
+    description: { es: 'Equipo propiedad de Crown Xpress', en: 'Crown Xpress owned equipment' }
+  },
+  CUSTOMER: {
+    es: 'CLIENTE',
+    en: 'CUSTOMER',
+    description: { es: 'Equipo propiedad del cliente', en: 'Customer owned equipment' }
+  }
+}
+
 export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange, onInspectionTypeChange }) {
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo } = useInspection()
@@ -44,6 +58,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [inspectionType, setInspectionType] = useState(unitInfo?.inspectionType || null)
   const [trailerType, setTrailerType] = useState(unitInfo?.trailerType || null)
   const [trailerSize, setTrailerSize] = useState(unitInfo?.trailerSize || null)
+  const [equipmentOwner, setEquipmentOwner] = useState(unitInfo?.equipmentOwner || null)
   const [hasContainer, setHasContainer] = useState(false)
   const [hasSeal, setHasSeal] = useState(false)
   const [hasLock, setHasLock] = useState(false)
@@ -64,18 +79,21 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     setInspectionType(unitInfo?.inspectionType || null)
     setTrailerType(unitInfo?.trailerType || null)
     setTrailerSize(unitInfo?.trailerSize || null)
-  }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize])
+    setEquipmentOwner(unitInfo?.equipmentOwner || null)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize, unitInfo?.equipmentOwner])
 
   // Handle inspection type selection
   const handleInspectionTypeChange = (type) => {
     setInspectionType(type)
     updateUnitInfo('inspectionType', type)
     
-    // Reset trailer type and size when changing inspection type
+    // Reset trailer type, size and equipment owner when changing inspection type
     setTrailerType(null)
     setTrailerSize(null)
+    setEquipmentOwner(null)
     updateUnitInfo('trailerType', null)
     updateUnitInfo('trailerSize', null)
+    updateUnitInfo('equipmentOwner', null)
     
     const typeConfig = INSPECTION_TYPES[type]
     
@@ -127,6 +145,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const handleTrailerSizeChange = (size) => {
     setTrailerSize(size)
     updateUnitInfo('trailerSize', size)
+  }
+
+  // Handle equipment owner selection
+  const handleEquipmentOwnerChange = (owner) => {
+    setEquipmentOwner(owner)
+    updateUnitInfo('equipmentOwner', owner)
   }
 
   // Notify parent when checkbox states change
@@ -516,12 +540,86 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     )
   }
 
+  // If trailer size selected but no equipment owner, show owner selector
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType && trailerSize && !equipmentOwner) {
+    const typeConfig = TRAILER_TYPES[trailerType]
+    
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-header flex items-center gap-3">
+          <Truck className="w-5 h-5 text-crown-gold" />
+          <h2 className="font-bold tracking-wide uppercase text-sm">
+            {language === 'es' ? 'PROPIETARIO DEL EQUIPO' : 'EQUIPMENT OWNER'}
+          </h2>
+          <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+            inspectionType === 'LOADED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+            {INSPECTION_TYPES[inspectionType]?.[language]} · {typeConfig?.[language] || trailerType} {trailerSize}'
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setTrailerSize(null)
+              updateUnitInfo('trailerSize', null)
+            }}
+            className="text-xs text-white/80 hover:text-white underline"
+          >
+            {language === 'es' ? 'CAMBIAR' : 'CHANGE'}
+          </button>
+        </div>
+        <div className="card-body">
+          <p className="text-sm text-slate-600 mb-4">
+            {language === 'es' 
+              ? '¿El equipo es de Crown o de un cliente?' 
+              : 'Is the equipment owned by Crown or a customer?'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* CROWN */}
+            <button
+              type="button"
+              onClick={() => handleEquipmentOwnerChange('CROWN')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-crown-gold/20 rounded-full flex items-center justify-center group-hover:bg-crown-gold/30 transition-colors">
+                <Truck className="w-8 h-8 text-crown-gold" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'CROWN' : 'CROWN'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Equipo propiedad de Crown Xpress' : 'Crown Xpress owned equipment'}
+              </span>
+            </button>
+
+            {/* CUSTOMER / CLIENTE */}
+            <button
+              type="button"
+              onClick={() => handleEquipmentOwnerChange('CUSTOMER')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+                <User className="w-8 h-8 text-slate-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'CLIENTE' : 'CUSTOMER'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Equipo propiedad del cliente' : 'Customer owned equipment'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   // Build badge text with trailer info
   const getBadgeText = () => {
     const typeLabel = INSPECTION_TYPES[inspectionType]?.[language] || inspectionType
     if (inspectionType === 'BOBTAIL') return typeLabel
     const trailerLabel = TRAILER_TYPES[trailerType]?.[language] || trailerType
-    return `${typeLabel} · ${trailerLabel} ${trailerSize}'`
+    const ownerLabel = EQUIPMENT_OWNERS[equipmentOwner]?.[language] || equipmentOwner
+    return `${typeLabel} · ${trailerLabel} ${trailerSize}' · ${ownerLabel}`
   }
 
   return (
@@ -543,9 +641,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             setInspectionType(null)
             setTrailerType(null)
             setTrailerSize(null)
+            setEquipmentOwner(null)
             updateUnitInfo('inspectionType', null)
             updateUnitInfo('trailerType', null)
             updateUnitInfo('trailerSize', null)
+            updateUnitInfo('equipmentOwner', null)
           }}
           className="text-xs text-white/80 hover:text-white underline"
         >
