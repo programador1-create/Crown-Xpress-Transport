@@ -14,12 +14,36 @@ const YARDS = [
   { id: 5, name: 'Yard E - San Antonio' },
 ]
 
+// Trailer types with sizes
+const TRAILER_TYPES = {
+  BOX: {
+    es: 'CAJA',
+    en: 'BOX',
+    icon: 'box',
+    sizes: ['53', '48']
+  },
+  CONTAINER: {
+    es: 'CONTENEDOR',
+    en: 'CONTAINER',
+    icon: 'container',
+    sizes: ['53', '40', '20']
+  },
+  FLATBED: {
+    es: 'PLATAFORMA',
+    en: 'FLATBED',
+    icon: 'flatbed',
+    sizes: ['53', '48', '40']
+  }
+}
+
 export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange, onInspectionTypeChange }) {
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo } = useInspection()
   const { user } = useAuth()
   // Sync local state with context - use context value as source of truth
   const [inspectionType, setInspectionType] = useState(unitInfo?.inspectionType || null)
+  const [trailerType, setTrailerType] = useState(unitInfo?.trailerType || null)
+  const [trailerSize, setTrailerSize] = useState(unitInfo?.trailerSize || null)
   const [hasContainer, setHasContainer] = useState(false)
   const [hasSeal, setHasSeal] = useState(false)
   const [hasLock, setHasLock] = useState(false)
@@ -38,24 +62,36 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // Sync local inspectionType with context when context changes
   useEffect(() => {
     setInspectionType(unitInfo?.inspectionType || null)
-  }, [unitInfo?.inspectionType])
+    setTrailerType(unitInfo?.trailerType || null)
+    setTrailerSize(unitInfo?.trailerSize || null)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize])
 
   // Handle inspection type selection
   const handleInspectionTypeChange = (type) => {
     setInspectionType(type)
     updateUnitInfo('inspectionType', type)
     
+    // Reset trailer type and size when changing inspection type
+    setTrailerType(null)
+    setTrailerSize(null)
+    updateUnitInfo('trailerType', null)
+    updateUnitInfo('trailerSize', null)
+    
     const typeConfig = INSPECTION_TYPES[type]
     
     // Reset fields based on type
     if (type === 'BOBTAIL') {
-      // Bobtail: No container, no seal, no lock
+      // Bobtail: No trailer, no container, no seal, no lock - skip trailer selection
       setHasContainer(false)
       setHasSeal(false)
       setHasLock(false)
       updateUnitInfo('containerNumber', '')
       updateUnitInfo('sealNumber', '')
       updateUnitInfo('lockNumber', '')
+      updateUnitInfo('trailerType', 'BOBTAIL')
+      updateUnitInfo('trailerSize', 'N/A')
+      setTrailerType('BOBTAIL')
+      setTrailerSize('N/A')
       if (onContainerChange) onContainerChange(false)
       if (onSealChange) onSealChange(false)
       if (onLockChange) onLockChange(false)
@@ -77,6 +113,20 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     }
     
     if (onInspectionTypeChange) onInspectionTypeChange(type)
+  }
+
+  // Handle trailer type selection
+  const handleTrailerTypeChange = (type) => {
+    setTrailerType(type)
+    setTrailerSize(null) // Reset size when changing type
+    updateUnitInfo('trailerType', type)
+    updateUnitInfo('trailerSize', null)
+  }
+
+  // Handle trailer size selection
+  const handleTrailerSizeChange = (size) => {
+    setTrailerSize(size)
+    updateUnitInfo('trailerSize', size)
   }
 
   // Notify parent when checkbox states change
@@ -322,6 +372,158 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     )
   }
 
+  // If LOADED or EMPTY selected but no trailer type, show trailer type selector
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && !trailerType) {
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-header flex items-center gap-3">
+          <Truck className="w-5 h-5 text-crown-gold" />
+          <h2 className="font-bold tracking-wide uppercase text-sm">
+            {language === 'es' ? 'TIPO DE REMOLQUE' : 'TRAILER TYPE'}
+          </h2>
+          <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+            inspectionType === 'LOADED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+            {INSPECTION_TYPES[inspectionType]?.[language] || inspectionType}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setInspectionType(null)
+              updateUnitInfo('inspectionType', null)
+            }}
+            className="text-xs text-white/80 hover:text-white underline"
+          >
+            {language === 'es' ? 'CAMBIAR' : 'CHANGE'}
+          </button>
+        </div>
+        <div className="card-body">
+          <p className="text-sm text-slate-600 mb-4">
+            {language === 'es' 
+              ? 'Seleccione el tipo de remolque:' 
+              : 'Select the trailer type:'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* BOX / CAJA */}
+            <button
+              type="button"
+              onClick={() => handleTrailerTypeChange('BOX')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <Box className="w-8 h-8 text-purple-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'CAJA' : 'BOX'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Caja seca estándar' : 'Standard dry box'}
+              </span>
+            </button>
+
+            {/* CONTAINER / CONTENEDOR */}
+            <button
+              type="button"
+              onClick={() => handleTrailerTypeChange('CONTAINER')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                <Package className="w-8 h-8 text-cyan-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'CONTENEDOR' : 'CONTAINER'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Contenedor intermodal' : 'Intermodal container'}
+              </span>
+            </button>
+
+            {/* FLATBED / PLATAFORMA */}
+            <button
+              type="button"
+              onClick={() => handleTrailerTypeChange('FLATBED')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                <Truck className="w-8 h-8 text-orange-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'PLATAFORMA' : 'FLATBED'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Plataforma abierta' : 'Open flatbed'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // If trailer type selected but no size, show size selector
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType && !trailerSize) {
+    const typeConfig = TRAILER_TYPES[trailerType]
+    const availableSizes = typeConfig?.sizes || ['53', '40', '20']
+    
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-header flex items-center gap-3">
+          <Truck className="w-5 h-5 text-crown-gold" />
+          <h2 className="font-bold tracking-wide uppercase text-sm">
+            {language === 'es' ? 'MEDIDA DEL REMOLQUE' : 'TRAILER SIZE'}
+          </h2>
+          <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+            inspectionType === 'LOADED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+            {INSPECTION_TYPES[inspectionType]?.[language]} · {typeConfig?.[language] || trailerType}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setTrailerType(null)
+              updateUnitInfo('trailerType', null)
+            }}
+            className="text-xs text-white/80 hover:text-white underline"
+          >
+            {language === 'es' ? 'CAMBIAR' : 'CHANGE'}
+          </button>
+        </div>
+        <div className="card-body">
+          <p className="text-sm text-slate-600 mb-4">
+            {language === 'es' 
+              ? 'Seleccione la medida del remolque:' 
+              : 'Select the trailer size:'}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {availableSizes.map(size => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => handleTrailerSizeChange(size)}
+                className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-2 group"
+              >
+                <span className="font-bold text-3xl text-slate-800 group-hover:text-crown-gold transition-colors">
+                  {size}'
+                </span>
+                <span className="text-xs text-slate-500">
+                  {language === 'es' ? 'PIES' : 'FEET'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Build badge text with trailer info
+  const getBadgeText = () => {
+    const typeLabel = INSPECTION_TYPES[inspectionType]?.[language] || inspectionType
+    if (inspectionType === 'BOBTAIL') return typeLabel
+    const trailerLabel = TRAILER_TYPES[trailerType]?.[language] || trailerType
+    return `${typeLabel} · ${trailerLabel} ${trailerSize}'`
+  }
+
   return (
     <section className="card animate-slide-up">
       <div className="card-header flex items-center gap-3">
@@ -333,13 +535,17 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           inspectionType === 'EMPTY' ? 'bg-amber-100 text-amber-700' :
           'bg-blue-100 text-blue-700'
         }`}>
-          {INSPECTION_TYPES[inspectionType]?.[language] || inspectionType}
+          {getBadgeText()}
         </span>
         <button
           type="button"
           onClick={() => {
             setInspectionType(null)
+            setTrailerType(null)
+            setTrailerSize(null)
             updateUnitInfo('inspectionType', null)
+            updateUnitInfo('trailerType', null)
+            updateUnitInfo('trailerSize', null)
           }}
           className="text-xs text-white/80 hover:text-white underline"
         >

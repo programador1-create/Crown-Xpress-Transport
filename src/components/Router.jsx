@@ -23,8 +23,13 @@ export default function Router() {
   const [page, setPage] = useState(canViewAll() && !canEdit() ? 'auditor' : 'form')
   const [success, setSuccess] = useState({ open: false, filename: null })
   
-  // Check if inspection type has been selected
-  const inspectionTypeSelected = !!unitInfo?.inspectionType
+  // Check if inspection type and trailer info has been selected
+  // For BOBTAIL: only need inspectionType
+  // For LOADED/EMPTY: need inspectionType + trailerType + trailerSize
+  const inspectionTypeSelected = !!unitInfo?.inspectionType && (
+    unitInfo.inspectionType === 'BOBTAIL' || 
+    (!!unitInfo?.trailerType && !!unitInfo?.trailerSize)
+  )
 
   const handleSuccess = (payload) => {
     setSuccess({ open: true, filename: payload.filename })
