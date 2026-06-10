@@ -1,11 +1,17 @@
 import { useState } from 'react'
-import { FileText, AlertCircle, CheckCircle2, Loader2, X, Truck, PenLine, Home } from 'lucide-react'
+import { FileText, AlertCircle, CheckCircle2, Loader2, X, Truck, PenLine, Home, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { generateInspectionPDF } from '../utils/pdfGenerator'
 import { createInspection, buildPayload } from '../utils/api'
 import SignatureCanvas from 'react-signature-canvas'
 import { useRef } from 'react'
+import { Document, Page, pdfjs } from 'react-pdf'
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
+import 'react-pdf/dist/esm/Page/TextLayer.css'
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 export default function SubmitBar({ onSuccess }) {
   const { t, language } = useLanguage()
@@ -16,6 +22,8 @@ export default function SubmitBar({ onSuccess }) {
   const [showPdfViewer, setShowPdfViewer] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [pdfFilename, setPdfFilename] = useState('')
+  const [numPages, setNumPages] = useState(null)
+  const [pageNumber, setPageNumber] = useState(1)
   const sigRef = useRef(null)
 
   const issues = []
@@ -103,8 +111,23 @@ export default function SubmitBar({ onSuccess }) {
     }
     setShowPdfViewer(false)
     setPdfUrl(null)
+    setNumPages(null)
+    setPageNumber(1)
     ctx.resetInspection()
     onSuccess?.({ filename: pdfFilename })
+  }
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages)
+    setPageNumber(1)
+  }
+
+  const goToPrevPage = () => {
+    setPageNumber(prev => Math.max(prev - 1, 1))
+  }
+
+  const goToNextPage = () => {
+    setPageNumber(prev => Math.min(prev + 1, numPages || 1))
   }
 
   return (
@@ -253,52 +276,92 @@ export default function SubmitBar({ onSuccess }) {
         </div>
       )}
 
-      {/* PDF Viewer Modal - Success message with download option for tablet */}
+      {/* PDF Viewer Modal - with react-pdf for tablet compatibility */}
       {showPdfViewer && pdfUrl && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
-          {/* Success Card */}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-center">
-              <CheckCircle2 className="w-16 h-16 text-white mx-auto mb-3" />
-              <h3 className="font-bold text-white text-xl">
-                {language === 'es' ? '¡INSPECCIÓN GUARDADA!' : 'INSPECTION SAVED!'}
-              </h3>
-              <p className="text-emerald-100 text-sm mt-1">{pdfFilename}</p>
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-white" />
+              <div>
+                <h3 className="font-bold text-white text-sm sm:text-base">
+                  {language === 'es' ? '✅ INSPECCIÓN GUARDADA' : '✅ INSPECTION SAVED'}
+                </h3>
+                <p className="text-emerald-100 text-xs truncate max-w-[150px] sm:max-w-none">{pdfFilename}</p>
+              </div>
             </div>
+            <button
+              onClick={handleClosePdfViewer}
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              <Home className="w-5 h-5" />
+              <span>{language === 'es' ? 'Inicio' : 'Home'}</span>
+            </button>
+          </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              <p className="text-slate-600 text-center">
-                {language === 'es' 
-                  ? 'La inspección se ha guardado correctamente. Puedes ver el PDF o regresar al inicio.' 
-                  : 'The inspection has been saved successfully. You can view the PDF or return to home.'}
-              </p>
+          {/* Page Navigation */}
+          <div className="bg-slate-800 px-4 py-2 flex items-center justify-center gap-4 flex-shrink-0">
+            <button
+              onClick={goToPrevPage}
+              disabled={pageNumber <= 1}
+              className="p-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <span className="text-white font-semibold min-w-[100px] text-center">
+              {language === 'es' ? 'Página' : 'Page'} {pageNumber} / {numPages || '...'}
+            </span>
+            <button
+              onClick={goToNextPage}
+              disabled={pageNumber >= (numPages || 1)}
+              className="p-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
 
-              {/* View PDF Button - opens in new tab */}
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-4 bg-crown-navy hover:bg-crown-navy-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
-              >
-                <FileText className="w-6 h-6" />
-                {language === 'es' ? 'VER PDF COMPLETO' : 'VIEW FULL PDF'}
-              </a>
+          {/* PDF Content - scrollable */}
+          <div 
+            className="flex-1 overflow-auto bg-slate-900 flex justify-center"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-12 h-12 text-white animate-spin" />
+                </div>
+              }
+              error={
+                <div className="flex flex-col items-center justify-center h-full text-white p-4">
+                  <AlertCircle className="w-12 h-12 mb-2" />
+                  <p>{language === 'es' ? 'Error cargando PDF' : 'Error loading PDF'}</p>
+                </div>
+              }
+            >
+              <Page 
+                pageNumber={pageNumber} 
+                width={Math.min(window.innerWidth - 20, 600)}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            </Document>
+          </div>
 
-              {/* Return Home Button */}
-              <button
-                onClick={handleClosePdfViewer}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
-              >
-                <Home className="w-6 h-6" />
-                {language === 'es' ? 'REGRESAR A INICIO' : 'RETURN TO HOME'}
-              </button>
-            </div>
+          {/* Bottom action bar */}
+          <div className="bg-slate-800 px-4 py-3 flex-shrink-0">
+            <button
+              onClick={handleClosePdfViewer}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <Home className="w-5 h-5" />
+              {language === 'es' ? 'REGRESAR A INICIO' : 'RETURN TO HOME'}
+            </button>
           </div>
         </div>
       )}
 
-      </section>
+    </section>
   )
 }
