@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch, CheckCircle, X, Filter, Calendar, Truck, User, Tag } from 'lucide-react'
+import { FileText, Search, Download, AlertTriangle, ChevronDown, ChevronRight, Lock, GitBranch, CheckCircle, X, Filter, Calendar, Truck, User, Tag, Eye } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, getInspection, reconfirmInspection } from '../utils/api'
@@ -23,6 +23,7 @@ export default function GuardHistory() {
   const [reconfirmTarget, setReconfirmTarget] = useState(null)
   const [successModal, setSuccessModal] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [pdfViewer, setPdfViewer] = useState({ open: false, url: null, filename: '' })
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -122,6 +123,29 @@ export default function GuardHistory() {
         ? 'Error descargando PDF. Esta inspección puede no tener PDF guardado.' 
         : 'Error downloading PDF. This inspection may not have a saved PDF.')
     }
+  }
+
+  const handleViewPdf = async (id, filename) => {
+    try {
+      const blob = await downloadPdf(id)
+      if (blob.size === 0) {
+        throw new Error('PDF vacío')
+      }
+      const url = URL.createObjectURL(blob)
+      setPdfViewer({ open: true, url, filename: filename || `inspection-${id}.pdf` })
+    } catch (e) {
+      console.error('PDF view error:', e)
+      alert(language === 'es' 
+        ? 'Error abriendo PDF. Esta inspección puede no tener PDF guardado.' 
+        : 'Error opening PDF. This inspection may not have a saved PDF.')
+    }
+  }
+
+  const closePdfViewer = () => {
+    if (pdfViewer.url) {
+      URL.revokeObjectURL(pdfViewer.url)
+    }
+    setPdfViewer({ open: false, url: null, filename: '' })
   }
 
   const handleReconfirm = async (id) => {
@@ -361,6 +385,14 @@ export default function GuardHistory() {
                       }`}>
                         {group.original.status === 'completed' ? (language === 'es' ? 'Completado' : 'Completed') : group.original.status}
                       </span>
+                      {/* View PDF button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleViewPdf(group.original.id, group.original.pdf_filename) }}
+                        className="p-1.5 rounded hover:bg-slate-100"
+                        title={language === 'es' ? 'Ver PDF' : 'View PDF'}
+                      >
+                        <Eye className="w-4 h-4 text-crown-navy" />
+                      </button>
                       {/* Download button */}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDownload(group.original.id, group.original.pdf_filename) }}
@@ -509,6 +541,40 @@ export default function GuardHistory() {
                 {language === 'es' ? 'ACEPTAR' : 'OK'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {pdfViewer.open && pdfViewer.url && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col animate-fade-in">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-crown-navy to-crown-navy-dark px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="w-6 h-6 text-crown-gold" />
+              <div>
+                <h3 className="font-bold text-white text-lg">
+                  {language === 'es' ? 'VISOR DE PDF' : 'PDF VIEWER'}
+                </h3>
+                <p className="text-crown-gold text-sm">{pdfViewer.filename}</p>
+              </div>
+            </div>
+            <button
+              onClick={closePdfViewer}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+              <span>{language === 'es' ? 'Cerrar' : 'Close'}</span>
+            </button>
+          </div>
+
+          {/* PDF Viewer */}
+          <div className="flex-1 overflow-hidden">
+            <iframe
+              src={pdfViewer.url}
+              className="w-full h-full border-0"
+              title="PDF Viewer"
+            />
           </div>
         </div>
       )}

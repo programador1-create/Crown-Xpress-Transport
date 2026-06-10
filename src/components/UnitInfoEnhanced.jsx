@@ -958,14 +958,32 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 type="text"
                 value={unitInfo.trailerNumber || ''}
                 readOnly
-                onClick={() => openKeypad('trailerNumber', language === 'es' ? 'NÚMERO DE CONTENEDOR/CAJA' : 'CONTAINER/BOX NUMBER')}
+                onClick={() => {
+                  const trailerLabel = trailerType === 'CONTAINER' 
+                    ? (language === 'es' ? 'NÚMERO DE CONTENEDOR' : 'CONTAINER NUMBER')
+                    : trailerType === 'BOX'
+                    ? (language === 'es' ? 'NÚMERO DE CAJA' : 'BOX NUMBER')
+                    : trailerType === 'FLATBED'
+                    ? (language === 'es' ? 'NÚMERO DE PLATAFORMA' : 'FLATBED NUMBER')
+                    : (language === 'es' ? 'NÚMERO DE REMOLQUE' : 'TRAILER NUMBER')
+                  openKeypad('trailerNumber', trailerLabel)
+                }}
                 className={`flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors uppercase cursor-pointer ${validateField('trailerNumber')}`}
                 placeholder={inspectionType === 'BOBTAIL' ? (language === 'es' ? 'EJ: TR-12345' : 'EX: TR-12345') : (language === 'es' ? 'TOCA PARA INGRESAR' : 'TAP TO ENTER')}
                 required
               />
               <button
                 type="button"
-                onClick={() => openKeypad('trailerNumber', language === 'es' ? 'NÚMERO DE CONTENEDOR/CAJA' : 'CONTAINER/BOX NUMBER')}
+                onClick={() => {
+                  const trailerLabel = trailerType === 'CONTAINER' 
+                    ? (language === 'es' ? 'NÚMERO DE CONTENEDOR' : 'CONTAINER NUMBER')
+                    : trailerType === 'BOX'
+                    ? (language === 'es' ? 'NÚMERO DE CAJA' : 'BOX NUMBER')
+                    : trailerType === 'FLATBED'
+                    ? (language === 'es' ? 'NÚMERO DE PLATAFORMA' : 'FLATBED NUMBER')
+                    : (language === 'es' ? 'NÚMERO DE REMOLQUE' : 'TRAILER NUMBER')
+                  openKeypad('trailerNumber', trailerLabel)
+                }}
                 className="px-3 py-2 bg-crown-navy text-white rounded-lg hover:bg-crown-navy/90 transition-colors"
               >
                 <Keyboard className="w-5 h-5" />

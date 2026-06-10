@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, Delete, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Delete, Check, Trash2 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
 /**
@@ -16,7 +16,22 @@ export default function NumericKeypad({
   maxLength = 20
 }) {
   const { language } = useLanguage()
-  const [value, setValue] = useState(initialValue)
+  const [value, setValue] = useState('')
+
+  // Reset value when modal opens with new initialValue
+  useEffect(() => {
+    if (isOpen) {
+      setValue(initialValue || '')
+      // Block body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+    } else {
+      // Restore body scroll when modal closes
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, initialValue])
 
   if (!isOpen) return null
 
@@ -36,17 +51,35 @@ export default function NumericKeypad({
 
   const handleConfirm = () => {
     onConfirm(value.toUpperCase())
+    setValue('') // Clear value after confirm
     onClose()
   }
 
+  const handleClose = () => {
+    setValue('') // Clear value when closing
+    onClose()
+  }
+
+  // Prevent touch events from propagating to background
+  const handleTouchMove = (e) => {
+    e.stopPropagation()
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+    <div 
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      onTouchMove={handleTouchMove}
+      style={{ touchAction: 'none' }}
+    >
+      <div 
+        className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-gradient-to-r from-crown-navy to-crown-navy/90 px-5 py-4 text-white flex items-center justify-between">
           <h3 className="font-bold text-lg uppercase">{title}</h3>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 hover:bg-white/20 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
@@ -91,8 +124,8 @@ export default function NumericKeypad({
             
             {/* Row 4 */}
             <button onClick={() => handleKeyPress('0')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">0</button>
-            <button onClick={handleClear} className="p-5 text-sm font-bold bg-rose-100 hover:bg-rose-200 active:bg-rose-300 text-rose-700 rounded-xl transition-colors">
-              {language === 'es' ? 'BORRAR' : 'CLEAR'}
+            <button onClick={handleClear} className="p-5 font-bold bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-xl transition-colors flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
             </button>
             <button onClick={handleConfirm} className="col-span-2 p-5 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition-colors flex items-center justify-center gap-2 text-xl">
               <Check className="w-6 h-6" />
