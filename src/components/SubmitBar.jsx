@@ -270,55 +270,50 @@ export default function SubmitBar({ onSuccess }) {
         </div>
       )}
 
-      {/* PDF Viewer Modal - embedded in same page */}
+      {/* PDF Success Modal - simple buttons for tablet compatibility */}
       {showPdfViewer && pdfUrl && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-          {/* Header - with padding top for safe area */}
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3 pt-16 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <div>
-                <h3 className="font-bold text-white text-sm">
-                  {language === 'es' ? '✅ INSPECCIÓN GUARDADA' : '✅ INSPECTION SAVED'}
-                </h3>
-              </div>
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4">
+          {/* Success Card */}
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+              <CheckCircle2 className="w-20 h-20 text-white mx-auto mb-4" />
+              <h3 className="font-bold text-white text-2xl">
+                {language === 'es' ? '¡LISTO!' : 'DONE!'}
+              </h3>
+              <p className="text-emerald-100 text-sm mt-2">
+                {language === 'es' ? 'Inspección guardada correctamente' : 'Inspection saved successfully'}
+              </p>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Buttons */}
+            <div className="p-5 space-y-3">
+              {/* View PDF Button */}
+              <button
+                onClick={handleOpenInNewTab}
+                className="w-full py-4 bg-crown-navy hover:bg-crown-navy-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
+              >
+                <ExternalLink className="w-6 h-6" />
+                {language === 'es' ? 'VER PDF' : 'VIEW PDF'}
+              </button>
+
+              {/* Download PDF Button */}
               <button
                 onClick={handleDownloadPdf}
-                className="p-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
-                title={language === 'es' ? 'Descargar' : 'Download'}
+                className="w-full py-4 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
               >
-                <Download className="w-5 h-5" />
+                <Download className="w-6 h-6" />
+                {language === 'es' ? 'DESCARGAR' : 'DOWNLOAD'}
               </button>
+
+              {/* Confirm Button */}
               <button
                 onClick={handleClosePdfViewer}
-                className="flex items-center gap-1 px-3 py-2 bg-white text-emerald-700 font-bold rounded-lg transition-colors text-sm"
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
               >
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-6 h-6" />
                 {language === 'es' ? 'CONFIRMAR' : 'CONFIRM'}
               </button>
-            </div>
-          </div>
-
-          {/* PDF Viewer - scrollable wrapper for iOS */}
-          <div 
-            className="flex-1 bg-slate-100 overflow-auto"
-            style={{ 
-              WebkitOverflowScrolling: 'touch',
-              overflowY: 'scroll'
-            }}
-          >
-            <div style={{ height: '300vh', width: '100%' }}>
-              <iframe
-                src={pdfUrl + '#toolbar=1&navpanes=0&scrollbar=1'}
-                className="w-full border-0"
-                style={{ 
-                  height: '300vh',
-                  pointerEvents: 'auto'
-                }}
-                title="PDF Viewer"
-              />
             </div>
           </div>
         </div>
