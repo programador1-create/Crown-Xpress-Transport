@@ -301,21 +301,25 @@ export default function SubmitBar({ onSuccess }) {
             </div>
           </div>
 
-          {/* PDF Viewer - using object tag for better iOS support */}
-          <div className="flex-1 bg-slate-200 overflow-hidden">
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              style={{ minHeight: '100%' }}
-            >
-              {/* Fallback for browsers that don't support object */}
+          {/* PDF Viewer - scrollable wrapper for iOS */}
+          <div 
+            className="flex-1 bg-slate-100 overflow-auto"
+            style={{ 
+              WebkitOverflowScrolling: 'touch',
+              overflowY: 'scroll'
+            }}
+          >
+            <div style={{ height: '300vh', width: '100%' }}>
               <iframe
-                src={pdfUrl}
-                className="w-full h-full border-0"
+                src={pdfUrl + '#toolbar=1&navpanes=0&scrollbar=1'}
+                className="w-full border-0"
+                style={{ 
+                  height: '300vh',
+                  pointerEvents: 'auto'
+                }}
                 title="PDF Viewer"
               />
-            </object>
+            </div>
           </div>
         </div>
       )}
