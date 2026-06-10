@@ -91,6 +91,12 @@ export default function SubmitBar({ onSuccess }) {
     }, 100)
   }
   
+  const clearSignature = () => {
+    if (sigRef.current) {
+      sigRef.current.clear()
+    }
+  }
+
   const handleClosePdfViewer = () => {
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl)
@@ -99,12 +105,6 @@ export default function SubmitBar({ onSuccess }) {
     setPdfUrl(null)
     ctx.resetInspection()
     onSuccess?.({ filename: pdfFilename })
-  }
-
-  const clearSignature = () => {
-    if (sigRef.current) {
-      sigRef.current.clear()
-    }
   }
 
   return (
@@ -253,47 +253,51 @@ export default function SubmitBar({ onSuccess }) {
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
+      {/* PDF Viewer Modal - with scrollable container for tablet */}
       {showPdfViewer && pdfUrl && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col animate-fade-in"
-          style={{ touchAction: 'none' }}
-          onTouchMove={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-crown-navy to-crown-navy-dark px-6 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
+          {/* Header - fixed at top */}
+          <div className="bg-gradient-to-r from-crown-navy to-crown-navy-dark px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-6 h-6 text-emerald-400" />
               <div>
-                <h3 className="font-bold text-white text-lg">
-                  {language === 'es' ? 'PDF GENERADO EXITOSAMENTE' : 'PDF GENERATED SUCCESSFULLY'}
+                <h3 className="font-bold text-white text-base sm:text-lg">
+                  {language === 'es' ? '✅ INSPECCIÓN GUARDADA' : '✅ INSPECTION SAVED'}
                 </h3>
-                <p className="text-crown-gold text-sm">{pdfFilename}</p>
+                <p className="text-crown-gold text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none">{pdfFilename}</p>
               </div>
             </div>
             <button
               onClick={handleClosePdfViewer}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base"
             >
               <Home className="w-5 h-5" />
-              <span>{language === 'es' ? 'Regresar a Inicio' : 'Return to Home'}</span>
+              <span className="hidden sm:inline">{language === 'es' ? 'Regresar a Inicio' : 'Return to Home'}</span>
+              <span className="sm:hidden">{language === 'es' ? 'Inicio' : 'Home'}</span>
             </button>
           </div>
 
-          {/* PDF Viewer */}
-          <div className="flex-1 overflow-hidden relative">
+          {/* PDF Container - scrollable on tablet */}
+          <div 
+            className="flex-1 overflow-auto"
+            style={{ 
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain'
+            }}
+          >
             <iframe
-              src={`${pdfUrl}#view=FitH&toolbar=1&navpanes=1&scrollbar=1`}
-              className="w-full h-full border-0"
-              title="PDF Viewer"
+              src={pdfUrl}
+              className="w-full border-0"
               style={{ 
-                touchAction: 'pan-y pinch-zoom',
-                WebkitOverflowScrolling: 'touch'
+                height: '200vh',
+                minHeight: '100%'
               }}
+              title="PDF Viewer"
             />
           </div>
         </div>
       )}
-    </section>
+
+      </section>
   )
 }
