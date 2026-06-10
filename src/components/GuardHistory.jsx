@@ -125,21 +125,29 @@ export default function GuardHistory() {
   }
 
   const handleViewPdf = async (id, filename) => {
-    // Helper function to open PDF that works on tablets
-    const openPdfBlob = (blob, name) => {
-      const url = URL.createObjectURL(blob)
-      // Create a temporary link element - works better on iPad/tablets
-      const link = document.createElement('a')
-      link.href = url
-      link.target = '_blank'
-      link.rel = 'noopener noreferrer'
-      // For iOS Safari, we need to trigger the link differently
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      // Clean up after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 5000)
+    // For iPad/iOS: Open a blank window FIRST (must be in direct click handler)
+    // Then load the PDF into it after async operations
+    const newWindow = window.open('about:blank', '_blank')
+    
+    if (!newWindow) {
+      alert(language === 'es' 
+        ? 'Por favor permite ventanas emergentes para ver el PDF' 
+        : 'Please allow popups to view the PDF')
+      return
     }
+
+    // Show loading message in new window
+    newWindow.document.write(`
+      <html>
+        <head><title>${language === 'es' ? 'Cargando PDF...' : 'Loading PDF...'}</title></head>
+        <body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f1f5f9;">
+          <div style="text-align:center;">
+            <div style="font-size:24px;margin-bottom:10px;">⏳</div>
+            <div>${language === 'es' ? 'Cargando PDF...' : 'Loading PDF...'}</div>
+          </div>
+        </body>
+      </html>
+    `)
 
     try {
       // First try to download PDF from backend
@@ -147,7 +155,8 @@ export default function GuardHistory() {
       if (blob.size === 0) {
         throw new Error('PDF vacío')
       }
-      openPdfBlob(blob, filename || `inspection-${id}.pdf`)
+      const url = URL.createObjectURL(blob)
+      newWindow.location.href = url
     } catch (e) {
       console.error('PDF view error:', e)
       
@@ -167,11 +176,13 @@ export default function GuardHistory() {
           language: inspectionData.inspection.language || 'es'
         })
         
-        // Open PDF using link method for tablet compatibility
+        // Open PDF in the already-opened window
         const pdfBlob = pdfResult.doc.output('blob')
-        openPdfBlob(pdfBlob, filename || `inspection-${id}.pdf`)
+        const url = URL.createObjectURL(pdfBlob)
+        newWindow.location.href = url
       } catch (genError) {
         console.error('PDF generation error:', genError)
+        newWindow.close()
         alert(language === 'es' 
           ? 'Error generando PDF. Por favor intente descargarlo.' 
           : 'Error generating PDF. Please try downloading it.')
