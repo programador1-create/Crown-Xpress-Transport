@@ -296,6 +296,9 @@ export default function SubmitBar({ onSuccess }) {
                 <ExternalLink className="w-6 h-6" />
                 {language === 'es' ? 'VER PDF' : 'VIEW PDF'}
               </button>
+              <p className="text-xs text-slate-400 text-center -mt-1">
+                {language === 'es' ? 'Se abre en nueva pestaña. Ciérrala para volver aquí.' : 'Opens in new tab. Close it to return here.'}
+              </p>
 
               {/* Download PDF Button */}
               <button
