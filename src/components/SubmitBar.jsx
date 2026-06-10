@@ -253,47 +253,48 @@ export default function SubmitBar({ onSuccess }) {
         </div>
       )}
 
-      {/* PDF Viewer Modal - with scrollable container for tablet */}
+      {/* PDF Viewer Modal - Success message with download option for tablet */}
       {showPdfViewer && pdfUrl && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
-          {/* Header - fixed at top */}
-          <div className="bg-gradient-to-r from-crown-navy to-crown-navy-dark px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-              <div>
-                <h3 className="font-bold text-white text-base sm:text-lg">
-                  {language === 'es' ? '✅ INSPECCIÓN GUARDADA' : '✅ INSPECTION SAVED'}
-                </h3>
-                <p className="text-crown-gold text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none">{pdfFilename}</p>
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
+          {/* Success Card */}
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-center">
+              <CheckCircle2 className="w-16 h-16 text-white mx-auto mb-3" />
+              <h3 className="font-bold text-white text-xl">
+                {language === 'es' ? '¡INSPECCIÓN GUARDADA!' : 'INSPECTION SAVED!'}
+              </h3>
+              <p className="text-emerald-100 text-sm mt-1">{pdfFilename}</p>
             </div>
-            <button
-              onClick={handleClosePdfViewer}
-              className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors text-sm sm:text-base"
-            >
-              <Home className="w-5 h-5" />
-              <span className="hidden sm:inline">{language === 'es' ? 'Regresar a Inicio' : 'Return to Home'}</span>
-              <span className="sm:hidden">{language === 'es' ? 'Inicio' : 'Home'}</span>
-            </button>
-          </div>
 
-          {/* PDF Container - scrollable on tablet */}
-          <div 
-            className="flex-1 overflow-auto"
-            style={{ 
-              WebkitOverflowScrolling: 'touch',
-              overscrollBehavior: 'contain'
-            }}
-          >
-            <iframe
-              src={pdfUrl}
-              className="w-full border-0"
-              style={{ 
-                height: '200vh',
-                minHeight: '100%'
-              }}
-              title="PDF Viewer"
-            />
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-slate-600 text-center">
+                {language === 'es' 
+                  ? 'La inspección se ha guardado correctamente. Puedes ver el PDF o regresar al inicio.' 
+                  : 'The inspection has been saved successfully. You can view the PDF or return to home.'}
+              </p>
+
+              {/* View PDF Button - opens in new tab */}
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-crown-navy hover:bg-crown-navy-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
+              >
+                <FileText className="w-6 h-6" />
+                {language === 'es' ? 'VER PDF COMPLETO' : 'VIEW FULL PDF'}
+              </a>
+
+              {/* Return Home Button */}
+              <button
+                onClick={handleClosePdfViewer}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
+              >
+                <Home className="w-6 h-6" />
+                {language === 'es' ? 'REGRESAR A INICIO' : 'RETURN TO HOME'}
+              </button>
+            </div>
           </div>
         </div>
       )}
