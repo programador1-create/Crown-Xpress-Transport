@@ -23,7 +23,6 @@ export default function GuardHistory() {
   const [reconfirmTarget, setReconfirmTarget] = useState(null)
   const [successModal, setSuccessModal] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
-  const [pdfViewer, setPdfViewer] = useState({ open: false, url: null, filename: '' })
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -132,8 +131,9 @@ export default function GuardHistory() {
       if (blob.size === 0) {
         throw new Error('PDF vacío')
       }
+      // Open PDF in new tab instead of modal
       const url = URL.createObjectURL(blob)
-      setPdfViewer({ open: true, url, filename: filename || `inspection-${id}.pdf` })
+      window.open(url, '_blank')
     } catch (e) {
       console.error('PDF view error:', e)
       
@@ -153,10 +153,10 @@ export default function GuardHistory() {
           language: inspectionData.inspection.language || 'es'
         })
         
-        // Create blob and show PDF
+        // Open PDF in new tab instead of modal
         const pdfBlob = pdfResult.doc.output('blob')
         const url = URL.createObjectURL(pdfBlob)
-        setPdfViewer({ open: true, url, filename: filename || `inspection-${id}.pdf` })
+        window.open(url, '_blank')
       } catch (genError) {
         console.error('PDF generation error:', genError)
         alert(language === 'es' 
@@ -164,13 +164,6 @@ export default function GuardHistory() {
           : 'Error generating PDF. Please try downloading it.')
       }
     }
-  }
-
-  const closePdfViewer = () => {
-    if (pdfViewer.url) {
-      URL.revokeObjectURL(pdfViewer.url)
-    }
-    setPdfViewer({ open: false, url: null, filename: '' })
   }
 
   const handleReconfirm = async (id) => {
@@ -570,47 +563,6 @@ export default function GuardHistory() {
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
-      {pdfViewer.open && pdfViewer.url && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col animate-fade-in"
-          style={{ touchAction: 'none' }}
-          onTouchMove={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-crown-navy to-crown-navy-dark px-6 py-4 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <FileText className="w-6 h-6 text-crown-gold" />
-              <div>
-                <h3 className="font-bold text-white text-lg">
-                  {language === 'es' ? 'VISOR DE PDF' : 'PDF VIEWER'}
-                </h3>
-                <p className="text-crown-gold text-sm">{pdfViewer.filename}</p>
-              </div>
-            </div>
-            <button
-              onClick={closePdfViewer}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-              <span>{language === 'es' ? 'Cerrar' : 'Close'}</span>
-            </button>
-          </div>
-
-          {/* PDF Viewer */}
-          <div className="flex-1 overflow-hidden relative">
-            <iframe
-              src={`${pdfViewer.url}#view=FitH&toolbar=1&navpanes=1&scrollbar=1`}
-              className="w-full h-full border-0"
-              title="PDF Viewer"
-              style={{ 
-                touchAction: 'pan-y pinch-zoom',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            />
-          </div>
-        </div>
-      )}
     </>
   )
 }
