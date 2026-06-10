@@ -144,17 +144,17 @@ export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) 
   })
 }
 
-/** Build payload for createInspection (with image compression) */
+/** Build payload for createInspection (with aggressive image compression) */
 export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   const { unitInfo, points, sealPhoto, guardSignature, auditorSignature, completedCount, failedCount, goodCount } = ctx
   
-  // Compress seal photo if exists
-  const compressedSealPhoto = sealPhoto ? await compressImage(sealPhoto, 600, 0.5) : null
+  // Compress seal photo more aggressively (400px, 40% quality)
+  const compressedSealPhoto = sealPhoto ? await compressImage(sealPhoto, 400, 0.4) : null
   
-  // Map points to API shape with compressed photos
+  // Map points to API shape with compressed photos (400px, 40% quality)
   const pointsPayload = {}
   for (const [id, p] of Object.entries(points)) {
-    const compressedPhoto = p.photo ? await compressImage(p.photo, 600, 0.5) : null
+    const compressedPhoto = p.photo ? await compressImage(p.photo, 400, 0.4) : null
     pointsPayload[id] = {
       status: p.status || 'pending',
       issueId: p.issueId || null,
@@ -163,14 +163,16 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     }
   }
   
-  // Compress signatures
+  // Compress signatures (300px, 40% quality)
   const compressedGuardSig = guardSignature?.signature 
-    ? await compressImage(guardSignature.signature, 400, 0.5) 
+    ? await compressImage(guardSignature.signature, 300, 0.4) 
     : null
   const compressedAuditorSig = auditorSignature?.signature 
-    ? await compressImage(auditorSignature.signature, 400, 0.5) 
+    ? await compressImage(auditorSignature.signature, 300, 0.4) 
     : null
   
+  // Don't send the full PDF - it's too large. Backend can regenerate if needed.
+  // Just send a flag that PDF was generated
   return {
     unitInfo,
     points: pointsPayload,
@@ -178,7 +180,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     auditorSignature: { ...auditorSignature, signature: compressedAuditorSig },
     sealPhoto: compressedSealPhoto,
     language: 'es',
-    pdfBase64,  // PDF stays as-is (already optimized by jsPDF)
+    pdfGenerated: true,  // Flag instead of full PDF
     pdfFilename,
     counts: { 
       good: goodCount || 0, 
