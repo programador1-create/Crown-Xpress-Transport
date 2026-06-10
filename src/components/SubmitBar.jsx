@@ -272,9 +272,9 @@ export default function SubmitBar({ onSuccess }) {
 
       {/* PDF Viewer Modal - embedded in same page */}
       {showPdfViewer && pdfUrl && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          {/* Header - with padding top for safe area */}
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3 pt-16 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-white" />
               <div>
