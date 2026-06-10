@@ -310,13 +310,13 @@ export default function SubmitBar({ onSuccess }) {
                 {language === 'es' ? 'DESCARGAR PDF' : 'DOWNLOAD PDF'}
               </button>
 
-              {/* Return Home Button */}
+              {/* Confirm Button */}
               <button
                 onClick={handleClosePdfViewer}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-lg"
               >
-                <Home className="w-6 h-6" />
-                {language === 'es' ? 'REGRESAR A INICIO' : 'RETURN TO HOME'}
+                <CheckCircle2 className="w-6 h-6" />
+                {language === 'es' ? 'CONFIRMAR' : 'CONFIRM'}
               </button>
             </div>
           </div>
