@@ -68,8 +68,8 @@ export default function SubmitBar({ onSuccess }) {
         const pdfBase64 = pdfResult.doc.output('datauristring')
         const pdfFilename = pdfResult.filename
 
-        // 2. Upload to backend
-        const payload = buildPayload(ctx, pdfBase64, pdfFilename)
+        // 2. Upload to backend (with compressed images)
+        const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
         const uploadResult = await createInspection(payload)
 
         // 3. Show PDF in modal viewer

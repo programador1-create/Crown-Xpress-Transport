@@ -103,27 +103,82 @@ export async function getInspectionChain(id) {
   return res
 }
 
-/** Build payload for createInspection */
-export function buildPayload(ctx, pdfBase64, pdfFilename) {
+/**
+ * Compress a base64 image to reduce payload size
+ * @param {string} base64Image - Base64 encoded image (with or without data URI prefix)
+ * @param {number} maxWidth - Maximum width in pixels (default 800)
+ * @param {number} quality - JPEG quality 0-1 (default 0.6)
+ * @returns {Promise<string>} - Compressed base64 image
+ */
+export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) {
+  if (!base64Image) return null
+  
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      // Calculate new dimensions
+      let width = img.width
+      let height = img.height
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+      
+      // Create canvas and draw resized image
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // Convert to compressed JPEG
+      const compressed = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressed)
+    }
+    img.onerror = () => {
+      // If compression fails, return original
+      resolve(base64Image)
+    }
+    img.src = base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`
+  })
+}
+
+/** Build payload for createInspection (with image compression) */
+export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   const { unitInfo, points, sealPhoto, guardSignature, auditorSignature, completedCount, failedCount, goodCount } = ctx
-  // Map points to API shape
+  
+  // Compress seal photo if exists
+  const compressedSealPhoto = sealPhoto ? await compressImage(sealPhoto, 600, 0.5) : null
+  
+  // Map points to API shape with compressed photos
   const pointsPayload = {}
   for (const [id, p] of Object.entries(points)) {
+    const compressedPhoto = p.photo ? await compressImage(p.photo, 600, 0.5) : null
     pointsPayload[id] = {
       status: p.status || 'pending',
       issueId: p.issueId || null,
       issueText: null,
-      photo: p.photo || null,
+      photo: compressedPhoto,
     }
   }
+  
+  // Compress signatures
+  const compressedGuardSig = guardSignature?.signature 
+    ? await compressImage(guardSignature.signature, 400, 0.5) 
+    : null
+  const compressedAuditorSig = auditorSignature?.signature 
+    ? await compressImage(auditorSignature.signature, 400, 0.5) 
+    : null
+  
   return {
     unitInfo,
     points: pointsPayload,
-    guardSignature,
-    auditorSignature,
-    sealPhoto,
+    guardSignature: { ...guardSignature, signature: compressedGuardSig },
+    auditorSignature: { ...auditorSignature, signature: compressedAuditorSig },
+    sealPhoto: compressedSealPhoto,
     language: 'es',
-    pdfBase64,
+    pdfBase64,  // PDF stays as-is (already optimized by jsPDF)
     pdfFilename,
     counts: { 
       good: goodCount || 0, 
