@@ -103,31 +103,28 @@ export default function NumericKeypad({
 
         {/* Calculator Keypad */}
         <div className="p-4">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {/* Row 1 */}
             <button onClick={() => handleKeyPress('7')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">7</button>
             <button onClick={() => handleKeyPress('8')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">8</button>
             <button onClick={() => handleKeyPress('9')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">9</button>
-            <button onClick={() => handleKeyPress('/')} className="p-5 text-2xl font-bold bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-700 rounded-xl transition-colors">/</button>
             
             {/* Row 2 */}
             <button onClick={() => handleKeyPress('4')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">4</button>
             <button onClick={() => handleKeyPress('5')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">5</button>
             <button onClick={() => handleKeyPress('6')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">6</button>
-            <button onClick={() => handleKeyPress('*')} className="p-5 text-2xl font-bold bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-700 rounded-xl transition-colors">×</button>
             
             {/* Row 3 */}
             <button onClick={() => handleKeyPress('1')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">1</button>
             <button onClick={() => handleKeyPress('2')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">2</button>
             <button onClick={() => handleKeyPress('3')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">3</button>
-            <button onClick={() => handleKeyPress('-')} className="p-5 text-2xl font-bold bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-700 rounded-xl transition-colors">−</button>
             
             {/* Row 4 */}
             <button onClick={() => handleKeyPress('0')} className="p-5 text-2xl font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-colors">0</button>
             <button onClick={handleClear} className="p-5 font-bold bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-xl transition-colors flex items-center justify-center">
               <Trash2 className="w-6 h-6" />
             </button>
-            <button onClick={handleConfirm} className="col-span-2 p-5 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition-colors flex items-center justify-center gap-2 text-xl">
+            <button onClick={handleConfirm} className="p-5 font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition-colors flex items-center justify-center gap-2 text-xl">
               <Check className="w-6 h-6" />
               OK
             </button>
