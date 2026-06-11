@@ -101,17 +101,27 @@ export function InspectionProvider({ children }) {
   const goodCount = applicablePointIds.filter(id => points[id]?.status === 'good').length
   const progressPercent = applicablePoints.length > 0 ? Math.round((completedCount / applicablePoints.length) * 100) : 0
 
+  // Check if seal photo is required: only when LOADED + has seal number (not lock) + not FLATBED
+  const hasSealNumber = !!(unitInfo.sealNumber && unitInfo.sealNumber.trim())
+  const hasLockNumber = !!(unitInfo.lockNumber && unitInfo.lockNumber.trim())
+  const isFlatbed = unitInfo.trailerType === 'FLATBED'
+  const isLoaded = unitInfo.inspectionType === 'LOADED'
+  const sealPhotoRequired = isLoaded && hasSealNumber && !hasLockNumber && !isFlatbed
+
   // Validation: all applicable points evaluated, all bad have issueId+photo, guard signed
   const validation = {
     allPointsEvaluated: completedCount === applicablePoints.length,
     failuresHaveIssue: applicablePointIds.every(id => points[id]?.status !== 'bad' || points[id]?.issueId),
     failuresHavePhoto: applicablePointIds.every(id => points[id]?.status !== 'bad' || points[id]?.photo),
-    hasSealPhoto: !!sealPhoto, // Optional - not required for submission
+    hasSealPhoto: !!sealPhoto,
+    sealPhotoRequired: sealPhotoRequired,
+    sealPhotoValid: !sealPhotoRequired || !!sealPhoto, // Valid if not required OR has photo
     guardSigned: !!(guardSignature.signature && guardSignature.name.trim()),
     operatorSigned: !!(operatorSignature.signature && operatorSignature.name.trim()),
   }
   // Operator signature is NOT required here - it will be captured when clicking "Generate PDF"
-  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned
+  // Seal photo is required when LOADED + has seal (not lock) + not FLATBED
+  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned && validation.sealPhotoValid
 
   return (
     <InspectionContext.Provider value={{

@@ -22,7 +22,10 @@ export default function SubmitBar({ onSuccess }) {
   if (!validation.allPointsEvaluated) issues.push(t('completeAllPoints'))
   if (!validation.failuresHaveIssue) issues.push(t('selectIssueForFailures'))
   if (!validation.failuresHavePhoto) issues.push(t('addPhotoForFailures'))
-  // Seal photo is now optional - removed from validation
+  // Seal photo is required when LOADED + has seal (not lock) + not FLATBED
+  if (validation.sealPhotoRequired && !validation.hasSealPhoto) {
+    issues.push(language === 'es' ? 'Foto del sello requerida' : 'Seal photo required')
+  }
   // Operator signature is captured when clicking "Generate PDF"
   if (!validation.guardSigned) issues.push(t('guardMustSign'))
 
