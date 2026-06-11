@@ -22,6 +22,7 @@ export default function Router() {
   const { user, canEdit, canViewAll } = useAuth()
   const [page, setPage] = useState(canViewAll() && !canEdit() ? 'auditor' : 'form')
   const [success, setSuccess] = useState({ open: false, filename: null })
+  const [unitInfoFlowComplete, setUnitInfoFlowComplete] = useState(false)
   
   // Check if inspection type and trailer info has been selected
   // For BOBTAIL: only need inspectionType
@@ -90,9 +91,9 @@ export default function Router() {
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {page === 'form' && canEdit() && (
           <div className="space-y-5">
-            <UnitInfo />
-            {/* Only show remaining components after inspection type is selected */}
-            {inspectionTypeSelected && (
+            <UnitInfo onFlowComplete={setUnitInfoFlowComplete} />
+            {/* Only show remaining components after all unit info steps are completed */}
+            {inspectionTypeSelected && unitInfoFlowComplete && (
               <>
                 <TruckDiagram />
                 <InspectionList />
