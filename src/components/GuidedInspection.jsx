@@ -16,7 +16,7 @@ export default function GuidedInspection() {
   const [currentStage, setCurrentStage] = useState('unitInfo') // unitInfo, inspection, seal, signatures
   const [unitInfoValid, setUnitInfoValid] = useState(false)
   const [hasContainer, setHasContainer] = useState(false)
-  const [hasSeal, setHasSeal] = useState(true)
+  const [hasSeal, setHasSeal] = useState(false)
   const [hasLock, setHasLock] = useState(false)
   const [unitInfoFlowComplete, setUnitInfoFlowComplete] = useState(false)
 
