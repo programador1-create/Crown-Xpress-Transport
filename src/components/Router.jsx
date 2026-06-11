@@ -23,6 +23,7 @@ export default function Router() {
   const [page, setPage] = useState(canViewAll() && !canEdit() ? 'auditor' : 'form')
   const [success, setSuccess] = useState({ open: false, filename: null })
   const [unitInfoFlowComplete, setUnitInfoFlowComplete] = useState(false)
+  const [showInspectionPoints, setShowInspectionPoints] = useState(false)
   
   // Check if inspection type and trailer info has been selected
   // For BOBTAIL: only need inspectionType
@@ -45,6 +46,8 @@ export default function Router() {
   const handleNewInspection = () => {
     resetInspection()
     setSuccess({ open: false, filename: null })
+    setShowInspectionPoints(false)
+    setUnitInfoFlowComplete(false)
     setPage('form')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -92,8 +95,22 @@ export default function Router() {
         {page === 'form' && canEdit() && (
           <div className="space-y-5">
             <UnitInfo onFlowComplete={setUnitInfoFlowComplete} />
-            {/* Only show remaining components after all unit info steps are completed */}
-            {inspectionTypeSelected && unitInfoFlowComplete && (
+            {/* Show "Start Inspection" button after unit info is complete */}
+            {inspectionTypeSelected && unitInfoFlowComplete && !showInspectionPoints && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    setShowInspectionPoints(true)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="px-8 py-4 bg-crown-gold hover:bg-crown-gold-dark text-crown-navy font-bold rounded-xl text-lg transition-colors shadow-lg"
+                >
+                  {language === 'es' ? 'COMENZAR INSPECCIÓN DE 20 PUNTOS' : 'START 20-POINT INSPECTION'}
+                </button>
+              </div>
+            )}
+            {/* Only show inspection components after clicking the button */}
+            {inspectionTypeSelected && unitInfoFlowComplete && showInspectionPoints && (
               <>
                 <TruckDiagram />
                 <InspectionList />
