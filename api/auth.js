@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       const users = await sql`
         SELECT id, username, full_name, role, location_id, location_name
         FROM employees
-        WHERE username = ${username} AND password = ${password} AND active = true
+        WHERE username = ${username} AND password_hash = ${password} AND active = true
       `
 
       if (users.length === 0) {

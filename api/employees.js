@@ -92,7 +92,7 @@ export default async function handler(req, res) {
       
       // Otherwise, list all employees
       const employees = await sql`
-        SELECT id, username, full_name, role, location_id, location_name, active, created_at
+        SELECT id, username, password_hash, full_name, role, location_id, location_name, active, created_at
         FROM employees
         ORDER BY role, full_name
       `

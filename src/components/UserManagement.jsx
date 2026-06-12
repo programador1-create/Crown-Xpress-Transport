@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Plus, Edit2, Trash2, Save, X, Search, Shield, Eye, UserCheck, Crown } from 'lucide-react'
+import { Users, Plus, Edit2, Trash2, Save, X, Search, Shield, Eye, UserCheck, Crown, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
@@ -35,6 +35,9 @@ export default function UserManagement() {
     location_id: 1,
     location_name: 'Yard A - Laredo',
   })
+  const [successModal, setSuccessModal] = useState({ show: false, message: '', isEdit: false })
+  const [confirmModal, setConfirmModal] = useState({ show: false, type: '', data: null })
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadEmployees()
@@ -71,8 +74,18 @@ export default function UserManagement() {
     }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmitClick = (e) => {
     e.preventDefault()
+    // Show confirmation modal before saving
+    setConfirmModal({
+      show: true,
+      type: editingId ? 'update' : 'create',
+      data: formData
+    })
+  }
+
+  const handleSubmit = async () => {
+    setSaving(true)
     try {
       const method = editingId ? 'PUT' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
@@ -86,12 +99,20 @@ export default function UserManagement() {
       if (data.error) throw new Error(data.error)
 
       await loadEmployees()
+      const isEdit = !!editingId
       resetForm()
-      alert(language === 'es' 
-        ? (editingId ? 'Usuario actualizado' : 'Usuario creado') 
-        : (editingId ? 'User updated' : 'User created'))
+      setSuccessModal({
+        show: true,
+        message: language === 'es' 
+          ? (isEdit ? '¡Usuario actualizado exitosamente!' : '¡Usuario creado exitosamente!') 
+          : (isEdit ? 'User updated successfully!' : 'User created successfully!'),
+        isEdit
+      })
     } catch (err) {
       alert(`Error: ${err.message}`)
+    } finally {
+      setSaving(false)
+      setConfirmModal({ show: false, type: '', data: null })
     }
   }
 
@@ -108,15 +129,31 @@ export default function UserManagement() {
     setShowForm(true)
   }
 
+  const handleDeleteClick = (emp) => {
+    setConfirmModal({
+      show: true,
+      type: 'delete',
+      data: emp
+    })
+  }
+
   const handleDelete = async (id) => {
-    if (!confirm(language === 'es' ? '¿Desactivar este usuario?' : 'Deactivate this user?')) return
+    setSaving(true)
     try {
       const res = await fetch(`${API_BASE}/employees?id=${id}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       await loadEmployees()
+      setSuccessModal({
+        show: true,
+        message: language === 'es' ? '¡Usuario desactivado!' : 'User deactivated!',
+        isEdit: false
+      })
     } catch (err) {
       alert(`Error: ${err.message}`)
+    } finally {
+      setSaving(false)
+      setConfirmModal({ show: false, type: '', data: null })
     }
   }
 
@@ -211,6 +248,9 @@ export default function UserManagement() {
                       <div className="text-xs text-slate-500">
                         @{emp.username} · {roleInfo.label[language]} · {emp.location_name || '—'}
                       </div>
+                      <div className="text-xs text-slate-400 font-mono">
+                        🔑 {emp.password_hash || '—'}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -222,7 +262,7 @@ export default function UserManagement() {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(emp.id)}
+                      onClick={() => handleDeleteClick(emp)}
                       className="p-2 rounded-lg hover:bg-rose-100 text-rose-500"
                       title={language === 'es' ? 'Desactivar' : 'Deactivate'}
                     >
@@ -250,7 +290,7 @@ export default function UserManagement() {
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <form onSubmit={handleSubmitClick} className="p-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   {language === 'es' ? 'Nombre Completo' : 'Full Name'} *
@@ -333,6 +373,101 @@ export default function UserManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm animate-scale-up">
+            <div className="p-6 text-center">
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                confirmModal.type === 'delete' ? 'bg-rose-100' : 'bg-amber-100'
+              }`}>
+                <AlertTriangle className={`w-8 h-8 ${
+                  confirmModal.type === 'delete' ? 'text-rose-500' : 'text-amber-500'
+                }`} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">
+                {confirmModal.type === 'delete' 
+                  ? (language === 'es' ? '¿Desactivar Usuario?' : 'Deactivate User?')
+                  : confirmModal.type === 'update'
+                    ? (language === 'es' ? '¿Guardar Cambios?' : 'Save Changes?')
+                    : (language === 'es' ? '¿Crear Usuario?' : 'Create User?')}
+              </h3>
+              <p className="text-slate-500 text-sm mb-6">
+                {confirmModal.type === 'delete' 
+                  ? (language === 'es' 
+                      ? `¿Estás seguro de desactivar a "${confirmModal.data?.full_name}"?` 
+                      : `Are you sure you want to deactivate "${confirmModal.data?.full_name}"?`)
+                  : confirmModal.type === 'update'
+                    ? (language === 'es' 
+                        ? `¿Guardar los cambios para "${formData.full_name}"?${formData.password ? ' (Se actualizará la contraseña)' : ''}` 
+                        : `Save changes for "${formData.full_name}"?${formData.password ? ' (Password will be updated)' : ''}`)
+                    : (language === 'es' 
+                        ? `¿Crear el usuario "${formData.full_name}" con usuario "${formData.username}"?` 
+                        : `Create user "${formData.full_name}" with username "${formData.username}"?`)}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmModal({ show: false, type: '', data: null })}
+                  disabled={saving}
+                  className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {language === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmModal.type === 'delete') {
+                      handleDelete(confirmModal.data.id)
+                    } else {
+                      handleSubmit()
+                    }
+                  }}
+                  disabled={saving}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${
+                    confirmModal.type === 'delete' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-crown-navy hover:bg-crown-navy-dark'
+                  }`}
+                >
+                  {saving ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {confirmModal.type === 'delete' ? <Trash2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {confirmModal.type === 'delete' 
+                        ? (language === 'es' ? 'Desactivar' : 'Deactivate')
+                        : (language === 'es' ? 'Confirmar' : 'Confirm')}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successModal.show && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm animate-scale-up">
+            <div className="p-6 text-center">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">
+                {language === 'es' ? '¡Éxito!' : 'Success!'}
+              </h3>
+              <p className="text-slate-500 mb-6">
+                {successModal.message}
+              </p>
+              <button
+                onClick={() => setSuccessModal({ show: false, message: '', isEdit: false })}
+                className="w-full px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+              >
+                {language === 'es' ? 'Aceptar' : 'OK'}
+              </button>
+            </div>
           </div>
         </div>
       )}
