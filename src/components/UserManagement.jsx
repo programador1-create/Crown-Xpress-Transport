@@ -25,6 +25,7 @@ export default function UserManagement() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -62,7 +63,8 @@ export default function UserManagement() {
       emp.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       emp.username?.toLowerCase().includes(search.toLowerCase())
     const matchesRole = !filterRole || emp.role === filterRole
-    return matchesSearch && matchesRole && emp.active !== false
+    const matchesActive = showInactive || emp.active !== false
+    return matchesSearch && matchesRole && matchesActive
   })
 
   const handleLocationChange = (locationId) => {
@@ -225,6 +227,15 @@ export default function UserManagement() {
               <option key={r.id} value={r.id}>{r.label[language]}</option>
             ))}
           </select>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="rounded border-slate-300 text-crown-navy focus:ring-crown-navy/20"
+            />
+            {language === 'es' ? 'Mostrar inactivos' : 'Show inactive'}
+          </label>
         </div>
 
         {/* Users list */}
@@ -238,9 +249,9 @@ export default function UserManagement() {
               const roleInfo = getRoleInfo(emp.role)
               const RoleIcon = roleInfo.icon
               return (
-                <div key={emp.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50">
+                <div key={emp.id} className={`px-4 py-3 flex items-center justify-between ${emp.active === false ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50'}`}>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${roleInfo.color} flex items-center justify-center`}>
+                    <div className={`w-10 h-10 rounded-full ${roleInfo.color} ${emp.active === false ? 'opacity-50' : ''} flex items-center justify-center`}>
                       <RoleIcon className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -251,6 +262,11 @@ export default function UserManagement() {
                       <div className="text-xs text-slate-400 font-mono">
                         🔑 {emp.password_hash || '—'}
                       </div>
+                      {emp.active === false && (
+                        <div className="text-xs text-rose-500 font-medium">
+                          {language === 'es' ? 'INACTIVO' : 'INACTIVE'}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
