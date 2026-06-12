@@ -114,7 +114,7 @@ export default async function handler(req, res) {
       }
 
       const [employee] = await sql`
-        INSERT INTO employees (username, password, full_name, role, location_id, location_name)
+        INSERT INTO employees (username, password_hash, full_name, role, location_id, location_name)
         VALUES (${username}, ${password}, ${full_name}, ${role}, ${location_id || null}, ${location_name || null})
         RETURNING id, username, full_name, role, location_id, location_name, active, created_at
       `
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
         updateQuery = await sql`
           UPDATE employees SET
             username = ${username},
-            password = ${password},
+            password_hash = ${password},
             full_name = ${full_name},
             role = ${role},
             location_id = ${location_id || null},
