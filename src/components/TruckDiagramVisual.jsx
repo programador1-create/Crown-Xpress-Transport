@@ -39,48 +39,55 @@ const pointPositionsDefault = [
 ]
 
 // Positions for FLATBED (Plataforma) - Based on "Origen plataforma.png"
-// Layout: Top-left: CAB-AREA front, Top-center: side view with flatbed, Top-right: TRAILER-REAR
-// Bottom-left: TRACTOR CAB rear, Bottom-center: PLATFORM BODY side view
+// Layout: 
+//   Top-left (0-15%, 0-50%): CAB-AREA - vista frontal del tractor
+//   Top-center (15-75%, 0-50%): Vista lateral - CHASSIS-SECTION, PLATFORM BODY
+//   Top-right (85-100%, 0-100%): TRAILER-REAR - vista trasera de la plataforma
+//   Bottom-left (0-25%, 50-100%): TRACTOR CAB, TRACTOR-SECTION
+//   Bottom-center (25-85%, 50-100%): PLATFORM BODY lateral, FRONT AXLE, LANDING GEAR, REAR TANDEM
 const pointPositionsFlatbed = [
   // TRACTOR POINTS (1-10)
-  { id: 1, x: 8, y: 28, label: 'Defensa' },             // Bumper - front view top-left
-  { id: 2, x: 17, y: 72, label: 'Llantas' },            // Tires - tractor section bottom-left
-  { id: 3, x: 17, y: 85, label: 'Piso' },               // Floor - tractor cab bottom-left
-  { id: 4, x: 32, y: 35, label: 'Tanques Diesel' },     // Fuel tanks - side of tractor
-  { id: 5, x: 8, y: 12, label: 'Cabina' },              // Cab compartments - top of cab area
-  { id: 6, x: 38, y: 35, label: 'Tanques Aire' },       // Air tanks - under chassis
-  { id: 7, x: 43, y: 28, label: 'Quinta Rueda' },       // Fifth wheel - connection area
-  { id: 8, x: 25, y: 85, label: 'Ejes Trans.' },        // Drive shafts - bottom view
-  { id: 9, x: 28, y: 12, label: 'Escape' },             // Exhaust - side of cab
-  { id: 10, x: 8, y: 55, label: 'Motor' },              // Engine/Battery - front cab area
+  { id: 1, x: 8, y: 35, label: 'Defensa' },              // Bumper - CAB-AREA frontal (top-left)
+  { id: 2, x: 35, y: 35, label: 'Llantas' },             // Tires - FRONT AXLE area (top-center)
+  { id: 3, x: 18, y: 85, label: 'Piso' },                // Floor - TRACTOR-SECTION (bottom-left)
+  { id: 4, x: 30, y: 25, label: 'Tanques Diesel' },      // Fuel tanks - lado del tractor (top-center)
+  { id: 5, x: 8, y: 15, label: 'Cabina' },               // Cab - CAB-AREA top (top-left)
+  { id: 6, x: 42, y: 45, label: 'Tanques Aire' },        // Air tanks - CHASSIS-SECTION (top-center)
+  { id: 7, x: 45, y: 30, label: 'Quinta Rueda' },        // Fifth wheel - conexión tractor-plataforma
+  { id: 8, x: 10, y: 70, label: 'Ejes Trans.' },         // Drive shafts - TRACTOR CAB rear (bottom-left)
+  { id: 9, x: 25, y: 15, label: 'Escape' },              // Exhaust - chimeneas del tractor
+  { id: 10, x: 5, y: 55, label: 'Motor' },               // Engine - TRACTOR CAB (bottom-left)
   
-  // TRAILER POINTS (11-20) - Flatbed specific
-  { id: 11, x: 55, y: 35, label: 'Chasis' },            // Chassis section
-  { id: 12, x: 92, y: 55, label: 'Parte Trasera' },     // Rear of flatbed - TRAILER-REAR view
-  { id: 13, x: 75, y: 18, label: 'Lado Der.' },         // Right side - platform body
-  { id: 14, x: 65, y: 12, label: 'Plataforma' },        // Platform body top
-  { id: 15, x: 50, y: 18, label: 'Frente Plat.' },      // Front of platform
-  { id: 16, x: 75, y: 75, label: 'Lado Izq.' },         // Left side - bottom view
-  { id: 17, x: 55, y: 75, label: 'Piso Plat.' },        // Platform floor - bottom view
-  { id: 18, x: 62, y: 35, label: 'Patín' },             // Landing gear
-  { id: 19, x: 78, y: 35, label: 'Ejes Traseros' },     // Rear tandem
-  { id: 20, x: 92, y: 85, label: 'Limpieza' },          // Cleanliness - rear view
+  // TRAILER/PLATFORM POINTS (11-20) - Flatbed specific
+  { id: 11, x: 50, y: 45, label: 'Chasis' },             // CHASSIS-SECTION (top-center)
+  { id: 12, x: 92, y: 50, label: 'Parte Trasera' },      // TRAILER-REAR view (top-right)
+  { id: 13, x: 70, y: 20, label: 'Lado Der.' },          // PLATFORM BODY lado derecho (top)
+  { id: 14, x: 60, y: 12, label: 'Plataforma' },         // PLATFORM BODY superficie (top)
+  { id: 15, x: 48, y: 20, label: 'Frente Plat.' },       // Frente de la plataforma
+  { id: 16, x: 70, y: 75, label: 'Lado Izq.' },          // PLATFORM BODY lado izq (bottom)
+  { id: 17, x: 55, y: 75, label: 'Piso Plat.' },         // PLATFORM BODY piso (bottom-center)
+  { id: 18, x: 58, y: 45, label: 'Patín' },              // LANDING GEAR
+  { id: 19, x: 72, y: 45, label: 'Ejes Traseros' },      // REAR TANDEM
+  { id: 20, x: 92, y: 85, label: 'Limpieza' },           // Limpieza - TRAILER-REAR (bottom-right)
 ]
 
 // Positions for BOBTAIL (Solo tractor) - Based on "Origen Trailer.png"
-// Layout: Left: CABIN INTERIOR DETAIL, Center: COMPLETE TRACTOR CABIN & CHASSIS, Right: TRACTOR REAR VIEW
+// Layout:
+//   Left (0-30%): CABIN INTERIOR DETAIL - DASHBOARD PANEL, STEERING WHEEL, DRIVER SEAT, PASSENGER SEAT
+//   Center (30-75%): COMPLETE TRACTOR CABIN & CHASSIS - FIFTH WHEEL COUPLER, REAR TANDEM, CHASSIS-SECTION
+//   Right (75-100%): TRACTOR REAR VIEW
 const pointPositionsBobtail = [
-  // TRACTOR POINTS ONLY (1-10) - All points on tractor
-  { id: 1, x: 48, y: 75, label: 'Defensa' },            // Bumper - front of tractor center view
-  { id: 2, x: 62, y: 85, label: 'Llantas' },            // Tires - rear tandem
-  { id: 3, x: 18, y: 75, label: 'Piso' },               // Floor - cabin interior left
-  { id: 4, x: 55, y: 55, label: 'Tanques Diesel' },     // Fuel tanks - side of tractor
-  { id: 5, x: 12, y: 25, label: 'Cabina' },             // Cab compartments - dashboard panel
-  { id: 6, x: 70, y: 70, label: 'Tanques Aire' },       // Air tanks - chassis section
-  { id: 7, x: 72, y: 55, label: 'Quinta Rueda' },       // Fifth wheel coupler
-  { id: 8, x: 65, y: 75, label: 'Ejes Trans.' },        // Chassis section
-  { id: 9, x: 50, y: 25, label: 'Escape' },             // Exhaust - top of cab
-  { id: 10, x: 88, y: 55, label: 'Motor' },             // Engine/Battery - rear view
+  // TRACTOR POINTS ONLY (1-10) - Solo puntos del tractor
+  { id: 1, x: 40, y: 75, label: 'Defensa' },             // Bumper - frente del tractor (center)
+  { id: 2, x: 58, y: 78, label: 'Llantas' },             // Tires - REAR TANDEM (center)
+  { id: 3, x: 20, y: 70, label: 'Piso' },                // Floor - PASSENGER SEAT area (left)
+  { id: 4, x: 55, y: 55, label: 'Tanques Diesel' },      // Fuel tanks - lado del tractor (center)
+  { id: 5, x: 10, y: 30, label: 'Cabina' },              // Cab - DASHBOARD PANEL (left)
+  { id: 6, x: 62, y: 70, label: 'Tanques Aire' },        // Air tanks - CHASSIS-SECTION (center)
+  { id: 7, x: 68, y: 50, label: 'Quinta Rueda' },        // FIFTH WHEEL COUPLER (center)
+  { id: 8, x: 62, y: 78, label: 'Ejes Trans.' },         // CHASSIS-SECTION / drive (center)
+  { id: 9, x: 48, y: 22, label: 'Escape' },              // Exhaust - top of cab (center)
+  { id: 10, x: 88, y: 50, label: 'Motor' },              // Engine - TRACTOR REAR VIEW (right)
 ]
 
 export default function TruckDiagramVisual({ onPointClick, compact = false }) {
