@@ -71,6 +71,7 @@ export default function Login() {
                 placeholder={language === 'es' ? 'Ingrese su usuario' : 'Enter your username'}
                 required
                 autoFocus
+                autoComplete="username"
               />
             </div>
           </div>
@@ -91,6 +92,7 @@ export default function Login() {
                 className="w-full pl-11 pr-11 py-3.5 bg-slate-50/50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-crown-gold focus:ring-4 focus:ring-crown-gold/10 transition-all font-medium"
                 placeholder={language === 'es' ? 'Ingrese su contraseña' : 'Enter your password'}
                 required
+                autoComplete="current-password"
               />
               <button
                 type="button"

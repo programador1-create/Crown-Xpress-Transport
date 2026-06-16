@@ -132,6 +132,11 @@ export function AuthProvider({ children }) {
         throw new Error(data.error || 'Usuario o contraseña incorrectos')
       }
       
+      // Double check user status if API doesn't include it
+      if (!data.user.active && data.user.active !== undefined) {
+        throw new Error('Usuario desactivado. Contacte al administrador.')
+      }
+      
       const session = {
         id: data.user.id,
         username: data.user.username,
@@ -139,6 +144,7 @@ export function AuthProvider({ children }) {
         role: data.user.role,
         location_id: data.user.location_id,
         location_name: data.user.location_name,
+        active: data.user.active
       }
       setUser(session)
       localStorage.setItem('crown_user', JSON.stringify(session))

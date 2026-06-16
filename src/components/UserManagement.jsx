@@ -42,8 +42,6 @@ export default function UserManagement() {
   const [confirmModal, setConfirmModal] = useState({ show: false, type: '', data: null })
   const [saving, setSaving] = useState(false)
   const [showPassword, setShowPassword] = useState({})
-  const [resetPasswordModal, setResetPasswordModal] = useState({ show: false, employee: null })
-  const [newPassword, setNewPassword] = useState('')
   const [permanentDeleteModal, setPermanentDeleteModal] = useState({ show: false, employee: null })
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
@@ -214,45 +212,6 @@ export default function UserManagement() {
     } finally {
       setSaving(false)
       setConfirmModal({ show: false, type: '', data: null })
-    }
-  }
-
-  const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 4) {
-      alert(language === 'es' ? 'La contraseña debe tener al menos 4 caracteres' : 'Password must be at least 4 characters')
-      return
-    }
-    setSaving(true)
-    try {
-      const emp = resetPasswordModal.employee
-      const res = await fetch(`${API_BASE}/employees`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id: emp.id,
-          username: emp.username,
-          full_name: emp.full_name,
-          role: emp.role,
-          location_id: emp.location_id,
-          location_name: emp.location_name,
-          password: newPassword,
-          active: emp.active
-        })
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      await loadEmployees()
-      setResetPasswordModal({ show: false, employee: null })
-      setNewPassword('')
-      setSuccessModal({
-        show: true,
-        message: language === 'es' ? '¡Contraseña actualizada!' : 'Password updated!',
-        isEdit: true
-      })
-    } catch (err) {
-      alert(`Error: ${err.message}`)
-    } finally {
-      setSaving(false)
     }
   }
 
