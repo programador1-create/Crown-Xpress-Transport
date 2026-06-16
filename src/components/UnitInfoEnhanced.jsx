@@ -131,7 +131,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const handleInspectionTypeChange = (type) => {
     setInspectionType(type)
     updateUnitInfo('inspectionType', type)
-    
+
     // Reset trailer type, size, equipment owner, fleet and customer prefix when changing inspection type
     setTrailerType(null)
     setTrailerSize(null)
@@ -143,9 +143,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('equipmentOwner', null)
     updateUnitInfo('crownFleet', null)
     updateUnitInfo('customerPrefix', null)
-    
+
     const typeConfig = INSPECTION_TYPES[type]
-    
+
     // Reset fields based on type
     if (type === 'BOBTAIL') {
       // Bobtail: No trailer, no container, no seal, no lock - skip trailer selection
@@ -178,7 +178,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       setHasLock(false)
       if (onSealChange) onSealChange(true)
     }
-    
+
     if (onInspectionTypeChange) onInspectionTypeChange(type)
   }
 
@@ -272,11 +272,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   useEffect(() => {
     // FLATBED doesn't require seal/lock
     const sealLockRequired = inspectionType === 'LOADED' && trailerType !== 'FLATBED'
-    const isFlowComplete = (inspectionType === 'BOBTAIL') || 
-      (containerNumberEntered && 
-       (inspectionType === 'EMPTY' || sealLockEntered || !sealLockRequired) && 
+    const isFlowComplete = (inspectionType === 'BOBTAIL') ||
+      (containerNumberEntered &&
+       (inspectionType === 'EMPTY' || sealLockEntered || !sealLockRequired) &&
        tractorNumberEntered)
-    
+
     if (onFlowComplete) {
       onFlowComplete(isFlowComplete)
     }
@@ -302,11 +302,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       setOperatorError(language === 'es' ? 'Ingrese número de empleado' : 'Enter employee number')
       return
     }
-    
+
     setOperatorSearching(true)
     setOperatorError(null)
     setOperatorFound(null)
-    
+
     try {
       const result = await searchOperator(employeeNumber)
       if (result.success && result.operator) {
@@ -397,13 +397,13 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     }
     return 'border-emerald-400 bg-emerald-50 focus:border-emerald-500 focus:ring-emerald-200'
   }
-  
+
   const getFieldIcon = (field) => {
     // Optional fields based on checkboxes
     if (field === 'containerNumber' && !hasContainer) return null
     if (field === 'sealNumber' && !hasSeal) return null
     if (field === 'lockNumber' && !hasLock) return null
-    
+
     if (!unitInfo[field] || unitInfo[field].trim() === '') {
       return <span className="text-rose-500 text-xs font-bold">✗</span>
     }
@@ -422,8 +422,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Seleccione el tipo de inspección para continuar:' 
+            {language === 'es'
+              ? 'Seleccione el tipo de inspección para continuar:'
               : 'Select the inspection type to continue:'}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -440,8 +440,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'CARGADO' : 'LOADED'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Trailer con carga. Requiere sello O candado.' 
+                {language === 'es'
+                  ? 'Trailer con carga. Requiere sello O candado.'
                   : 'Trailer with cargo. Requires seal OR lock.'}
               </span>
               <span className="text-xs font-semibold text-emerald-600">20 {language === 'es' ? 'puntos' : 'points'}</span>
@@ -460,8 +460,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'VACÍO' : 'EMPTY'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Trailer sin carga. Sin sello ni candado.' 
+                {language === 'es'
+                  ? 'Trailer sin carga. Sin sello ni candado.'
                   : 'Empty trailer. No seal or lock.'}
               </span>
               <span className="text-xs font-semibold text-amber-600">17 {language === 'es' ? 'puntos' : 'points'}</span>
@@ -480,8 +480,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'BOTADO' : 'BOBTAIL'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Solo tractor. Sin trailer ni contenedor.' 
+                {language === 'es'
+                  ? 'Solo tractor. Sin trailer ni contenedor.'
                   : 'Tractor only. No trailer or container.'}
               </span>
               <span className="text-xs font-semibold text-blue-600">10 {language === 'es' ? 'puntos' : 'points'}</span>
@@ -519,8 +519,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Seleccione el tipo de remolque:' 
+            {language === 'es'
+              ? 'Seleccione el tipo de remolque:'
               : 'Select the trailer type:'}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -601,7 +601,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType && !trailerSize) {
     const typeConfig = TRAILER_TYPES[trailerType]
     const availableSizes = typeConfig?.sizes || ['53', '40', '20']
-    
+
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -627,8 +627,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Seleccione la medida del remolque:' 
+            {language === 'es'
+              ? 'Seleccione la medida del remolque:'
               : 'Select the trailer size:'}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -656,7 +656,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // If trailer size selected but no equipment owner, show owner selector
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType && trailerSize && !equipmentOwner) {
     const typeConfig = TRAILER_TYPES[trailerType]
-    
+
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -682,8 +682,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? '¿El equipo es de Crown o de un cliente?' 
+            {language === 'es'
+              ? '¿El equipo es de Crown o de un cliente?'
               : 'Is the equipment owned by Crown or a customer?'}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -729,7 +729,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // If CROWN selected but no fleet, show fleet selector
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType && trailerSize && equipmentOwner === 'CROWN' && !crownFleet) {
     const typeConfig = TRAILER_TYPES[trailerType]
-    
+
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -755,8 +755,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Seleccione la flota de Crown:' 
+            {language === 'es'
+              ? 'Seleccione la flota de Crown:'
               : 'Select the Crown fleet:'}
           </p>
           {/* Different fleets based on trailer type */}
@@ -843,7 +843,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // If CUSTOMER selected with CONTAINER but no prefix, show prefix selector
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix) {
     const typeConfig = TRAILER_TYPES[trailerType]
-    
+
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -869,8 +869,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Seleccione el prefijo del contenedor:' 
+            {language === 'es'
+              ? 'Seleccione el prefijo del contenedor:'
               : 'Select the container prefix:'}
           </p>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -951,7 +951,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // Step: Enter container/box/flatbed number after prefix selection
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && isPrefixSelected() && !containerNumberEntered) {
     const typeConfig = TRAILER_TYPES[trailerType]
-    
+
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -967,11 +967,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? `Ingrese el número de ${trailerType === 'CONTAINER' ? 'contenedor' : trailerType === 'BOX' ? 'caja' : trailerType === 'FLATBED' ? 'plataforma' : 'remolque'}:` 
+            {language === 'es'
+              ? `Ingrese el número de ${trailerType === 'CONTAINER' ? 'contenedor' : trailerType === 'BOX' ? 'caja' : trailerType === 'FLATBED' ? 'plataforma' : 'remolque'}:`
               : `Enter the ${trailerType === 'CONTAINER' ? 'container' : trailerType === 'BOX' ? 'box' : trailerType === 'FLATBED' ? 'flatbed' : 'trailer'} number:`}
           </p>
-          
+
           {/* Show prefix if applicable */}
           {(equipmentOwner === 'CROWN' && crownFleet) || (equipmentOwner === 'CUSTOMER' && trailerType === 'CONTAINER' && customerPrefix) ? (
             <div className="mb-4 p-3 bg-slate-100 rounded-lg">
@@ -1075,8 +1075,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Para inspección CARGADO, ingrese el número de sello O candado:' 
+            {language === 'es'
+              ? 'Para inspección CARGADO, ingrese el número de sello O candado:'
               : 'For LOADED inspection, enter the seal OR lock number:'}
           </p>
 
@@ -1197,9 +1197,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // Step: Enter tractor number (after seal/lock for LOADED, after container for EMPTY)
   // For FLATBED: skip seal/lock step entirely
-  const shouldShowTractorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') && 
-    containerNumberEntered && 
-    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED') && 
+  const shouldShowTractorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') &&
+    containerNumberEntered &&
+    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED') &&
     !tractorNumberEntered
 
   if (shouldShowTractorStep) {
@@ -1218,8 +1218,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         </div>
         <div className="card-body">
           <p className="text-sm text-slate-600 mb-4">
-            {language === 'es' 
-              ? 'Ingrese el número de tractor:' 
+            {language === 'es'
+              ? 'Ingrese el número de tractor:'
               : 'Enter the tractor number:'}
           </p>
 
@@ -1274,7 +1274,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // For BOBTAIL: skip container/seal/tractor checks - go directly to operator search
   const isBobtailReady = inspectionType === 'BOBTAIL'
   const isOtherReady = containerNumberEntered && (inspectionType !== 'LOADED' || sealLockEntered) && tractorNumberEntered
-  
+
   if (!isBobtailReady && !isOtherReady) {
     // This shouldn't happen, but just in case
     return null
@@ -1426,8 +1426,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                       }}
                       onKeyDown={e => e.key === 'Enter' && handleSearchOperator()}
                       className={`flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 uppercase transition-colors ${
-                        operatorFound ? 'border-emerald-400 bg-emerald-50' : 
-                        operatorError ? 'border-rose-400 bg-rose-50' : 
+                        operatorFound ? 'border-emerald-400 bg-emerald-50' :
+                        operatorError ? 'border-rose-400 bg-rose-50' :
                         'border-white focus:border-crown-navy'
                       }`}
                       placeholder={language === 'es' ? 'EJ: EMP001' : 'E.G.: EMP001'}
