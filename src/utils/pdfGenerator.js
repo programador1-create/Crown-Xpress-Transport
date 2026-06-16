@@ -42,16 +42,36 @@ async function loadLogoImage() {
 // Load C-TPAT logo image as base64
 async function loadCtpatLogoImage() {
   try {
+    console.log('Loading C-TPAT logo from:', CTPAT_LOGO_URL)
     const response = await fetch(CTPAT_LOGO_URL)
+    
+    if (!response.ok) {
+      console.error('Failed to fetch C-TPAT logo:', response.status, response.statusText)
+      return null
+    }
+    
     const blob = await response.blob()
+    console.log('C-TPAT logo blob size:', blob.size, 'type:', blob.type)
+    
+    if (blob.size === 0) {
+      console.error('C-TPAT logo blob is empty')
+      return null
+    }
+    
     return new Promise((resolve) => {
       const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result)
-      reader.onerror = () => resolve(null)
+      reader.onloadend = () => {
+        console.log('C-TPAT logo loaded successfully, data length:', reader.result?.length)
+        resolve(reader.result)
+      }
+      reader.onerror = (error) => {
+        console.error('FileReader error for C-TPAT logo:', error)
+        resolve(null)
+      }
       reader.readAsDataURL(blob)
     })
   } catch (e) {
-    console.warn('Could not load C-TPAT logo:', e)
+    console.error('Could not load C-TPAT logo:', e)
     return null
   }
 }
@@ -500,10 +520,15 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase6
   
   if (ctpatLogoBase64) {
     try {
+      console.log('Adding C-TPAT logo to PDF, data length:', ctpatLogoBase64.length)
       doc.addImage(ctpatLogoBase64, 'PNG', ctpatLogoX, ctpatLogoY, ctpatLogoWidth, ctpatLogoHeight)
+      console.log('C-TPAT logo added successfully')
     } catch (e) {
-      console.warn('Could not add C-TPAT logo:', e)
+      console.error('Could not add C-TPAT logo to PDF:', e)
+      console.error('C-TPAT logo data preview:', ctpatLogoBase64.substring(0, 100))
     }
+  } else {
+    console.warn('C-TPAT logo data is null or undefined')
   }
 
   // Right side - inspection title and form code
