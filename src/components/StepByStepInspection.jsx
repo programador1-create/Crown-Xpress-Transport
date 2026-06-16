@@ -78,8 +78,8 @@ export default function StepByStepInspection({ onAllCompleted }) {
       })
       
       // Show confirmation with details
-      const badPointNames = badPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
-      const goodPointNames = goodPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
+      const badPointNames = badPoints.map(p => p[language] || p.es || p.en || p.id).join(', ')
+      const goodPointNames = goodPoints.map(p => p[language] || p.es || p.en || p.id).join(', ')
       
       // Close modal immediately
       setShowConfirmAllOk(false)

@@ -4,7 +4,7 @@ import { inspectionPoints, getIssuesForPoint, INSPECTION_TYPES } from '../data/i
 
 // Crown Xpress logo will be loaded from public folder
 const CROWN_LOGO_URL = '/crown-logo.png'
-const CTPAT_LOGO_URL = '/ctpat-logo.png'
+const CTPAT_LOGO_URL = '/ctpat-logo.svg'
 
 // Truck diagram images - different images for each inspection type
 import truckDiagramLoaded from '../assets/Gemini_Generated_Image_nwvt4xnwvt4xnwvt.jpg'
@@ -195,7 +195,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 14
+  const margin = 20
 
   // Get applicable points based on inspection type
   const inspectionType = unitInfo?.inspectionType || 'LOADED'

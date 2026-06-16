@@ -37,6 +37,7 @@ export default function UserManagement() {
     role: 'guard',
     location_id: 1,
     location_name: 'Yard A - Laredo',
+    profile_photo: null
   })
   const [successModal, setSuccessModal] = useState({ show: false, message: '', isEdit: false })
   const [confirmModal, setConfirmModal] = useState({ show: false, type: '', data: null })
@@ -277,9 +278,25 @@ export default function UserManagement() {
       role: 'guard',
       location_id: 1,
       location_name: 'Yard A - Laredo',
+      profile_photo: null
     })
     setEditingId(null)
     setShowForm(false)
+  }
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert(language === 'es' ? 'La foto no puede ser mayor a 5MB' : 'Photo cannot be larger than 5MB')
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, profile_photo: reader.result }))
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const getRoleInfo = (roleId) => ROLES.find(r => r.id === roleId) || ROLES[0]
@@ -429,6 +446,38 @@ export default function UserManagement() {
               </button>
             </div>
             <form onSubmit={handleSubmitClick} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {language === 'es' ? 'Foto de Perfil' : 'Profile Photo'}
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center overflow-hidden">
+                    {formData.profile_photo ? (
+                      <img src={formData.profile_photo} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserCheck className="w-8 h-8 text-slate-400" />
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className="px-4 py-2 bg-crown-navy text-white rounded-lg hover:bg-crown-navy/90 cursor-pointer text-sm font-medium"
+                    >
+                      {language === 'es' ? 'Seleccionar Foto' : 'Select Photo'}
+                    </label>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {language === 'es' ? 'Máximo 5MB' : 'Maximum 5MB'}
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   {language === 'es' ? 'Nombre Completo' : 'Full Name'} *

@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">
-  <!-- C-TPAT Logo Placeholder -->
-  <rect width="140" height="80" fill="#003366" rx="4"/>
-  <text x="70" y="45" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">C-TPAT</text>
-  <text x="70" y="65" font-family="Arial, sans-serif" font-size="8" fill="white" text-anchor="middle">CERTIFIED</text>
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="40" fill="#0033A0"/>
+  <text x="10" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">C-TPAT</text>
 </svg>
