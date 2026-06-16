@@ -1,4 +1,4 @@
-import { Truck, Hash, User, Calendar, MapPin, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { Truck, Hash, User, MapPin, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 
@@ -10,7 +10,6 @@ export default function UnitInfo() {
     { id: 'trailerNumber', label: t('trailerNumber'), icon: Truck, type: 'text', placeholder: 'TRL-12345' },
     { id: 'sealNumber', label: t('sealNumber'), icon: Hash, type: 'text', placeholder: 'SEAL-00001' },
     { id: 'driverName', label: t('driverName'), icon: User, type: 'text', placeholder: 'Juan Pérez' },
-    { id: 'inspectionDate', label: t('inspectionDate'), icon: Calendar, type: 'datetime-local' },
     { id: 'location', label: t('location'), icon: MapPin, type: 'text', placeholder: 'Tijuana, B.C.' },
   ]
 

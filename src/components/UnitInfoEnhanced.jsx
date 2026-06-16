@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MapPin, Calendar, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2, Truck, Box, PackageX, Keyboard } from 'lucide-react'
+import { MapPin, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2, Truck, Box, PackageX, Keyboard } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
@@ -1585,27 +1585,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             </div>
           </div>
 
-          {/* Date - readonly, auto-set to today */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {t('date').toUpperCase()} <span className="text-rose-500">*</span>
-              </span>
-              {getFieldIcon('inspectionDate')}
-            </label>
-            <input
-              type="date"
-              value={unitInfo.inspectionDate || ''}
-              readOnly
-              className={`w-full px-3 py-2 border-2 rounded-lg bg-slate-100 cursor-not-allowed transition-colors ${validateField('inspectionDate')}`}
-              required
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              {language === 'es' ? 'Fecha automática del día actual' : 'Automatic date of current day'}
-            </p>
-          </div>
-
+          
           {/* Location */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
