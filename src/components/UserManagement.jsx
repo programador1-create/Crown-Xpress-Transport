@@ -378,8 +378,14 @@ export default function UserManagement() {
               return (
                 <div key={emp.id} className={`px-4 py-3 flex items-center justify-between ${emp.active === false ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50'}`}>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${roleInfo.color} ${emp.active === false ? 'opacity-50' : ''} flex items-center justify-center`}>
-                      <RoleIcon className="w-5 h-5 text-white" />
+                    <div className={`w-10 h-10 rounded-full ${emp.active === false ? 'opacity-50' : ''} flex items-center justify-center overflow-hidden border-2 border-slate-200`}>
+                      {emp.profile_photo ? (
+                        <img src={emp.profile_photo} alt={emp.full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className={`w-full h-full ${roleInfo.color} flex items-center justify-center`}>
+                          <RoleIcon className="w-5 h-5 text-white" />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <div className="font-semibold text-slate-800">{emp.full_name}</div>

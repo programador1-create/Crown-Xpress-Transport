@@ -92,7 +92,7 @@ export default async function handler(req, res) {
       
       // Otherwise, list all employees
       const employees = await sql`
-        SELECT id, username, password_hash, full_name, role, location_id, location_name, active, created_at
+        SELECT id, username, password_hash, full_name, role, location_id, location_name, active, created_at, profile_photo
         FROM employees
         ORDER BY role, full_name
       `
@@ -114,9 +114,9 @@ export default async function handler(req, res) {
       }
 
       const [employee] = await sql`
-        INSERT INTO employees (username, password_hash, full_name, role, location_id, location_name)
-        VALUES (${username}, ${password}, ${full_name}, ${role}, ${location_id || null}, ${location_name || null})
-        RETURNING id, username, full_name, role, location_id, location_name, active, created_at
+        INSERT INTO employees (username, password_hash, full_name, role, location_id, location_name, profile_photo)
+        VALUES (${username}, ${password}, ${full_name}, ${role}, ${location_id || null}, ${location_name || null}, ${profile_photo || null})
+        RETURNING id, username, full_name, role, location_id, location_name, active, created_at, profile_photo
       `
 
       return res.status(201).json({ success: true, employee })
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
 
     // PUT - Update employee
     if (req.method === 'PUT') {
-      const { id, username, password, full_name, role, location_id, location_name, active } = req.body
+      const { id, username, password, full_name, role, location_id, location_name, active, profile_photo } = req.body
 
       if (!id) {
         return res.status(400).json({ error: 'Employee ID required' })
@@ -142,9 +142,10 @@ export default async function handler(req, res) {
             location_id = ${location_id || null},
             location_name = ${location_name || null},
             active = ${active !== undefined ? active : true},
+            profile_photo = ${profile_photo || null},
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id, username, full_name, role, location_id, location_name, active
+          RETURNING id, username, full_name, role, location_id, location_name, active, profile_photo
         `
       } else {
         updateQuery = await sql`
@@ -155,9 +156,10 @@ export default async function handler(req, res) {
             location_id = ${location_id || null},
             location_name = ${location_name || null},
             active = ${active !== undefined ? active : true},
+            profile_photo = ${profile_photo || null},
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id, username, full_name, role, location_id, location_name, active
+          RETURNING id, username, full_name, role, location_id, location_name, active, profile_photo
         `
       }
 
