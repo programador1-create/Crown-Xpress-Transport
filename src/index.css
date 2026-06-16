@@ -48,7 +48,7 @@
     @apply btn bg-crown-gold text-white hover:bg-crown-gold-dark shadow-lg hover:shadow-xl active:scale-95 border-2 border-crown-gold-dark;
   }
   .btn-secondary {
-    @apply btn bg-white text-crown-navy border-3 border-crown-navy/40 hover:border-crown-navy hover:bg-crown-navy/10 shadow-md;
+    @apply btn bg-white text-crown-navy border-4 border-crown-navy/40 hover:border-crown-navy hover:bg-crown-navy/10 shadow-md;
   }
   .btn-success {
     @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg hover:shadow-xl border-2 border-emerald-700;

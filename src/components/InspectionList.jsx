@@ -137,7 +137,7 @@ export default function InspectionList() {
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowConfirmAllOk(false)}
-                  className="flex-1 py-4 px-5 border-3 border-slate-300 rounded-xl text-slate-700 font-bold text-lg hover:bg-slate-100 transition"
+                  className="flex-1 py-4 px-5 border-4 border-slate-300 rounded-xl text-slate-700 font-bold text-lg hover:bg-slate-100 transition"
                 >
                   {language === 'es' ? 'CANCELAR' : 'CANCEL'}
                 </button>
