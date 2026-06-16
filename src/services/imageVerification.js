@@ -29,16 +29,19 @@ export async function verifyInspectionImage(imageBase64, point, language = 'es')
   const keywords = point.keywords || []
   const issues = point.issues || []
 
+  const issuesList = Array.isArray(issues) ? issues : []
+  const issuesText = issuesList.map((i, idx) => `${idx + 1}. ${i[language]}`).join(', ')
+  
   const prompt = language === 'es' 
     ? `Eres un inspector de seguridad de transporte. Analiza esta imagen para el punto de inspección: "${pointName}".
 Palabras clave: ${keywords.join(', ')}
-Posibles fallas: ${issues.map((i, idx) => `${idx + 1}. ${i.es}`).join(', ')}
+Posibles fallas: ${issuesText}
 
 Responde SOLO con JSON válido (sin markdown):
 {"valid": true/false, "confidence": 0-100, "message": "explicación breve", "detectedIssues": [], "recommendation": ""}`
     : `You are a transportation security inspector. Analyze this image for: "${pointName}".
 Keywords: ${keywords.join(', ')}
-Possible issues: ${issues.map((i, idx) => `${idx + 1}. ${i.en}`).join(', ')}
+Possible issues: ${issuesText}
 
 Respond ONLY with valid JSON (no markdown):
 {"valid": true/false, "confidence": 0-100, "message": "brief explanation", "detectedIssues": [], "recommendation": ""}`
