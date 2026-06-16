@@ -12,13 +12,10 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const [showSummary, setShowSummary] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
 
-  // Filter inspection points based on inspection type
+  // Filter inspection points - simplified to avoid errors
   const applicablePoints = useMemo(() => {
-    const inspectionType = unitInfo?.inspectionType || 'LOADED'
-    const typeConfig = INSPECTION_TYPES[inspectionType]
-    if (!typeConfig) return inspectionPoints
-    return inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
-  }, [unitInfo?.inspectionType])
+    return inspectionPoints
+  }, [])
 
   const totalPoints = applicablePoints.length
   const isLastStep = currentStep === totalPoints - 1

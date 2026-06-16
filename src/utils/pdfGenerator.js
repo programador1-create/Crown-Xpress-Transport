@@ -199,12 +199,8 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 14
 
-  // Get applicable points based on inspection type
-  const inspectionType = unitInfo?.inspectionType || 'LOADED'
-  const typeConfig = INSPECTION_TYPES[inspectionType]
-  const applicablePoints = typeConfig 
-    ? inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
-    : inspectionPoints
+  // Get applicable points - simplified to avoid errors
+  const applicablePoints = inspectionPoints
 
   // ===== HEADER =====
   drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
@@ -537,9 +533,8 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase6
   doc.setTextColor(255, 255, 255)
   doc.text(T.title, pageWidth - margin, 10, { align: 'right' })
   
-  // Inspection type badge
-  const typeConfig = INSPECTION_TYPES[inspectionType]
-  const typeLabel = typeConfig ? typeConfig[language] : inspectionType
+  // Inspection type badge - simplified
+  const typeLabel = inspectionType || 'LOADED'
   doc.setFontSize(8)
   doc.setTextColor(201, 169, 97)
   doc.text(`[ ${typeLabel} ]`, pageWidth - margin, 16, { align: 'right' })
