@@ -1,32 +1,43 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
-import { inspectionPoints, getApplicablePoints } from '../data/inspectionPoints'
 
 const InspectionContext = createContext()
 
-const initialPoints = () => inspectionPoints.reduce((acc, p) => {
-  acc[p.id] = { status: null, issueId: null, issueCustomText: null, photo: null }
-  return acc
-}, {})
+const initialPoints = () => ({
+  1: { status: null, issueId: null, issueCustomText: null, photo: null },
+  2: { status: null, issueId: null, issueCustomText: null, photo: null },
+  3: { status: null, issueId: null, issueCustomText: null, photo: null },
+  4: { status: null, issueId: null, issueCustomText: null, photo: null },
+  5: { status: null, issueId: null, issueCustomText: null, photo: null },
+  6: { status: null, issueId: null, issueCustomText: null, photo: null },
+  7: { status: null, issueId: null, issueCustomText: null, photo: null },
+  8: { status: null, issueId: null, issueCustomText: null, photo: null },
+  9: { status: null, issueId: null, issueCustomText: null, photo: null },
+  10: { status: null, issueId: null, issueCustomText: null, photo: null },
+  11: { status: null, issueId: null, issueCustomText: null, photo: null },
+  12: { status: null, issueId: null, issueCustomText: null, photo: null },
+  13: { status: null, issueId: null, issueCustomText: null, photo: null },
+  14: { status: null, issueId: null, issueCustomText: null, photo: null },
+  15: { status: null, issueId: null, issueCustomText: null, photo: null },
+  16: { status: null, issueId: null, issueCustomText: null, photo: null },
+  17: { status: null, issueId: null, issueCustomText: null, photo: null },
+  18: { status: null, issueId: null, issueCustomText: null, photo: null },
+  19: { status: null, issueId: null, issueCustomText: null, photo: null },
+  20: { status: null, issueId: null, issueCustomText: null, photo: null },
+})
 
 export function InspectionProvider({ children }) {
   // Unit info
   const [unitInfo, setUnitInfo] = useState({
     trailerNumber: '',
-    tractorNumber: '',
     sealNumber: '',
-    lockNumber: '',
-    containerNumber: '',
     driverName: '',
-    odometer: '',
-    location: '',
     inspectionDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Tijuana' }),
     guardName: '',
-    notes: '',
     highSecuritySeal: 'yes',
     sealAffixed: 'yes',
   })
 
-  // 20 inspection points state: { [id]: { status: 'good'|'bad'|null, issueId, photo } }
+  // 20 inspection points state
   const [points, setPoints] = useState(initialPoints)
 
   // Seal photo
@@ -48,7 +59,6 @@ export function InspectionProvider({ children }) {
       [id]: {
         ...prev[id],
         status,
-        // Clear issue if changing back to good
         issueId: status === 'good' ? null : prev[id].issueId,
         photo: status === 'good' ? null : prev[id].photo,
       }
@@ -66,16 +76,10 @@ export function InspectionProvider({ children }) {
   const resetInspection = useCallback(() => {
     setUnitInfo({
       trailerNumber: '',
-      tractorNumber: '',
       sealNumber: '',
-      lockNumber: '',
-      containerNumber: '',
       driverName: '',
-      odometer: '',
-      location: '',
       inspectionDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Tijuana' }),
       guardName: '',
-      notes: '',
       highSecuritySeal: 'yes',
       sealAffixed: 'yes',
     })
@@ -86,41 +90,37 @@ export function InspectionProvider({ children }) {
     setOperatorSignature({ name: '', signature: null, signedAt: null })
   }, [])
 
-  // Get applicable points based on inspection type
+  // Simple applicable points - always return all 20 points for now
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    return [
+      { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 },
+      { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }, { id: 10 },
+      { id: 11 }, { id: 12 }, { id: 13 }, { id: 14 }, { id: 15 },
+      { id: 16 }, { id: 17 }, { id: 18 }, { id: 19 }, { id: 20 }
+    ]
+  }, [])
 
   const applicablePointIds = useMemo(() => {
     return applicablePoints.map(p => p.id)
   }, [applicablePoints])
 
-  // Computed - only count applicable points for this inspection type
+  // Computed
   const completedCount = applicablePointIds.filter(id => points[id]?.status !== null).length
   const failedCount = applicablePointIds.filter(id => points[id]?.status === 'bad').length
   const goodCount = applicablePointIds.filter(id => points[id]?.status === 'good').length
   const progressPercent = applicablePoints.length > 0 ? Math.round((completedCount / applicablePoints.length) * 100) : 0
 
-  // Check if seal photo is required: only when LOADED + has seal number (not lock) + not FLATBED
-  const hasSealNumber = !!(unitInfo.sealNumber && unitInfo.sealNumber.trim())
-  const hasLockNumber = !!(unitInfo.lockNumber && unitInfo.lockNumber.trim())
-  const isFlatbed = unitInfo.trailerType === 'FLATBED'
-  const isLoaded = unitInfo.inspectionType === 'LOADED'
-  const sealPhotoRequired = isLoaded && hasSealNumber && !hasLockNumber && !isFlatbed
-
-  // Validation: all applicable points evaluated, all bad have issueId+photo, guard signed
+  // Validation
   const validation = {
     allPointsEvaluated: completedCount === applicablePoints.length,
     failuresHaveIssue: applicablePointIds.every(id => points[id]?.status !== 'bad' || points[id]?.issueId),
     failuresHavePhoto: applicablePointIds.every(id => points[id]?.status !== 'bad' || points[id]?.photo),
     hasSealPhoto: !!sealPhoto,
-    sealPhotoRequired: sealPhotoRequired,
-    sealPhotoValid: !sealPhotoRequired || !!sealPhoto, // Valid if not required OR has photo
+    sealPhotoValid: !!sealPhoto,
     guardSigned: !!(guardSignature.signature && guardSignature.name.trim()),
     operatorSigned: !!(operatorSignature.signature && operatorSignature.name.trim()),
   }
-  // Operator signature is captured in modal when clicking "Generate PDF"
-  // Seal photo is required when LOADED + has seal (not lock) + not FLATBED
+
   const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned && validation.sealPhotoValid
 
   return (
@@ -140,8 +140,10 @@ export function InspectionProvider({ children }) {
   )
 }
 
-export function useInspection() {
-  const ctx = useContext(InspectionContext)
-  if (!ctx) throw new Error('useInspection must be used within InspectionProvider')
-  return ctx
+export const useInspection = () => {
+  const context = useContext(InspectionContext)
+  if (!context) {
+    throw new Error('useInspection must be used within an InspectionProvider')
+  }
+  return context
 }
