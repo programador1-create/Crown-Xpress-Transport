@@ -8,25 +8,6 @@
   }
   body {
     @apply font-sans bg-gradient-to-br from-white via-slate-50 to-stone-100 text-slate-900 min-h-screen;
-    padding-top: 80px; /* Compensar header fijo */
-  }
-  
-  @media (min-width: 640px) {
-    body {
-      padding-top: 88px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    body {
-      padding-top: 104px;
-    }
-  }
-  
-  @media (min-width: 1280px) {
-    body {
-      padding-top: 120px;
-    }
   }
   
   /* Force uppercase on all inputs and text (except login) */
