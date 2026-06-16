@@ -2,7 +2,20 @@
 -- SCRIPT PARA CAMBIAR "AUDITOR" POR "SUPERVISOR"
 -- =====================================================
 
--- 1. Actualizar el CHECK constraint en la tabla employees
+-- 0. Verificación inicial - mostrar todos los roles existentes
+SELECT 'ROLES EXISTENTES ANTES DEL CAMBIO:' as info;
+SELECT role, COUNT(*) as count 
+FROM employees 
+GROUP BY role 
+ORDER BY role;
+
+-- 1. Primero, actualizar todos los usuarios con rol 'auditor' a 'supervisor'
+-- Esto debe hacerse ANTES de modificar la constraint
+UPDATE employees 
+SET role = 'supervisor' 
+WHERE role = 'auditor';
+
+-- 2. Actualizar el CHECK constraint en la tabla employees
 -- Nota: PostgreSQL no permite modificar CHECK constraints directamente,
 -- así que necesitamos eliminar y recrear la constraint
 
@@ -22,11 +35,6 @@ BEGIN
     ADD CONSTRAINT employees_role_check 
     CHECK (role IN ('operator','guard','inspector','supervisor','admin'));
 END $$;
-
--- 2. Actualizar todos los usuarios con rol 'auditor' a 'supervisor'
-UPDATE employees 
-SET role = 'supervisor' 
-WHERE role = 'auditor';
 
 -- 3. Actualizar columnas en la tabla inspections
 -- Renombrar auditor_name a supervisor_name
