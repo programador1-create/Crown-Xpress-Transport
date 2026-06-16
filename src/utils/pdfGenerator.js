@@ -4,6 +4,7 @@ import { inspectionPoints, getIssuesForPoint, INSPECTION_TYPES } from '../data/i
 
 // Crown Xpress logo will be loaded from public folder
 const CROWN_LOGO_URL = '/crown-logo.png'
+const CTPAT_LOGO_URL = '/ctpat-logo.png'
 
 // Truck diagram images - different images for each inspection type
 import truckDiagramLoaded from '../assets/Gemini_Generated_Image_nwvt4xnwvt4xnwvt.jpg'
@@ -34,6 +35,23 @@ async function loadLogoImage() {
     })
   } catch (e) {
     console.warn('Could not load logo:', e)
+    return null
+  }
+}
+
+// Load C-TPAT logo image as base64
+async function loadCtpatLogoImage() {
+  try {
+    const response = await fetch(CTPAT_LOGO_URL)
+    const blob = await response.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch (e) {
+    console.warn('Could not load C-TPAT logo:', e)
     return null
   }
 }
@@ -73,6 +91,7 @@ async function loadTruckDiagramImage(inspectionType) {
 export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guardSignature, auditorSignature, operatorSignature, language = 'es' }) {
   // Pre-load images (pass inspection type to get correct diagram)
   const logoBase64 = await loadLogoImage()
+  const ctpatLogoBase64 = await loadCtpatLogoImage()
   const truckDiagramBase64 = await loadTruckDiagramImage(unitInfo?.inspectionType)
   
   const T = language === 'es' ? {
@@ -168,7 +187,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     : inspectionPoints
 
   // ===== HEADER =====
-  drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
+  drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
 
   let y = 38
 
@@ -294,7 +313,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   if (failures.length > 0) {
     if (y > pageHeight - 60) {
       doc.addPage()
-      drawHeader(doc, T, pageWidth, margin, logoBase64)
+      drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
       y = 38
     }
 
@@ -324,7 +343,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
 
       if (cellY + photoH + 22 > pageHeight - 25) {
         doc.addPage()
-        drawHeader(doc, T, pageWidth, margin, logoBase64)
+        drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
         y = 38
         continue
       }
@@ -367,7 +386,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
 
   // ===== PAGE 2: TRUCK DIAGRAM (vertical page, horizontal image centered) =====
   doc.addPage()
-  drawHeader(doc, T, pageWidth, margin, logoBase64)
+  drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
   
   let diagramY = 38
   
@@ -394,7 +413,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
 
   // ===== PAGE 3: SEAL PHOTO + SIGNATURES =====
   doc.addPage()
-  drawHeader(doc, T, pageWidth, margin, logoBase64)
+  drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
   
   let sigY = 38
 
@@ -446,7 +465,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   return { filename, doc }
 }
 
-function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, inspectionType = 'LOADED', language = 'es') {
+function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase64 = null, inspectionType = 'LOADED', language = 'es') {
   // Top navy bar
   doc.setFillColor(...COLORS.navyDark)
   doc.rect(0, 0, pageWidth, 28, 'F')
@@ -471,6 +490,20 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, inspectionType
   } else {
     // Fallback to text-based logo
     drawFallbackLogo(doc, margin)
+  }
+
+  // C-TPAT Logo (PNG image) - positioned to the right of Crown logo
+  const ctpatLogoWidth = 35
+  const ctpatLogoHeight = 20
+  const ctpatLogoX = logoX + logoWidth + 8
+  const ctpatLogoY = logoY
+  
+  if (ctpatLogoBase64) {
+    try {
+      doc.addImage(ctpatLogoBase64, 'PNG', ctpatLogoX, ctpatLogoY, ctpatLogoWidth, ctpatLogoHeight)
+    } catch (e) {
+      console.warn('Could not add C-TPAT logo:', e)
+    }
   }
 
   // Right side - inspection title and form code
