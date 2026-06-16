@@ -38,19 +38,26 @@ export default function InspectionList() {
       const badPointNames = badPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
       const goodPointNames = goodPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
       
-      alert(
-        language === 'es' 
-          ? `✅ Se marcaron como BUENOS:\n${goodPointNames}\n\n❌ Se mantienen como MALOS:\n${badPointNames}`
-          : `✅ Marked as GOOD:\n${goodPointNames}\n\n❌ Kept as BAD:\n${badPointNames}`
-      )
+      // Close modal immediately
+      setShowConfirmAllOk(false)
+      
+      // Show alert after modal is closed
+      setTimeout(() => {
+        alert(
+          language === 'es' 
+            ? `✅ Se marcaron como BUENOS:\n${goodPointNames}\n\n❌ Se mantienen como MALOS:\n${badPointNames}`
+            : `✅ Marked as GOOD:\n${goodPointNames}\n\n❌ Kept as BAD:\n${badPointNames}`
+        )
+      }, 100)
     } else {
       // Mark all points as good (original behavior)
       applicablePoints.forEach(point => {
         setPointStatus(point.id, 'good')
       })
+      
+      // Close modal immediately
+      setShowConfirmAllOk(false)
     }
-    
-    setShowConfirmAllOk(false)
   }
 
   // Check if there are any bad points
