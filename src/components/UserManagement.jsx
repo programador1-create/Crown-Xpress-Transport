@@ -54,8 +54,8 @@ export default function UserManagement() {
     try {
       const [employeesRes, yardsRes, assignmentsRes] = await Promise.all([
         fetch(`${API_BASE}/employees`),
-        fetch(`${API_BASE}/yards`),
-        fetch(`${API_BASE}/yard-assignments`)
+        fetch(`${API_BASE}/yard-management?type=yards`),
+        fetch(`${API_BASE}/yard-management?type=assignments`)
       ])
 
       const employeesData = await employeesRes.json()

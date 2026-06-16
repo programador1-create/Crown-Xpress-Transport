@@ -54,7 +54,7 @@ export default function YardManagement() {
   async function loadYards() {
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/yards`)
+      const res = await fetch(`${API_BASE}/yard-management?type=yards`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setYards(data.data || [])
@@ -80,7 +80,7 @@ export default function YardManagement() {
       const method = editingId ? 'PUT' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
 
-      const res = await fetch(`${API_BASE}/yards`, {
+      const res = await fetch(`${API_BASE}/yard-management?type=yards`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -136,7 +136,7 @@ export default function YardManagement() {
   const handleDelete = async (id) => {
     setSaving(true)
     try {
-      const res = await fetch(`${API_BASE}/yards?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API_BASE}/yard-management?type=yards&id=${id}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       await loadYards()
