@@ -36,7 +36,7 @@ export default function Header() {
       <img
         src="/crown-logo.png"
         alt="Crown Xpress"
-        className="w-40 h-40 lg:w-56 lg:h-56 object-contain drop-shadow-sm"
+        className="w-40 h-40 lg:w-56 lg:h-26 object-contain drop-shadow-sm"
       />
     </div>
         
