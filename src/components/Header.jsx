@@ -30,26 +30,26 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm no-print">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-slate-200 shadow-lg no-print">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 sm:py-3 lg:py-4 flex items-center justify-between gap-2 sm:gap-4">
         <div className="flex items-center flex-shrink-0">
       <img
         src="/crown-logo.png"
         alt="Crown Xpress"
-        className="w-25 h-25 lg:w-40 lg:h-20 object-contain drop-shadow-sm"
+        className="w-16 h-16 sm:w-20 sm:h-20 lg:w-32 lg:h-32 xl:w-40 xl:h-40 object-contain drop-shadow-md"
       />
     </div>
         
-        <div className="hidden md:flex flex-col items-center px-6">
-          <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{t('appTitle')}</div>
-          <div className="text-xs text-crown-gold-dark font-bold">{t('formCode')}</div>
-          <div className="w-48 h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+        <div className="hidden md:flex flex-col items-center px-4 lg:px-6 min-w-0 flex-1">
+          <div className="text-xs text-slate-500 font-medium uppercase tracking-wider truncate">{t('appTitle')}</div>
+          <div className="text-xs text-crown-gold-dark font-bold truncate">{t('formCode')}</div>
+          <div className="w-32 sm:w-40 lg:w-48 h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-crown-gold to-crown-navy transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{progressPercent}% {t('completed')}</div>
+          <div className="text-[10px] text-slate-500 mt-0.5 truncate">{progressPercent}% {t('completed')}</div>
         </div>
 
         <div className="flex items-center gap-2">
