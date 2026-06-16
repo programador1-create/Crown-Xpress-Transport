@@ -148,7 +148,8 @@ export function AuthProvider({ children }) {
         role: data.user.role,
         location_id: data.user.location_id,
         location_name: data.user.location_name,
-        active: data.user.active
+        active: data.user.active,
+        profile_photo: data.user.profile_photo
       }
       setUser(session)
       localStorage.setItem('crown_user', JSON.stringify(session))

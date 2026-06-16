@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
       // First check if user exists with correct password
       const users = await sql`
-        SELECT id, username, full_name, role, location_id, location_name, active
+        SELECT id, username, full_name, role, location_id, location_name, active, profile_photo
         FROM employees
         WHERE username = ${username} AND password_hash = ${password}
       `
@@ -50,6 +50,7 @@ export default async function handler(req, res) {
           role: user.role,
           location_id: user.location_id,
           location_name: user.location_name,
+          profile_photo: user.profile_photo,
         }
       })
     }
