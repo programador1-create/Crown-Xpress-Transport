@@ -23,13 +23,38 @@ export default function InspectionList() {
     ? applicablePoints.filter(point => points[point.id]?.status === 'bad')
     : applicablePoints
 
-  // Mark all applicable points as good
+  // Mark all applicable points as good, or mark remaining as good if some are bad
   const handleMarkAllGood = () => {
-    applicablePoints.forEach(point => {
-      setPointStatus(point.id, 'good')
-    })
+    const badPoints = applicablePoints.filter(point => points[point.id]?.status === 'bad')
+    
+    if (badPoints.length > 0) {
+      // Mark only the non-bad points as good
+      const goodPoints = applicablePoints.filter(point => points[point.id]?.status !== 'bad')
+      goodPoints.forEach(point => {
+        setPointStatus(point.id, 'good')
+      })
+      
+      // Show confirmation with details
+      const badPointNames = badPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
+      const goodPointNames = goodPoints.map(p => p.name[language] || p.name.es || p.name).join(', ')
+      
+      alert(
+        language === 'es' 
+          ? `✅ Se marcaron como BUENOS:\n${goodPointNames}\n\n❌ Se mantienen como MALOS:\n${badPointNames}`
+          : `✅ Marked as GOOD:\n${goodPointNames}\n\n❌ Kept as BAD:\n${badPointNames}`
+      )
+    } else {
+      // Mark all points as good (original behavior)
+      applicablePoints.forEach(point => {
+        setPointStatus(point.id, 'good')
+      })
+    }
+    
     setShowConfirmAllOk(false)
   }
+
+  // Check if there are any bad points
+  const hasBadPoints = applicablePoints.some(point => points[point.id]?.status === 'bad')
 
   return (
     <section className="card animate-slide-up">
@@ -71,7 +96,10 @@ export default function InspectionList() {
           className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <CheckCheck className="w-5 h-5" />
-          {language === 'es' ? 'MARCAR TODO COMO BUENO' : 'MARK ALL AS GOOD'}
+          {hasBadPoints 
+            ? (language === 'es' ? 'MARCAR RESTO EN BUENO' : 'MARK REST AS GOOD')
+            : (language === 'es' ? 'MARCAR TODO COMO BUENO' : 'MARK ALL AS GOOD')
+          }
         </button>
       </div>
 
@@ -82,14 +110,22 @@ export default function InspectionList() {
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-4 text-white text-center">
               <CheckCheck className="w-10 h-10 mx-auto mb-2" />
               <h3 className="font-bold text-lg">
-                {language === 'es' ? '¿MARCAR TODO COMO BUENO?' : 'MARK ALL AS GOOD?'}
+                {hasBadPoints 
+                  ? (language === 'es' ? '¿MARCAR RESTO EN BUENO?' : 'MARK REST AS GOOD?')
+                  : (language === 'es' ? '¿MARCAR TODO COMO BUENO?' : 'MARK ALL AS GOOD?')
+                }
               </h3>
             </div>
             <div className="p-5">
               <p className="text-center text-slate-600 mb-4">
-                {language === 'es' 
-                  ? `ESTO MARCARÁ LOS ${applicablePoints.length} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?` 
-                  : `THIS WILL MARK ALL ${applicablePoints.length} INSPECTION POINTS AS "GOOD". ARE YOU SURE?`}
+                {hasBadPoints 
+                  ? (language === 'es' 
+                      ? `ESTO MARCARÁ SOLO LOS PUNTOS NO MARCADOS COMO "MALO" COMO "BUENO". ¿ESTÁ SEGURO?` 
+                      : `THIS WILL MARK ONLY POINTS NOT MARKED AS "BAD" AS "GOOD". ARE YOU SURE?`)
+                  : (language === 'es' 
+                      ? `ESTO MARCARÁ LOS ${applicablePoints.length} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?` 
+                      : `THIS WILL MARK ALL ${applicablePoints.length} INSPECTION POINTS AS "GOOD". ARE YOU SURE?`)
+                }
               </p>
               <div className="flex gap-3">
                 <button
