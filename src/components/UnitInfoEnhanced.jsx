@@ -1581,8 +1581,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               )}
             </div>
           </div>
-
-          
+        </div>
 
       </div>
 
