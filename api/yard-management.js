@@ -90,19 +90,46 @@ export default async function handler(req, res) {
       // GET - List assignments
       if (method === 'GET') {
         const { employee_id, yard_id } = query
-        let sqlQuery = `
-          SELECT ya.*, e.full_name as employee_name, y.name as yard_name, y.type as yard_type
-          FROM yard_assignments ya
-          JOIN employees e ON ya.employee_id = e.id
-          JOIN yards y ON ya.yard_id = y.id
-          WHERE ya.is_active = true
-        `
         
-        if (employee_id) sqlQuery += ` AND ya.employee_id = ${employee_id}`
-        if (yard_id) sqlQuery += ` AND ya.yard_id = ${yard_id}`
-        sqlQuery += ` ORDER BY ya.assigned_at DESC`
+        let assignments
+        if (employee_id && yard_id) {
+          assignments = await sql`
+            SELECT ya.*, e.full_name as employee_name, y.name as yard_name, y.type as yard_type
+            FROM yard_assignments ya
+            JOIN employees e ON ya.employee_id = e.id
+            JOIN yards y ON ya.yard_id = y.id
+            WHERE ya.is_active = true AND ya.employee_id = ${employee_id} AND ya.yard_id = ${yard_id}
+            ORDER BY ya.assigned_at DESC
+          `
+        } else if (employee_id) {
+          assignments = await sql`
+            SELECT ya.*, e.full_name as employee_name, y.name as yard_name, y.type as yard_type
+            FROM yard_assignments ya
+            JOIN employees e ON ya.employee_id = e.id
+            JOIN yards y ON ya.yard_id = y.id
+            WHERE ya.is_active = true AND ya.employee_id = ${employee_id}
+            ORDER BY ya.assigned_at DESC
+          `
+        } else if (yard_id) {
+          assignments = await sql`
+            SELECT ya.*, e.full_name as employee_name, y.name as yard_name, y.type as yard_type
+            FROM yard_assignments ya
+            JOIN employees e ON ya.employee_id = e.id
+            JOIN yards y ON ya.yard_id = y.id
+            WHERE ya.is_active = true AND ya.yard_id = ${yard_id}
+            ORDER BY ya.assigned_at DESC
+          `
+        } else {
+          assignments = await sql`
+            SELECT ya.*, e.full_name as employee_name, y.name as yard_name, y.type as yard_type
+            FROM yard_assignments ya
+            JOIN employees e ON ya.employee_id = e.id
+            JOIN yards y ON ya.yard_id = y.id
+            WHERE ya.is_active = true
+            ORDER BY ya.assigned_at DESC
+          `
+        }
         
-        const assignments = await sql(sqlQuery)
         return res.status(200).json({ success: true, data: assignments })
       }
 
