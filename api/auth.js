@@ -11,10 +11,13 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'POST') {
-      const { username, password } = req.body
+      const { username, password, language } = req.body
+      const isEnglish = language === 'en'
 
       if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password required' })
+        return res.status(400).json({ 
+          error: isEnglish ? 'Username and password required' : 'Usuario y contraseña requeridos' 
+        })
       }
 
       // First check if user exists with correct password
@@ -25,13 +28,17 @@ export default async function handler(req, res) {
       `
 
       if (users.length === 0) {
-        return res.status(401).json({ error: 'Invalid credentials' })
+        return res.status(401).json({ 
+          error: isEnglish ? 'Invalid username or password' : 'Usuario o contraseña incorrectos' 
+        })
       }
 
       // Check if user is active
       const user = users[0]
       if (user.active === false) {
-        return res.status(401).json({ error: 'Usuario desactivado. Contacte al administrador.' })
+        return res.status(401).json({ 
+          error: isEnglish ? 'User deactivated. Contact administrator.' : 'Usuario desactivado. Contacte al administrador.' 
+        })
       }
 
       return res.status(200).json({

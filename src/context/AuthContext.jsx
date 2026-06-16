@@ -120,10 +120,14 @@ export function AuthProvider({ children }) {
     const API_BASE = import.meta.env.VITE_API_URL || '/api'
     
     try {
+      // Get current language from localStorage or navigator
+      const language = localStorage.getItem('crown_language') || 
+                      (navigator.language.startsWith('es') ? 'es' : 'en')
+      
       const res = await fetch(`${API_BASE}/auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password, language })
       })
       
       const data = await res.json()
