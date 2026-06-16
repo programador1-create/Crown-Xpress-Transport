@@ -26,8 +26,9 @@ export default function SubmitBar({ onSuccess }) {
   if (validation.sealPhotoRequired && !validation.hasSealPhoto) {
     issues.push(language === 'es' ? 'Foto del sello requerida' : 'Seal photo required')
   }
-  // Operator signature is captured when clicking "Generate PDF"
+  // Operator signature is required before generating PDF
   if (!validation.guardSigned) issues.push(t('guardMustSign'))
+  if (!validation.operatorSigned) issues.push(t('operatorSignatureRequired'))
 
   // Step 1: Click "Generate PDF" -> Show signature modal
   const handleGenerateClick = () => {
@@ -234,13 +235,13 @@ export default function SubmitBar({ onSuccess }) {
             <div className="p-5">
               <p className="text-sm text-slate-500 mb-1 text-center">
                 {language === 'es' 
-                  ? 'Firma del operador (opcional)' 
-                  : 'Operator signature (optional)'}
+                  ? 'Firma del operador' 
+                  : 'Operator signature'}
               </p>
               <p className="text-xs text-slate-400 mb-3 text-center italic">
                 {language === 'es' 
-                  ? 'Puede dejar en blanco y continuar' 
-                  : 'You can leave blank and continue'}
+                  ? 'La firma es obligatoria para continuar' 
+                  : 'Signature is required to continue'}
               </p>
               
               <div className="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 overflow-hidden">

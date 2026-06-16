@@ -45,8 +45,8 @@ export default function SignaturesSection() {
       <div className="card-body space-y-4">
         <p className="text-xs text-slate-400 text-center italic">
           {language === 'es' 
-            ? 'La firma del operador se capturará al generar el PDF (opcional)' 
-            : 'Operator signature will be captured when generating PDF (optional)'}
+            ? 'La firma del operador se capturará al generar el PDF (requerida)' 
+            : 'Operator signature will be captured when generating PDF (required)'}
         </p>
         
         {/* Guard Signature */}
