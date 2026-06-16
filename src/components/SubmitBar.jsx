@@ -26,9 +26,8 @@ export default function SubmitBar({ onSuccess }) {
   if (validation.sealPhotoRequired && !validation.hasSealPhoto) {
     issues.push(language === 'es' ? 'Foto del sello requerida' : 'Seal photo required')
   }
-  // Operator signature is required before generating PDF
+  // Operator signature is captured in modal when clicking "Generate PDF"
   if (!validation.guardSigned) issues.push(t('guardMustSign'))
-  if (!validation.operatorSigned) issues.push(t('operatorSignatureRequired'))
 
   // Step 1: Click "Generate PDF" -> Show signature modal
   const handleGenerateClick = () => {

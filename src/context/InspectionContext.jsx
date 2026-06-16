@@ -119,9 +119,9 @@ export function InspectionProvider({ children }) {
     guardSigned: !!(guardSignature.signature && guardSignature.name.trim()),
     operatorSigned: !!(operatorSignature.signature && operatorSignature.name.trim()),
   }
-  // Operator signature IS required here - must be signed before generating PDF
+  // Operator signature is captured in modal when clicking "Generate PDF"
   // Seal photo is required when LOADED + has seal (not lock) + not FLATBED
-  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned && validation.operatorSigned && validation.sealPhotoValid
+  const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned && validation.sealPhotoValid
 
   return (
     <InspectionContext.Provider value={{
