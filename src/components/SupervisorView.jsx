@@ -31,7 +31,7 @@ export default function SupervisorView() {
       setError(null)
       try {
         const res = await listInspections({ limit: 500 })
-        setInspections(res.data || [])
+        setInspections(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
         setError(err.message)
       } finally {

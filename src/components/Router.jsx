@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users, MapPin } from 'lucide-react'
 import GuidedInspection from './GuidedInspection'
 import UnitInfo from './UnitInfoEnhanced'
@@ -55,14 +55,14 @@ export default function Router() {
 
   const isAdmin = user?.role === 'admin'
   
-  const tabs = [
+  const tabs = useMemo(() => [
     canEdit() && { id: 'form', label: 'v1 - Vista Clásica', icon: FileText },
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
     canViewAll() && { id: 'auditor', label: language === 'es' ? 'Vista Supervisor' : 'Supervisor View', icon: ShieldCheck },
     isAdmin && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
     isAdmin && { id: 'yards', label: language === 'es' ? 'Yardas' : 'Yards', icon: MapPin },
-  ].filter(Boolean)
+  ].filter(Boolean), [canEdit, canViewAll, isAdmin, language])
 
   const Nav = () => (
     <nav className="sticky top-14 z-20 bg-white border-b border-slate-200 no-print">

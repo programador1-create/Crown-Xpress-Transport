@@ -66,9 +66,9 @@ export default function UserManagement() {
       if (yardsData.error) throw new Error(yardsData.error)
       if (assignmentsData.error) throw new Error(assignmentsData.error)
 
-      setEmployees(employeesData.data || [])
-      setYards(yardsData.data || [])
-      setAssignments(assignmentsData.data || [])
+      setEmployees(Array.isArray(employeesData.data) ? employeesData.data : [])
+      setYards(Array.isArray(yardsData.data) ? yardsData.data : [])
+      setAssignments(Array.isArray(assignmentsData.data) ? assignmentsData.data : [])
     } catch (err) {
       setError(err.message)
     } finally {

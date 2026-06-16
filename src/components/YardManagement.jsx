@@ -57,7 +57,7 @@ export default function YardManagement() {
       const res = await fetch(`${API_BASE}/yard-management?type=yards`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setYards(data.data || [])
+      setYards(Array.isArray(data.data) ? data.data : [])
     } catch (err) {
       setError(err.message)
     } finally {
