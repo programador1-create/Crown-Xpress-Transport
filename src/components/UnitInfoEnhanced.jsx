@@ -1445,7 +1445,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                       )}
                       <span className="hidden sm:inline">{language === 'es' ? 'Buscar' : 'Search'}</span>
                     </button>
-                  </div>
                   {operatorError && (
                     <p className="text-xs text-rose-600 mt-2">⚠️ {operatorError}</p>
                   )}
@@ -1553,7 +1552,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                       <CheckCircle className="w-4 h-4" />
                       <span className="hidden sm:inline">{language === 'es' ? 'Confirmar' : 'Confirm'}</span>
                     </button>
-                  </div>
                   <p className="text-xs text-amber-600 mt-2">
                     ⚠️ {language === 'es' ? 'No se validará con la base de datos' : 'Will not be validated with database'}
                   </p>
@@ -1579,47 +1577,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                     >
                       {language === 'es' ? 'Cambiar' : 'Change'}
                     </button>
-                  </div>
                 </div>
               )}
             </div>
           </div>
 
           
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {language === 'es' ? 'UBICACIÓN (YARDA)' : 'LOCATION'} <span className="text-rose-500">*</span>
-              </span>
-              {getFieldIcon('location')}
-            </label>
-            {user?.location_id ? (
-              // User has assigned yard - show as readonly
-              <div className="w-full px-3 py-2 border-2 border-emerald-300 bg-emerald-50 rounded-lg text-slate-800 font-medium flex items-center justify-between">
-                <span>{unitInfo.location?.toUpperCase() || YARDS.find(y => y.id === user.location_id)?.name?.toUpperCase()}</span>
-                <span className="text-xs text-emerald-600 flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
-                  {language === 'es' ? 'ASIGNADA' : 'ASSIGNED'}
-                </span>
-              </div>
-            ) : (
-              // No assigned yard - allow selection
-              <select
-                value={unitInfo.location || ''}
-                onChange={e => update('location', e.target.value)}
-                className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${validateField('location')}`}
-                required
-              >
-                <option value="">{language === 'es' ? 'SELECCIONE...' : 'SELECT...'}</option>
-                {YARDS.map(yard => (
-                  <option key={yard.id} value={yard.name}>{yard.name.toUpperCase()}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
 
       </div>
 

@@ -2,16 +2,18 @@ import { useState, useEffect, useMemo } from 'react'
 import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { listInspections, downloadPdf } from '../utils/api'
+import { listInspections, downloadPdf, signSupervisor } from '../utils/api'
 import AuditTrail from './AuditTrail'
 
-export default function AuditorView() {
+export default function SupervisorView() {
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [inspections, setInspections] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
+  const [showSignatureModal, setShowSignatureModal] = useState(false)
+  const [signingInspection, setSigningInspection] = useState(null)
 
   // Filters
   const [filterYard, setFilterYard] = useState('')
@@ -92,9 +94,39 @@ export default function AuditorView() {
     }
   }
 
+  const handleSignInspection = (inspection) => {
+    setSigningInspection(inspection)
+    setShowSignatureModal(true)
+  }
+
+  const handleSupervisorSign = async (signatureData) => {
+    if (!signingInspection) return
+    
+    try {
+      await signSupervisor(signingInspection.id, {
+        name: user?.full_name || 'Supervisor',
+        signedAt: new Date().toISOString()
+      })
+      
+      // Update the inspection in the list
+      setInspections(prev => prev.map(i => 
+        i.id === signingInspection.id 
+          ? { ...i, supervisor_name: user?.full_name, supervisor_signed_at: new Date().toISOString(), status: 'supervised' }
+          : i
+      ))
+      
+      setShowSignatureModal(false)
+      setSigningInspection(null)
+      
+      alert(language === 'es' ? 'Inspección firmada exitosamente' : 'Inspection signed successfully')
+    } catch (e) {
+      alert(language === 'es' ? 'Error firmando inspección' : 'Error signing inspection')
+    }
+  }
+
   const stats = {
     total: filtered.length,
-    audited: filtered.filter(i => i.status === 'audited').length,
+    supervised: filtered.filter(i => i.status === 'supervised').length,
     pending: filtered.filter(i => i.status === 'completed').length,
     failures: filtered.reduce((sum, i) => sum + (i.total_bad || 0), 0),
   }
@@ -129,8 +161,8 @@ export default function AuditorView() {
           <div className="text-2xl font-bold text-slate-800">{stats.total}</div>
         </div>
         <div className="bg-white rounded-xl border border-emerald-200 p-4">
-          <div className="text-xs text-emerald-700 uppercase">{language === 'es' ? 'Auditadas' : 'Audited'}</div>
-          <div className="text-2xl font-bold text-emerald-700">{stats.audited}</div>
+          <div className="text-xs text-emerald-700 uppercase">{language === 'es' ? 'Supervisadas' : 'Supervised'}</div>
+          <div className="text-2xl font-bold text-emerald-700">{stats.supervised}</div>
         </div>
         <div className="bg-white rounded-xl border border-blue-200 p-4">
           <div className="text-xs text-blue-700 uppercase">{language === 'es' ? 'Pendientes' : 'Pending'}</div>
@@ -219,7 +251,7 @@ export default function AuditorView() {
               >
                 <option value="">{language === 'es' ? 'Todos' : 'All'}</option>
                 <option value="completed">{language === 'es' ? 'Completada' : 'Completed'}</option>
-                <option value="audited">{language === 'es' ? 'Auditada' : 'Audited'}</option>
+                <option value="supervised">{language === 'es' ? 'Supervisada' : 'Supervised'}</option>
                 <option value="reconfirmed">{language === 'es' ? 'Reconfirmada' : 'Reconfirmed'}</option>
               </select>
             </div>
@@ -323,7 +355,7 @@ export default function AuditorView() {
                           </span>
                         )}
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          insp.status === 'audited' ? 'bg-emerald-100 text-emerald-700' :
+                          insp.status === 'supervised' ? 'bg-emerald-100 text-emerald-700' :
                           insp.status === 'reconfirmed' ? 'bg-amber-100 text-amber-700' :
                           'bg-blue-100 text-blue-700'
                         }`}>
@@ -335,6 +367,15 @@ export default function AuditorView() {
                         >
                           <Download className="w-4 h-4 text-slate-600" />
                         </button>
+                        {insp.status === 'completed' && !insp.supervisor_name && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleSignInspection(insp) }}
+                            className="p-1 rounded hover:bg-emerald-100"
+                            title={language === 'es' ? 'Firmar inspección' : 'Sign inspection'}
+                          >
+                            <FileText className="w-4 h-4 text-emerald-600" />
+                          </button>
+                        )}
                       </div>
                     </button>
                     {selectedId === insp.id && (
@@ -356,6 +397,67 @@ export default function AuditorView() {
             </div>
           </div>
         )}
+
+      {/* Supervisor Signature Modal */}
+      {showSignatureModal && signingInspection && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800">
+                  {language === 'es' ? 'Firmar Inspección como Supervisor' : 'Sign Inspection as Supervisor'}
+                </h3>
+                <button
+                  onClick={() => setShowSignatureModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-slate-600 mb-2">
+                  {language === 'es' ? 'Inspección:' : 'Inspection:'} {signingInspection.trailer_number}
+                </p>
+                <p className="text-sm text-slate-600 mb-2">
+                  {language === 'es' ? 'Operador:' : 'Operator:'} {signingInspection.driver_name}
+                </p>
+                <p className="text-sm text-slate-600">
+                  {language === 'es' ? 'Guardia:' : 'Guard:'} {signingInspection.guard_name}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  {language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:'}
+                </label>
+                <input
+                  type="text"
+                  value={user?.full_name || ''}
+                  readOnly
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
+                  placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSignatureModal(false)}
+                  className="flex-1 py-2 px-4 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                >
+                  {language === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => handleSupervisorSign({ signature: null })}
+                  className="flex-1 py-2 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                >
+                  {language === 'es' ? 'Firmar' : 'Sign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </section>
     </div>
   )

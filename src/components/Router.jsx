@@ -10,7 +10,7 @@ import SubmitBar from './SubmitBar'
 import SuccessModal from './SuccessModal'
 import InspectionHistory from './InspectionHistory'
 import GuardHistory from './GuardHistory'
-import AuditorView from './AuditorView'
+import SupervisorView from './SupervisorView'
 import UserManagement from './UserManagement'
 import YardManagement from './YardManagement'
 import { useLanguage } from '../context/LanguageContext'
@@ -59,7 +59,7 @@ export default function Router() {
     canEdit() && { id: 'form', label: 'v1 - Vista Clásica', icon: FileText },
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
-    canViewAll() && { id: 'auditor', label: language === 'es' ? 'Vista Auditor' : 'Auditor View', icon: ShieldCheck },
+    canViewAll() && { id: 'auditor', label: language === 'es' ? 'Vista Supervisor' : 'Supervisor View', icon: ShieldCheck },
     isAdmin && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
     isAdmin && { id: 'yards', label: language === 'es' ? 'Yardas' : 'Yards', icon: MapPin },
   ].filter(Boolean)
@@ -130,7 +130,7 @@ export default function Router() {
           </div>
         )}
         {page === 'my-history' && canEdit() && <GuardHistory />}
-        {page === 'auditor' && canViewAll() && <AuditorView />}
+        {page === 'auditor' && canViewAll() && <SupervisorView />}
         {page === 'users' && isAdmin && <UserManagement />}
         {page === 'yards' && isAdmin && <YardManagement />}
       </div>
