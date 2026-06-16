@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X } from 'lucide-react'
+import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X, PenTool } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, signSupervisor } from '../utils/api'
@@ -31,7 +31,7 @@ export default function SupervisorView() {
       setError(null)
       try {
         const res = await listInspections({ limit: 500 })
-        setInspections(Array.isArray(res.data) ? res.data : [])
+        setInspections(res.data || [])
       } catch (err) {
         setError(err.message)
       } finally {
@@ -94,12 +94,12 @@ export default function SupervisorView() {
     }
   }
 
-  const handleSignInspection = (inspection) => {
+  const handleSignSupervisor = (inspection) => {
     setSigningInspection(inspection)
     setShowSignatureModal(true)
   }
 
-  const handleSupervisorSign = async (signatureData) => {
+  const handleSignatureSubmit = async (signatureData) => {
     if (!signingInspection) return
     
     try {
@@ -108,19 +108,16 @@ export default function SupervisorView() {
         signedAt: new Date().toISOString()
       })
       
-      // Update the inspection in the list
-      setInspections(prev => prev.map(i => 
-        i.id === signingInspection.id 
-          ? { ...i, supervisor_name: user?.full_name, supervisor_signed_at: new Date().toISOString(), status: 'supervised' }
-          : i
-      ))
+      // Refresh inspections list
+      const res = await listInspections({ limit: 500 })
+      setInspections(res.data || [])
       
       setShowSignatureModal(false)
       setSigningInspection(null)
       
       alert(language === 'es' ? 'Inspección firmada exitosamente' : 'Inspection signed successfully')
-    } catch (e) {
-      alert(language === 'es' ? 'Error firmando inspección' : 'Error signing inspection')
+    } catch (err) {
+      alert(language === 'es' ? `Error firmando inspección: ${err.message}` : `Error signing inspection: ${err.message}`)
     }
   }
 
@@ -251,7 +248,7 @@ export default function SupervisorView() {
               >
                 <option value="">{language === 'es' ? 'Todos' : 'All'}</option>
                 <option value="completed">{language === 'es' ? 'Completada' : 'Completed'}</option>
-                <option value="supervised">{language === 'es' ? 'Supervisada' : 'Supervised'}</option>
+                <option value="audited">{language === 'es' ? 'Auditada' : 'Audited'}</option>
                 <option value="reconfirmed">{language === 'es' ? 'Reconfirmada' : 'Reconfirmed'}</option>
               </select>
             </div>
@@ -359,23 +356,23 @@ export default function SupervisorView() {
                           insp.status === 'reconfirmed' ? 'bg-amber-100 text-amber-700' :
                           'bg-blue-100 text-blue-700'
                         }`}>
-                          {insp.status}
+                          {insp.status === 'audited' ? (language === 'es' ? 'Supervisada' : 'Supervised') : insp.status}
                         </span>
+                        {insp.status === 'completed' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleSignSupervisor(insp) }}
+                            className="p-1 rounded hover:bg-emerald-200"
+                            title={language === 'es' ? 'Firmar como supervisor' : 'Sign as supervisor'}
+                          >
+                            <PenTool className="w-4 h-4 text-emerald-600" />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDownload(insp.id, insp.pdf_filename) }}
                           className="p-1 rounded hover:bg-slate-200"
                         >
                           <Download className="w-4 h-4 text-slate-600" />
                         </button>
-                        {insp.status === 'completed' && !insp.supervisor_name && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleSignInspection(insp) }}
-                            className="p-1 rounded hover:bg-emerald-100"
-                            title={language === 'es' ? 'Firmar inspección' : 'Sign inspection'}
-                          >
-                            <FileText className="w-4 h-4 text-emerald-600" />
-                          </button>
-                        )}
                       </div>
                     </button>
                     {selectedId === insp.id && (
@@ -397,68 +394,43 @@ export default function SupervisorView() {
             </div>
           </div>
         )}
+      </section>
 
       {/* Supervisor Signature Modal */}
       {showSignatureModal && signingInspection && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-800">
-                  {language === 'es' ? 'Firmar Inspección como Supervisor' : 'Sign Inspection as Supervisor'}
-                </h3>
-                <button
-                  onClick={() => setShowSignatureModal(false)}
-                  className="p-2 hover:bg-slate-100 rounded-lg"
-                >
-                  <X className="w-5 h-5 text-slate-500" />
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm text-slate-600 mb-2">
-                  {language === 'es' ? 'Inspección:' : 'Inspection:'} {signingInspection.trailer_number}
-                </p>
-                <p className="text-sm text-slate-600 mb-2">
-                  {language === 'es' ? 'Operador:' : 'Operator:'} {signingInspection.driver_name}
-                </p>
-                <p className="text-sm text-slate-600">
-                  {language === 'es' ? 'Guardia:' : 'Guard:'} {signingInspection.guard_name}
-                </p>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  {language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:'}
-                </label>
-                <input
-                  type="text"
-                  value={user?.full_name || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50"
-                  placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSignatureModal(false)}
-                  className="flex-1 py-2 px-4 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
-                >
-                  {language === 'es' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button
-                  onClick={() => handleSupervisorSign({ signature: null })}
-                  className="flex-1 py-2 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                >
-                  {language === 'es' ? 'Firmar' : 'Sign'}
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">
+              {language === 'es' ? 'Firmar como Supervisor' : 'Sign as Supervisor'}
+            </h3>
+            <div className="mb-4">
+              <p className="text-sm text-slate-600 mb-2">
+                {language === 'es' ? 'Inspección:' : 'Inspection:'} {signingInspection.trailer_number || signingInspection.container_number}
+              </p>
+              <p className="text-sm text-slate-600">
+                {language === 'es' ? '¿Desea firmar esta inspección como supervisor?' : 'Do you want to sign this inspection as supervisor?'}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSignatureModal(false)
+                  setSigningInspection(null)
+                }}
+                className="flex-1 py-2 px-4 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50"
+              >
+                {language === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => handleSignatureSubmit({})}
+                className="flex-1 py-2 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                {language === 'es' ? 'Firmar' : 'Sign'}
+              </button>
             </div>
           </div>
         </div>
       )}
-      </section>
     </div>
   )
 }
