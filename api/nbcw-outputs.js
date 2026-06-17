@@ -59,9 +59,9 @@ export default async function handler(req, res) {
       let tableName = null
       
       try {
-        // Try NBCW_OUTPUTS (uppercase)
+        // Build query based on whether user has yard code or not
         tableName = 'tpr'
-        outputs = await nbcwSql`
+        let query = `
           SELECT 
             DRVCODE as driverCode,
             WONO as workOrderNumber,
@@ -103,11 +103,22 @@ export default async function handler(req, res) {
             TRXCODE as transactionCode,
             SEAL as seal
           FROM tpr 
-          WHERE ${yardCode ? `FROMD = ${yardCode}` : `DRVCODE = ${userKey} OR OPER = ${userKey}`}
-          AND (STATUS = 'PENDING' OR STATUS = 'PENDIENTE')
-          ORDER BY FECHA DESC, TIMEARRV DESC
-          LIMIT 50
+          WHERE 1=1
         `
+        
+        // Add WHERE conditions based on user type
+        if (yardCode) {
+          query += ` AND FROMD = '${yardCode}'`
+        } else {
+          query += ` AND (DRVCODE = '${userKey}' OR OPER = '${userKey}')`
+        }
+        
+        query += ` AND (STATUS = 'PENDING' OR STATUS = 'PENDIENTE')
+          ORDER BY FECHA DESC, TIMEARRV DESC
+          LIMIT 50`
+        
+        console.log('Executing query:', query)
+        outputs = await nbcwSql.unsafe(query)
       } catch (e) {
         console.error('Error querying tpr table:', e.message)
         console.error('Full error details:', e)
