@@ -49,7 +49,9 @@ export default async function handler(req, res) {
       }
 
       // Connect to NBCW database
+      console.log('Attempting to connect to NBCW database...')
       const nbcwSql = getNbcwSql()
+      console.log('NBCW database connection established')
       
       // Query NBCW outputs for this user
       // Try different possible table names
@@ -108,9 +110,17 @@ export default async function handler(req, res) {
         `
       } catch (e) {
         console.error('Error querying tpr table:', e.message)
+        console.error('Full error details:', e)
+        console.error('DATABASE_URL_NBCW exists:', !!process.env.DATABASE_URL_NBCW)
         return res.status(500).json({ 
           error: 'Failed to query tpr table in gpsactivity database',
-          details: e.message 
+          details: e.message,
+          debug: {
+            userKey,
+            yardCode,
+            databaseUrlExists: !!process.env.DATABASE_URL_NBCW,
+            errorMessage: e.message
+          }
         })
       }
       
@@ -154,9 +164,17 @@ export default async function handler(req, res) {
         output = await nbcwSql`SELECT * FROM tpr WHERE id = ${outputId}`
       } catch (e) {
         console.error('Error querying tpr table:', e.message)
+        console.error('Full error details:', e)
+        console.error('DATABASE_URL_NBCW exists:', !!process.env.DATABASE_URL_NBCW)
         return res.status(500).json({ 
           error: 'Failed to query tpr table in gpsactivity database',
-          details: e.message 
+          details: e.message,
+          debug: {
+            userKey,
+            yardCode,
+            databaseUrlExists: !!process.env.DATABASE_URL_NBCW,
+            errorMessage: e.message
+          }
         })
       }
       
