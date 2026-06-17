@@ -11,6 +11,7 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [showSummary, setShowSummary] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
+  const [showPendingWarning, setShowPendingWarning] = useState(false)
 
   // Filter inspection points based on inspection type
   const applicablePoints = useMemo(() => {
@@ -49,7 +50,24 @@ export default function StepByStepInspection({ onAllCompleted }) {
     }
   }, [currentState, isLastStep, showSummary])
 
+  const isCurrentPointCompleted = () => {
+    const state = currentState
+    return state?.status === 'good' || (state?.status === 'bad' && state?.issueId && state?.photo)
+  }
+
   const goToNext = () => {
+    if (!isLastStep) {
+      // Check if current point is not completed
+      if (!isCurrentPointCompleted()) {
+        setShowPendingWarning(true)
+        return
+      }
+      setCurrentStep(prev => prev + 1)
+    }
+  }
+
+  const forceGoToNext = () => {
+    setShowPendingWarning(false)
     if (!isLastStep) {
       setCurrentStep(prev => prev + 1)
     }
@@ -386,6 +404,77 @@ export default function StepByStepInspection({ onAllCompleted }) {
           </div>
         )}
       </div>
+
+      {/* Modal de advertencia de punto pendiente */}
+      {showPendingWarning && currentPoint && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl animate-slide-up overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {language === 'es' ? '¡Punto Pendiente!' : 'Pending Point!'}
+                  </h3>
+                  <p className="text-white/80 text-sm">
+                    {language === 'es' ? 'Este punto no ha sido completado' : 'This point has not been completed'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center text-xl font-bold">
+                    {currentPoint.id}
+                  </div>
+                  <div>
+                    <div className="font-bold text-amber-900 text-lg">
+                      {currentPoint[language] || currentPoint.es || currentPoint.en}
+                    </div>
+                    <div className="text-sm text-amber-700">
+                      {language === 'es' ? 'Punto de inspección' : 'Inspection point'} #{currentPoint.id}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-amber-800 text-sm mt-3 bg-amber-100 rounded-lg p-3">
+                  <p className="font-semibold mb-1">
+                    {language === 'es' ? '¿Qué necesita hacer?' : 'What do you need to do?'}
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-amber-700">
+                    <li>{language === 'es' ? 'Marcar como BUENO si no hay problemas' : 'Mark as GOOD if there are no issues'}</li>
+                    <li>{language === 'es' ? 'O marcar como MALO, seleccionar el problema y tomar una foto' : 'Or mark as BAD, select the issue and take a photo'}</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => setShowPendingWarning(false)}
+                  className="w-full py-4 bg-crown-navy text-white font-bold rounded-xl hover:bg-crown-navy/90 transition-colors text-lg flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  {language === 'es' ? 'Completar Este Punto' : 'Complete This Point'}
+                </button>
+                
+                <button
+                  onClick={forceGoToNext}
+                  className="w-full py-3 bg-slate-100 text-slate-600 font-semibold rounded-xl hover:bg-slate-200 transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  {language === 'es' ? 'Saltar y continuar de todos modos' : 'Skip and continue anyway'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
