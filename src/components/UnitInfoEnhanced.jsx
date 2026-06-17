@@ -456,7 +456,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               ? 'Seleccione el tipo de inspección para continuar:' 
               : 'Select the inspection type to continue:'}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* LOADED */}
             <button
               type="button"
@@ -497,24 +497,24 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               <span className="text-xs font-semibold text-amber-600">17 {language === 'es' ? 'puntos' : 'points'}</span>
             </button>
 
-            {/* BOBTAIL */}
+            {/* BOTADO - TPR */}
             <button
               type="button"
-              onClick={() => handleInspectionTypeChange('BOBTAIL')}
+              onClick={() => setShowEmptyLoads(true)}
               className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
             >
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                <Truck className="w-8 h-8 text-blue-600" />
+              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center group-hover:bg-rose-200 transition-colors">
+                <PackageX className="w-8 h-8 text-rose-600" />
               </div>
               <span className="font-bold text-lg text-slate-800">
-                {language === 'es' ? 'BOTADO' : 'BOBTAIL'}
+                {language === 'es' ? 'BOTADO' : 'EMPTY MOVE'}
               </span>
               <span className="text-xs text-slate-500 text-center">
                 {language === 'es' 
-                  ? 'Solo tractor. Sin trailer ni contenedor.' 
-                  : 'Tractor only. No trailer or container.'}
+                  ? 'Salida vacía desde sistema TPR' 
+                  : 'Empty move from TPR system'}
               </span>
-              <span className="text-xs font-semibold text-blue-600">10 {language === 'es' ? 'puntos' : 'points'}</span>
+              <span className="text-xs font-semibold text-rose-600">TPR {language === 'es' ? 'Datos' : 'Data'}</span>
             </button>
           </div>
         </div>
@@ -1612,26 +1612,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                   </div>
                 </div>
               )}
-
-              {/* Empty Loads Button - Always Visible */}
-              <div className="mt-6 pt-6 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setShowEmptyLoads(true)}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 flex items-center justify-center gap-2 transition-all shadow-lg"
-                >
-                  <PackageX className="w-5 h-5" />
-                  <span className="font-semibold">
-                    {language === 'es' ? 'Botadas Cargado/Vacío - Salidas NBCW' : 'Empty Loads - NBCW Outputs'}
-                  </span>
-                </button>
-                <p className="text-xs text-slate-500 mt-2 text-center">
-                  {language === 'es' 
-                    ? 'Ver movimientos de salida vacía desde sistema TPR' 
-                    : 'View empty load movements from TPR system'
-                  }
-                </p>
-              </div>
             </div>
           </div>
       </div>

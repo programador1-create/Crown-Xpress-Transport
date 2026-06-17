@@ -85,16 +85,12 @@ export default async function handler(req, res) {
   return res.status(405).json({ error: 'Method not allowed' })
 }
 
-// Función para conectar a la base de datos externa
-// Necesitarás implementar esto según tu configuración
+// Función para conectar a la base de datos externa NBCW
 function getExternalSql() {
-  // Opción 1: Si usas PostgreSQL y tienes la conexión configurada
   const { neon } = require('@neondatabase/serverless')
-  const externalUrl = process.env.GPSACTIVITY_DATABASE_URL
+  const externalUrl = process.env.DATABASE_URL_NBCW
   if (!externalUrl) {
-    throw new Error('GPSACTIVITY_DATABASE_URL not configured')
+    throw new Error('DATABASE_URL_NBCW not configured')
   }
   return neon(externalUrl)
-
-  // Opción 2: Si usas otro tipo de base de datos, implementa la conexión correspondiente
 }
