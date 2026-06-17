@@ -48,11 +48,34 @@ export default async function handler(req, res) {
       })
     }
 
+    // Handle PDF generation (GET request)
+    if (req.method === 'GET' && req.url.includes('pdf')) {
+      try {
+        const pdfBuffer = await generatePDF(parseInt(id))
+        if (!pdfBuffer) {
+          return res.status(500).json({ error: 'PDF generation failed - no data returned' })
+        }
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="inspection-${id}.pdf"`)
+        return res.status(200).send(pdfBuffer)
+      } catch (error) {
+        console.error('PDF generation error:', error)
+        return res.status(500).json({ 
+          error: 'Failed to generate PDF',
+          details: error.message 
+        })
+      }
+    }
+
     if (req.method === 'POST') {
+      console.log('POST request received:', req.url)
       // Check if this is a supervisor signature request
       const isSupervisorSignature = req.url.includes('sign-supervisor')
+      console.log('Is supervisor signature request:', isSupervisorSignature)
       
       if (isSupervisorSignature) {
+        console.log('Processing supervisor signature for inspection:', id)
+        console.log('Request body:', req.body)
         const { name, signedAt } = req.body
         
         if (!name || !signedAt) {
@@ -74,6 +97,7 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'Inspection not found' })
           }
 
+          console.log('Supervisor signature updated successfully for inspection:', id)
           return res.status(200).json({ 
             message: 'Supervisor signature added successfully',
             inspection: result[0]
@@ -89,25 +113,6 @@ export default async function handler(req, res) {
       
       // Handle other POST requests if needed
       return res.status(405).json({ error: 'Method not allowed' })
-    }
-
-    // Handle PDF generation
-    if (req.url.includes('pdf')) {
-      try {
-        const pdfBuffer = await generatePDF(parseInt(id))
-        if (!pdfBuffer) {
-          return res.status(500).json({ error: 'PDF generation failed - no data returned' })
-        }
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="inspection-${id}.pdf"`)
-        return res.status(200).send(pdfBuffer)
-      } catch (error) {
-        console.error('PDF generation error:', error)
-        return res.status(500).json({ 
-          error: 'Failed to generate PDF',
-          details: error.message 
-        })
-      }
     }
 
     return res.status(405).json({ error: 'Method not allowed' })
