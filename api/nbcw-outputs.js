@@ -30,12 +30,27 @@ export default async function handler(req, res) {
           if (user) {
             userKey = user.username
             // Extract yard code from location name (e.g., "Yard 6" -> "CXT6")
+            console.log(`User location info:`, { 
+              location_id: user.location_id, 
+              location_name: user.location_name,
+              username: user.username 
+            })
+            
             if (user.location_name) {
-              // Try to extract yard number and convert to CXT format
-              const yardMatch = user.location_name.match(/yard\s*(\d+)/i)
+              // Try multiple patterns for yard code extraction
+              let yardMatch = user.location_name.match(/yard\s*(\d+)/i)
+              if (!yardMatch) {
+                yardMatch = user.location_name.match(/cxt\s*(\d+)/i)
+              }
+              if (!yardMatch) {
+                yardMatch = user.location_name.match(/(\d+)/i)
+              }
+              
               if (yardMatch) {
                 yardCode = `CXT${yardMatch[1]}`
                 console.log(`User ${user.username} assigned to ${user.location_name}, extracted yard code: ${yardCode}`)
+              } else {
+                console.log(`Could not extract yard code from: ${user.location_name}`)
               }
             }
           }
@@ -107,10 +122,13 @@ export default async function handler(req, res) {
         `
         
         // Add WHERE conditions based on user type
+        console.log(`Building query - yardCode: ${yardCode}, userKey: ${userKey}`)
         if (yardCode) {
           query += ` AND FROMD = '${yardCode}'`
+          console.log(`Using yard-based search: FROMD = ${yardCode}`)
         } else {
           query += ` AND (DRVCODE = '${userKey}' OR OPER = '${userKey}')`
+          console.log(`Using operator-based search: DRVCODE/OPER = ${userKey}`)
         }
         
         query += ` AND (STATUS = 'PENDING' OR STATUS = 'PENDIENTE')
