@@ -76,7 +76,8 @@ export default async function handler(req, res) {
         query += ` ORDER BY fecha DESC, timearrv DESC`
 
         // Ejecutar query en base de datos externa
-        const movements = await externalSql(query)
+        // neon() requiere formato tagged-template, para queries dinamicas usamos array
+        const movements = await externalSql([query])
 
         return res.status(200).json({
           success: true,
