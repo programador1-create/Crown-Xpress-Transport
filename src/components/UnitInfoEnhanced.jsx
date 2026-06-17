@@ -386,6 +386,13 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('inspectionDate', movementData.date || '')
     updateUnitInfo('inspectionReason', movementData.inspectionReason || '')
     
+    // Guardar nomeclatura completa del equipo
+    updateUnitInfo('equipmentNomenclature', eqpCode.trim())
+    
+    // Extraer número de equipo de la nomeclatura
+    const nomenclatureMatch = eqpCode.match(/[A-Z]+-?(\d+)/i)
+    updateUnitInfo('equipmentNumber', nomenclatureMatch ? nomenclatureMatch[1] : '')
+    
     // Establecer el operador como encontrado
     setOperatorFound({ 
       fullName: movementData.operator || 'Desconocido', 
@@ -415,7 +422,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       
       // Determinar tipo de trailer basado en eqpcode
       if (eqpCode) {
-        const eqpUpper = eqpCode.toUpperCase()
+        const eqpUpper = eqpCode.toUpperCase().trim()
         
         // ISO container prefix pattern: XXXX-######-#
         const isIsoContainer = /^[A-Z]{4}-\d{6}-\d$/.test(eqpUpper)
@@ -430,50 +437,75 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                       eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB') ||
                       /^R\d{3}/.test(eqpUpper) || /^D\d{5}/.test(eqpUpper)
         
+        // === CONTENEDOR ===
         if (isIsoContainer || isCxcContainer || hasIsoPrefix) {
-          // CONTENEDOR
-          handleTrailerTypeChange('CONTAINER')
+          // Set trailer type directly (avoid handleTrailerTypeChange which resets states)
+          setTrailerType('CONTAINER')
+          updateUnitInfo('trailerType', 'CONTAINER')
           
           // Detectar tamaño del contenedor
           const sizeMatch = eqpCode.match(/-(\d{2})\d{4}-/)
           const containerSize = sizeMatch ? sizeMatch[1] : '40'
-          handleTrailerSizeChange(containerSize)
+          setTrailerSize(containerSize)
+          updateUnitInfo('trailerSize', containerSize)
           
-          // Contenedores ISO siempre son de CLIENTE (a menos sea CXC)
+          // Contenedores ISO
           if (isCxcContainer) {
-            handleEquipmentOwnerChange('CROWN')
+            setEquipmentOwner('CROWN')
+            updateUnitInfo('equipmentOwner', 'CROWN')
             setCrownFleet('CXTC')
+            updateUnitInfo('crownFleet', 'CXTC')
           } else {
-            handleEquipmentOwnerChange('CUSTOMER')
+            setEquipmentOwner('CUSTOMER')
+            updateUnitInfo('equipmentOwner', 'CUSTOMER')
             const prefix = isoPrefixes.find(p => eqpUpper.startsWith(p))
-            if (prefix) setCustomerPrefix(prefix)
+            if (prefix) {
+              setCustomerPrefix(prefix)
+              updateUnitInfo('customerPrefix', prefix)
+            }
           }
+        
+        // === CAJA / RABON ===
         } else if (isBox) {
-          // CAJA (incluye Rabon R###)
-          handleTrailerTypeChange('BOX')
+          setTrailerType('BOX')
+          updateUnitInfo('trailerType', 'BOX')
           
-          // Rabones (R###) son tipicamente mas cortos
+          // Rabones (R###) son típicamente mas cortos
           const isRabon = /^R\d{3}/.test(eqpUpper)
           const boxSize = isRabon ? '28' : '53'
-          handleTrailerSizeChange(boxSize)
+          setTrailerSize(boxSize)
+          updateUnitInfo('trailerSize', boxSize)
           
           // Determinar propietario para cajas
-          if (eqpUpper.startsWith('CXT') || eqpUpper.startsWith('RBX') || 
-              eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('JGB')) {
-            handleEquipmentOwnerChange('CROWN')
-            if (eqpUpper.startsWith('CXT')) setCrownFleet('CXT')
-            else if (eqpUpper.startsWith('RBX')) setCrownFleet('RBX')
-            else if (eqpUpper.startsWith('ABBA')) setCrownFleet('ABBA')
-            else if (eqpUpper.startsWith('JGB')) setCrownFleet('JGB')
+          const isCrownBox = eqpUpper.startsWith('CXT') || eqpUpper.startsWith('RBX') || 
+                             eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('JGB')
+          
+          if (isCrownBox) {
+            setEquipmentOwner('CROWN')
+            updateUnitInfo('equipmentOwner', 'CROWN')
+            
+            let fleet = ''
+            if (eqpUpper.startsWith('CXT')) fleet = 'CXT'
+            else if (eqpUpper.startsWith('RBX')) fleet = 'RBX'
+            else if (eqpUpper.startsWith('ABBA')) fleet = 'ABBA'
+            else if (eqpUpper.startsWith('JGB')) fleet = 'JGB'
+            
+            setCrownFleet(fleet)
+            updateUnitInfo('crownFleet', fleet)
           } else {
-            // D##### u otros - asumir CLIENTE por ahora
-            handleEquipmentOwnerChange('CUSTOMER')
+            // D##### u otros - CLIENTE
+            setEquipmentOwner('CUSTOMER')
+            updateUnitInfo('equipmentOwner', 'CUSTOMER')
           }
+        
+        // === DEFAULT: CAJA ===
         } else {
-          // Default a CAJA para cualquier otro eqpcode
-          handleTrailerTypeChange('BOX')
-          handleTrailerSizeChange('53')
-          handleEquipmentOwnerChange('CUSTOMER')
+          setTrailerType('BOX')
+          updateUnitInfo('trailerType', 'BOX')
+          setTrailerSize('53')
+          updateUnitInfo('trailerSize', '53')
+          setEquipmentOwner('CUSTOMER')
+          updateUnitInfo('equipmentOwner', 'CUSTOMER')
         }
       }
     }
