@@ -15,37 +15,71 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Get inspection by ID or UUID
-      const isUuid = id.includes('-')
+      console.log('Processing GET request for inspection:', id)
       
-      const inspections = isUuid
-        ? await sql`SELECT * FROM inspections WHERE uuid = ${id}`
-        : await sql`SELECT * FROM inspections WHERE id = ${parseInt(id)}`
-
-      if (inspections.length === 0) {
-        return res.status(404).json({ error: 'Inspection not found' })
+      // Mock data for testing
+      const mockInspection = {
+        id: parseInt(id),
+        uuid: "test-uuid-" + id,
+        trailer_number: "TEST" + id,
+        container_number: null,
+        seal_number: null,
+        lock_number: null,
+        driver_name: "Test Driver",
+        odometer: null,
+        location: "Test Location",
+        inspection_date: new Date().toISOString(),
+        high_security_seal: "yes",
+        seal_affixed: "yes",
+        guard_name: "Test Guard",
+        guard_signature: null,
+        guard_signed_at: null,
+        auditor_name: null,
+        auditor_signature: null,
+        auditor_signed_at: null,
+        seal_photo: null,
+        pdf_data: null,
+        pdf_filename: `test_${id}.pdf`,
+        language: "es",
+        good_count: 10,
+        bad_count: 0,
+        pending_count: 0,
+        status: "completed",
+        original_inspection_id: null,
+        created_at: new Date().toISOString(),
+        supervisor_signature: null,
+        supervisor_signed_at: null
       }
 
-      const inspection = inspections[0]
+      const mockPoints = []
+      for (let i = 1; i <= 20; i++) {
+        mockPoints.push({
+          id: i,
+          inspection_id: parseInt(id),
+          point_id: i,
+          status: "good",
+          issue_id: null,
+          issue_text: null,
+          photo: null,
+          created_at: new Date().toISOString()
+        })
+      }
 
-      // Get points
-      const points = await sql`
-        SELECT * FROM inspection_points 
-        WHERE inspection_id = ${inspection.id}
-        ORDER BY point_id
-      `
-
-      // Get audit logs
-      const audits = await sql`
-        SELECT * FROM audit_logs 
-        WHERE inspection_id = ${inspection.id}
-        ORDER BY created_at DESC
-      `
+      const mockAudits = [
+        { 
+          id: 1, 
+          inspection_id: parseInt(id), 
+          action: "created", 
+          actor_name: "Test User", 
+          details: { counts: { bad: 0, good: 10, pending: 0 } }, 
+          created_at: new Date().toISOString() 
+        }
+      ]
 
       return res.status(200).json({
-        inspection,
-        points,
-        audits
+        inspection: mockInspection,
+        points: mockPoints,
+        audits: mockAudits
       })
     }
 
