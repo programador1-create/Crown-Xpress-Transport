@@ -497,24 +497,46 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               <span className="text-xs font-semibold text-amber-600">17 {language === 'es' ? 'puntos' : 'points'}</span>
             </button>
 
-            {/* BOTADO - TPR */}
+            {/* BOBTAIL */}
             <button
               type="button"
-              onClick={() => setShowEmptyLoads(true)}
+              onClick={() => handleInspectionTypeChange('BOBTAIL')}
               className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
             >
-              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center group-hover:bg-rose-200 transition-colors">
-                <PackageX className="w-8 h-8 text-rose-600" />
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <Truck className="w-8 h-8 text-blue-600" />
               </div>
               <span className="font-bold text-lg text-slate-800">
-                {language === 'es' ? 'BOTADO' : 'EMPTY MOVE'}
+                {language === 'es' ? 'BOTADO' : 'BOBTAIL'}
               </span>
               <span className="text-xs text-slate-500 text-center">
                 {language === 'es' 
-                  ? 'Salida vacía desde sistema TPR' 
-                  : 'Empty move from TPR system'}
+                  ? 'Solo tractor. Sin trailer ni contenedor.' 
+                  : 'Tractor only. No trailer or container.'}
               </span>
-              <span className="text-xs font-semibold text-rose-600">TPR {language === 'es' ? 'Datos' : 'Data'}</span>
+              <span className="text-xs font-semibold text-blue-600">10 {language === 'es' ? 'puntos' : 'points'}</span>
+            </button>
+
+            {/* NBCW OUTPUTS */}
+            <button
+              type="button"
+              onClick={() => setShowEmptyLoads(true)}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <PackageX className="w-8 h-8 text-purple-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'SALIDAS NBCW' : 'NBCW OUTPUTS'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' 
+                  ? 'Movimientos de salida vacía desde sistema TPR' 
+                  : 'Empty load movements from TPR system'}
+              </span>
+              <span className="text-xs font-semibold text-purple-600">
+                {language === 'es' ? 'Botadas' : 'Empty Loads'}
+              </span>
             </button>
           </div>
         </div>
