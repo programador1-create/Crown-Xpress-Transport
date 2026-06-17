@@ -14,6 +14,7 @@ export default async function handler(req, res) {
       // Get user info from Authorization header or session
       const authHeader = req.headers.authorization
       let userKey = null
+      let yardCode = null
       
       if (authHeader) {
         // Extract user info from token or session
@@ -21,12 +22,22 @@ export default async function handler(req, res) {
           const token = authHeader.replace('Bearer ', '')
           const userSql = getSql()
           const [user] = await userSql`
-            SELECT id, username, full_name, location_id
-            FROM employees 
-            WHERE id = ${token} OR username = ${token}
+            SELECT e.id, e.username, e.full_name, e.location_id, l.name as location_name
+            FROM employees e
+            LEFT JOIN locations l ON e.location_id = l.id
+            WHERE e.id = ${token} OR e.username = ${token}
           `
           if (user) {
             userKey = user.username
+            // Extract yard code from location name (e.g., "Yard 6" -> "CXT6")
+            if (user.location_name) {
+              // Try to extract yard number and convert to CXT format
+              const yardMatch = user.location_name.match(/yard\s*(\d+)/i)
+              if (yardMatch) {
+                yardCode = `CXT${yardMatch[1]}`
+                console.log(`User ${user.username} assigned to ${user.location_name}, extracted yard code: ${yardCode}`)
+              }
+            }
           }
         } catch (e) {
           console.error('Error getting user info:', e)
@@ -90,7 +101,7 @@ export default async function handler(req, res) {
             TRXCODE as transactionCode,
             SEAL as seal
           FROM tpr 
-          WHERE DRVCODE = ${userKey} OR OPER = ${userKey}
+          WHERE ${yardCode ? `FROMD = ${yardCode}` : `(DRVCODE = ${userKey} OR OPER = ${userKey})`}
           AND (STATUS = 'PENDING' OR STATUS = 'PENDIENTE')
           ORDER BY FECHA DESC, TIMEARRV DESC
           LIMIT 50
@@ -209,7 +220,7 @@ export default async function handler(req, res) {
         }
       }
       
-      console.log(`Successfully queried table: ${tableName}, found ${outputs.length} outputs`)
+      console.log(`Query criteria - User: ${userKey}, Yard: ${yardCode || 'N/A'}, Search by: ${yardCode ? `FROMD = ${yardCode}` : 'DRVCODE/OPER'}, Found: ${outputs.length} outputs`)
 
       return res.status(200).json({
         success: true,
