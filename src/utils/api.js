@@ -70,10 +70,12 @@ export async function healthCheck() {
   return await fetchJson(`${API_BASE}/health`)
 }
 
-/** Get NBCW outputs for user's yard */
-export async function getNbcwOutputs(userLocation) {
-  const res = await fetchJson(`${API_BASE}/nbcw-outputs?location=${encodeURIComponent(userLocation)}`)
-  return res // { success, yardCode, data, count }
+/** Get TPR movements (empty loads) */
+export async function getTprMovements({ type = 'empty', date = null } = {}) {
+  const params = new URLSearchParams({ type })
+  if (date) params.append('date', date)
+  const res = await fetchJson(`${API_BASE}/tpr?${params}`)
+  return res // { success, data, count }
 }
 
 /** Search operator by employee number */

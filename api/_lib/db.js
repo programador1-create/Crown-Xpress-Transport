@@ -3,9 +3,6 @@ import { neon, neonConfig } from '@neondatabase/serverless'
 // Allow node connection in dev
 neonConfig.fetchConnectionCache = true
 
-// Suppress deprecation warning
-process.env.NO_DEPRECATION = 'url'
-
 let sqlInstance = null
 
 export function getSql() {
@@ -16,18 +13,6 @@ export function getSql() {
   }
   sqlInstance = neon(url)
   return sqlInstance
-}
-
-let nbcwSqlInstance = null
-
-export function getNbcwSql() {
-  if (nbcwSqlInstance) return nbcwSqlInstance
-  const url = process.env.DATABASE_URL_NBCW
-  if (!url) {
-    throw new Error('DATABASE_URL_NBCW is not set. Configure your NBCW connection in .env')
-  }
-  nbcwSqlInstance = neon(url)
-  return nbcwSqlInstance
 }
 
 /** Quick helper for SELECT one */

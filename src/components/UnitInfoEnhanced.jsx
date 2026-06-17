@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { searchOperator, searchOperatorsByName, listOperators } from '../utils/api'
 import { INSPECTION_TYPES } from '../data/inspectionPoints'
 import NumericKeypad from './NumericKeypad'
+import EmptyLoads from './EmptyLoads'
 
 const YARDS = [
   { id: 1, name: 'Yard A - Laredo' },
@@ -111,11 +112,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [operatorSearching, setOperatorSearching] = useState(false)
   const [operatorFound, setOperatorFound] = useState(null)
   const [operatorError, setOperatorError] = useState(null)
+  const [manualOperatorName, setManualOperatorName] = useState('')
+  const [showEmptyLoads, setShowEmptyLoads] = useState(false)
   const [operatorsList, setOperatorsList] = useState([])
   const [operatorsLoading, setOperatorsLoading] = useState(false)
   const [nameSearchResults, setNameSearchResults] = useState([])
   const [showNameResults, setShowNameResults] = useState(false)
-  const [manualOperatorName, setManualOperatorName] = useState('')
 
   // Sync local inspectionType with context when context changes
   useEffect(() => {
@@ -359,6 +361,34 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       updateUnitInfo('employeeNumber', 'MANUAL')
       setOperatorFound({ fullName: manualOperatorName.toUpperCase(), employeeNumber: 'MANUAL' })
       setOperatorError(null)
+    }
+  }
+
+  // Handle empty load selection
+  const handleSelectEmptyLoad = (movementData) => {
+    // Actualizar la información de la unidad con los datos de la botada
+    updateUnitInfo('trailerNumber', movementData.truckNumber || '')
+    updateUnitInfo('driverName', movementData.operator || '')
+    updateUnitInfo('employeeNumber', movementData.driverCode || '')
+    updateUnitInfo('workOrder', movementData.workOrder || '')
+    updateUnitInfo('origin', movementData.origin || {})
+    updateUnitInfo('destination', movementData.destination || {})
+    updateUnitInfo('customer', movementData.customer || '')
+    updateUnitInfo('sealNumber', movementData.seal || '')
+    updateUnitInfo('instructions', movementData.instructions || '')
+    updateUnitInfo('arrivalTime', movementData.arrivalTime || '')
+    updateUnitInfo('departureTime', movementData.departureTime || '')
+    
+    // Establecer el operador como encontrado para mostrar la confirmación
+    setOperatorFound({ 
+      fullName: movementData.operator || 'Desconocido', 
+      employeeNumber: movementData.driverCode || 'TPR' 
+    })
+    
+    // Si hay número de camión, establecer como número de contenedor/caja
+    if (movementData.truckNumber) {
+      updateUnitInfo('trailerNumber', movementData.truckNumber)
+      setContainerNumberEntered(true)
     }
   }
 
@@ -1560,6 +1590,26 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 </div>
               )}
 
+              {/* Empty Loads Button */}
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowEmptyLoads(true)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 flex items-center justify-center gap-2 transition-all shadow-lg"
+                >
+                  <PackageX className="w-5 h-5" />
+                  <span className="font-semibold">
+                    {language === 'es' ? 'Botadas Cargado/Vacío' : 'Empty Loads Movement'}
+                  </span>
+                </button>
+                <p className="text-xs text-slate-500 mt-2 text-center">
+                  {language === 'es' 
+                    ? 'Ver movimientos de salida vacía desde sistema TPR' 
+                    : 'View empty load movements from TPR system'
+                  }
+                </p>
+              </div>
+
               {/* Selected Operator Display */}
               {operatorFound && (
                 <div className="mt-4 p-3 bg-emerald-50 border-2 border-emerald-400 rounded-lg">
@@ -1596,6 +1646,14 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         initialValue={keypadField ? (unitInfo[keypadField] || '') : ''}
         maxLength={20}
       />
+
+      {/* Empty Loads Modal */}
+      {showEmptyLoads && (
+        <EmptyLoads
+          onSelectMovement={handleSelectEmptyLoad}
+          onClose={() => setShowEmptyLoads(false)}
+        />
+      )}
     </section>
   )
 }

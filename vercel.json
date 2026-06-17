@@ -50,12 +50,8 @@
       "destination": "/api/auth.js"
     },
     {
-      "source": "/api/nbcw-outputs",
-      "destination": "/api/nbcw-outputs.js"
-    },
-    {
-      "source": "/api/nbcw-test",
-      "destination": "/api/nbcw-test.js"
+      "source": "/api/tpr",
+      "destination": "/api/tpr.js"
     },
     {
       "source": "/(.*)",
