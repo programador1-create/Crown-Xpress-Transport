@@ -76,50 +76,7 @@ export default async function handler(req, res) {
       try {
         // Build query based on whether user has yard code or not
         tableName = 'tpr'
-        let query = `
-          SELECT 
-            DRVCODE as driverCode,
-            WONO as workOrderNumber,
-            BLNO as billOfLadingNumber,
-            FECHA as date,
-            FROMD as fromCode,
-            FROMCITY as fromCity,
-            FROMEDO as fromState,
-            TOD as toCode,
-            TOCITY as toCity,
-            TOEDO as toState,
-            TIPMOV as movementType,
-            STATUS as status,
-            EL as equipmentCode,
-            EQPCODE as equipmentTypeCode,
-            DELDATE as deliveryDate,
-            CSTMER as customer,
-            TIMEARRV as arrivalTime,
-            TIMEDEPAR as departureTime,
-            OPER as operator,
-            USTIMEIN as usTimeIn,
-            USTIMEOUT as usTimeOut,
-            MXMXCSTIN as mxCustomerTimeIn,
-            MXUSCSTIN as mxUsCustomerTimeIn,
-            MXTIMEOUT as mxTimeOut,
-            TRUCKID as truckId,
-            BLTIME as billTime,
-            TARRFROM as tariffFrom,
-            USRUPDD as userUpdateDate,
-            USRUPDT as userUpdateTime,
-            USRADD as userAdd,
-            USRADDD as userAddDate,
-            USRADDT as userAddTime,
-            INSTRUC1 as instructions1,
-            INSTRUC2 as instructions2,
-            RL as rlCode,
-            AMOUNT as amount,
-            TABLECODE as tableCode,
-            TRXCODE as transactionCode,
-            SEAL as seal
-          FROM tpr 
-          WHERE 1=1
-        `
+        let query = `SELECT DRVCODE as driverCode, WONO as workOrderNumber, BLNO as billOfLadingNumber, FECHA as date, FROMD as fromCode, FROMCITY as fromCity, FROMEDO as fromState, TOD as toCode, TOCITY as toCity, TOEDO as toState, TIPMOV as movementType, STATUS as status, EL as equipmentCode, EQPCODE as equipmentTypeCode, DELDATE as deliveryDate, CSTMER as customer, TIMEARRV as arrivalTime, TIMEDEPAR as departureTime, OPER as operator, USTIMEIN as usTimeIn, USTIMEOUT as usTimeOut, MXMXCSTIN as mxCustomerTimeIn, MXUSCSTIN as mxUsCustomerTimeIn, MXTIMEOUT as mxTimeOut, TRUCKID as truckId, BLTIME as billTime, TARRFROM as tariffFrom, USRUPDD as userUpdateDate, USRUPDT as userUpdateTime, USRADD as userAdd, USRADDD as userAddDate, USRADDT as userAddTime, INSTRUC1 as instructions1, INSTRUC2 as instructions2, RL as rlCode, AMOUNT as amount, TABLECODE as tableCode, TRXCODE as transactionCode, SEAL as seal FROM tpr WHERE 1=1`
         
         // Add WHERE conditions based on user type
         console.log(`Building query - yardCode: ${yardCode}, userKey: ${userKey}`)
