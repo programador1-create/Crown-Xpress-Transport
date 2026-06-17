@@ -153,6 +153,9 @@ export function AuthProvider({ children }) {
       }
       setUser(session)
       localStorage.setItem('crown_user', JSON.stringify(session))
+      // Save user token for NBCW API
+      localStorage.setItem('user_token', data.user.id.toString())
+      localStorage.setItem('user_id', data.user.id.toString())
       return session
     } catch (err) {
       // Re-throw the error - no fallback in production

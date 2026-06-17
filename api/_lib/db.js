@@ -4,6 +4,7 @@ import { neon, neonConfig } from '@neondatabase/serverless'
 neonConfig.fetchConnectionCache = true
 
 let sqlInstance = null
+let nbcwSqlInstance = null
 
 export function getSql() {
   if (sqlInstance) return sqlInstance
@@ -13,6 +14,16 @@ export function getSql() {
   }
   sqlInstance = neon(url)
   return sqlInstance
+}
+
+export function getNbcwSql() {
+  if (nbcwSqlInstance) return nbcwSqlInstance
+  const url = process.env.DATABASE_URL_NBCW
+  if (!url) {
+    throw new Error('DATABASE_URL_NBCW is not set. Configure your NBCW connection in .env')
+  }
+  nbcwSqlInstance = neon(url)
+  return nbcwSqlInstance
 }
 
 /** Quick helper for SELECT one */

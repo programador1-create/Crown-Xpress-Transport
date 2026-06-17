@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users, MapPin } from 'lucide-react'
+import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users, MapPin, Package } from 'lucide-react'
 import GuidedInspection from './GuidedInspection'
 import UnitInfo from './UnitInfoEnhanced'
 import TruckDiagram from './TruckDiagram'
@@ -13,6 +13,7 @@ import GuardHistory from './GuardHistory'
 import SupervisorView from './SupervisorView'
 import UserManagement from './UserManagement'
 import YardManagement from './YardManagement'
+import NbcwOutputs from './NbcwOutputs'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
@@ -58,6 +59,7 @@ export default function Router() {
   const tabs = [
     canEdit() && { id: 'form', label: 'v1 - Vista Clásica', icon: FileText },
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
+    canEdit() && { id: 'nbcw-outputs', label: 'SALIDAS NBCW', icon: Package },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
     canViewAll() && { id: 'supervisor', label: language === 'es' ? 'Vista Supervisor' : 'Supervisor View', icon: ShieldCheck },
     isAdmin && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
@@ -129,6 +131,7 @@ export default function Router() {
             <GuidedInspection />
           </div>
         )}
+        {page === 'nbcw-outputs' && canEdit() && <NbcwOutputs />}
         {page === 'my-history' && canEdit() && <GuardHistory />}
         {page === 'supervisor' && canViewAll() && <SupervisorView />}
         {page === 'users' && isAdmin && <UserManagement />}

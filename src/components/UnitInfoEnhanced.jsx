@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { MapPin, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2, Truck, Box, PackageX, Keyboard } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
@@ -87,6 +88,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo } = useInspection()
   const { user } = useAuth()
+  const location = useLocation()
+  
+  // Check if coming from NBCW with pre-filled data
+  const nbcwData = location.state?.prefillData
+  const fromNbcw = location.state?.fromNbcw
   // Sync local state with context - use context value as source of truth
   const [inspectionType, setInspectionType] = useState(unitInfo?.inspectionType || null)
   const [trailerType, setTrailerType] = useState(unitInfo?.trailerType || null)
@@ -116,6 +122,80 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [nameSearchResults, setNameSearchResults] = useState([])
   const [showNameResults, setShowNameResults] = useState(false)
   const [manualOperatorName, setManualOperatorName] = useState('')
+
+  // Pre-fill data from NBCW if coming from NBCW outputs
+  useEffect(() => {
+    if (fromNbcw && nbcwData) {
+      // Auto-fill inspection type based on equipment
+      let inspectionTypeValue = 'LOADED'
+      if (nbcwData.trailerNumber && !nbcwData.containerNumber) {
+        inspectionTypeValue = 'BOBTAIL'
+      } else if (nbcwData.trailerNumber || nbcwData.containerNumber) {
+        inspectionTypeValue = 'LOADED'
+      }
+      
+      // Set inspection type
+      setInspectionType(inspectionTypeValue)
+      updateUnitInfo('inspectionType', inspectionTypeValue)
+      
+      // Fill trailer/container info
+      if (nbcwData.trailerNumber) {
+        updateUnitInfo('trailerNumber', nbcwData.trailerNumber)
+        setContainerNumberEntered(true)
+      }
+      if (nbcwData.containerNumber) {
+        updateUnitInfo('containerNumber', nbcwData.containerNumber)
+        setHasContainer(true)
+        setContainerNumberEntered(true)
+      }
+      
+      // Fill seal info
+      if (nbcwData.sealNumber) {
+        updateUnitInfo('sealNumber', nbcwData.sealNumber)
+        setHasSeal(true)
+        setSealLockEntered(true)
+      }
+      
+      // Fill driver info
+      if (nbcwData.driverName) {
+        updateUnitInfo('driverName', nbcwData.driverName)
+        setOperatorName(nbcwData.driverName)
+        setOperatorFound({ full_name: nbcwData.driverName })
+        setTractorNumberEntered(true)
+      }
+      
+      // Fill location info
+      if (nbcwData.location) {
+        updateUnitInfo('location', nbcwData.location)
+      }
+      
+      // Fill customer and work order
+      if (nbcwData.customer) {
+        updateUnitInfo('customer', nbcwData.customer)
+      }
+      if (nbcwData.workOrderNumber) {
+        updateUnitInfo('workOrderNumber', nbcwData.workOrderNumber)
+      }
+      if (nbcwData.billOfLading) {
+        updateUnitInfo('billOfLading', nbcwData.billOfLading)
+      }
+      
+      // Fill route info
+      if (nbcwData.fromLocation) {
+        updateUnitInfo('fromLocation', nbcwData.fromLocation)
+      }
+      if (nbcwData.toLocation) {
+        updateUnitInfo('toLocation', nbcwData.toLocation)
+      }
+      
+      // Auto-complete flow and go to inspection
+      setTimeout(() => {
+        if (onFlowComplete) onFlowComplete()
+        // Auto-navigate to inspection points
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 500)
+    }
+  }, [fromNbcw, nbcwData, updateUnitInfo, onFlowComplete])
 
   // Sync local inspectionType with context when context changes
   useEffect(() => {

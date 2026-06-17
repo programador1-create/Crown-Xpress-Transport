@@ -70,6 +70,28 @@ export async function healthCheck() {
   return await fetchJson(`${API_BASE}/health`)
 }
 
+/** Get NBCW outputs for logged user */
+export async function getNbcwOutputs() {
+  const token = localStorage.getItem('user_token') || localStorage.getItem('user_id')
+  const res = await fetchJson(`${API_BASE}/nbcw-outputs`, {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  })
+  return res // { success, outputs }
+}
+
+/** Create inspection from NBCW output */
+export async function createInspectionFromNbcw(outputId, inspectionData) {
+  const res = await fetchJson(`${API_BASE}/nbcw-outputs`, {
+    method: 'POST',
+    body: JSON.stringify({ outputId, inspectionData }),
+    headers: { 'Content-Type': 'application/json' }
+  })
+  return res // { success, inspection }
+}
+
 /** Search operator by employee number */
 export async function searchOperator(employeeNumber) {
   const res = await fetchJson(`${API_BASE}/employees?employee_number=${encodeURIComponent(employeeNumber)}`)
