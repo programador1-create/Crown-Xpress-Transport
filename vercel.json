@@ -54,6 +54,10 @@
       "destination": "/api/nbcw-outputs.js"
     },
     {
+      "source": "/api/nbcw-test",
+      "destination": "/api/nbcw-test.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

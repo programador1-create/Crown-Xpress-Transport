@@ -11,17 +11,32 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
+      // Early check for NBCW database configuration
+      if (!process.env.DATABASE_URL_NBCW) {
+        console.error('NBCW Error: DATABASE_URL_NBCW not configured')
+        return res.status(500).json({ 
+          error: 'NBCW database not configured',
+          details: 'DATABASE_URL_NBCW environment variable is missing. Please configure it to access NBCW outputs.'
+        })
+      }
+
       // Get user info from Authorization header or query
       const authHeader = req.headers.authorization
       const userLocation = req.query.location || req.headers['x-user-location']
       
+      console.log('NBCW Debug - Request headers:', req.headers)
+      console.log('NBCW Debug - Query params:', req.query)
+      
       if (!userLocation) {
         return res.status(400).json({ 
-          error: 'User location is required' 
+          error: 'User location is required',
+          details: 'Please provide location parameter or x-user-location header'
         })
       }
 
+      console.log('NBCW Debug - Attempting to connect to NBCW database...')
       const sql = getNbcwSql()
+      console.log('NBCW Debug - Connected to NBCW database successfully')
       
       // Extract yard code from location and normalize
       // Handle formats like 'CXT6', 'CXT6 Yard', 'yard 6', etc.
@@ -106,6 +121,16 @@ export default async function handler(req, res) {
 
     } catch (error) {
       console.error('NBCW Outputs Error:', error)
+      console.error('NBCW Error Stack:', error.stack)
+      
+      // Check if it's a database connection error
+      if (error.message.includes('DATABASE_URL_NBCW')) {
+        return res.status(500).json({ 
+          error: 'NBCW database not configured',
+          details: 'DATABASE_URL_NBCW environment variable is missing'
+        })
+      }
+      
       return res.status(500).json({ 
         error: 'Failed to fetch NBCW outputs',
         details: error.message 
