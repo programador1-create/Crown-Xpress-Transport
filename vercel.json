@@ -10,14 +10,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/health",
-      "destination": "/api/health.js"
-    },
-    {
-      "source": "/api/init-db",
-      "destination": "/api/init-db.js"
-    },
-    {
       "source": "/api/inspections",
       "destination": "/api/inspections/index.js"
     },
@@ -27,19 +19,11 @@
     },
     {
       "source": "/api/inspections/:id/pdf",
-      "destination": "/api/inspections/[id]/pdf.js"
+      "destination": "/api/inspections/[id].js"
     },
     {
-      "source": "/api/inspections/:id/sign-auditor",
-      "destination": "/api/inspections/[id]/sign-auditor.js"
-    },
-    {
-      "source": "/api/inspections/:id/reconfirm",
-      "destination": "/api/inspections/[id]/reconfirm.js"
-    },
-    {
-      "source": "/api/inspections/:id/chain",
-      "destination": "/api/inspections/[id]/chain.js"
+      "source": "/api/inspections/:id/sign-supervisor",
+      "destination": "/api/inspections/[id].js"
     },
     {
       "source": "/api/employees",
