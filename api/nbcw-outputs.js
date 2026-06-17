@@ -103,7 +103,7 @@ export default async function handler(req, res) {
             TRXCODE as transactionCode,
             SEAL as seal
           FROM tpr 
-          WHERE ${yardCode ? `FROMD = ${yardCode}` : `(DRVCODE = ${userKey} OR OPER = ${userKey})`}
+          WHERE ${yardCode ? `FROMD = ${yardCode}` : `DRVCODE = ${userKey} OR OPER = ${userKey}`}
           AND (STATUS = 'PENDING' OR STATUS = 'PENDIENTE')
           ORDER BY FECHA DESC, TIMEARRV DESC
           LIMIT 50
