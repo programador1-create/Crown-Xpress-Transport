@@ -364,31 +364,118 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     }
   }
 
-  // Handle empty load selection
+  // Handle empty load selection (NBCW TPR data)
   const handleSelectEmptyLoad = (movementData) => {
-    // Actualizar la información de la unidad con los datos de la botada
-    updateUnitInfo('trailerNumber', movementData.truckNumber || '')
+    const tprType = movementData.inspectionType || 'LOADED'
+    const eqpCode = movementData.equipmentCode || ''
+    const isBotada = tprType === 'BOBTAIL'
+    
+    // Determinar automáticamente tipo de inspección y pre-llenar datos
+    handleInspectionTypeChange(tprType)
+    
+    // Datos básicos del operador
     updateUnitInfo('driverName', movementData.operator || '')
     updateUnitInfo('employeeNumber', movementData.driverCode || '')
     updateUnitInfo('workOrder', movementData.workOrder || '')
     updateUnitInfo('origin', movementData.origin || {})
     updateUnitInfo('destination', movementData.destination || {})
     updateUnitInfo('customer', movementData.customer || '')
-    updateUnitInfo('sealNumber', movementData.seal || '')
     updateUnitInfo('instructions', movementData.instructions || '')
     updateUnitInfo('arrivalTime', movementData.arrivalTime || '')
     updateUnitInfo('departureTime', movementData.departureTime || '')
+    updateUnitInfo('inspectionDate', movementData.date || '')
+    updateUnitInfo('inspectionReason', movementData.inspectionReason || '')
     
-    // Establecer el operador como encontrado para mostrar la confirmación
+    // Establecer el operador como encontrado
     setOperatorFound({ 
       fullName: movementData.operator || 'Desconocido', 
       employeeNumber: movementData.driverCode || 'TPR' 
     })
     
-    // Si hay número de camión, establecer como número de contenedor/caja
-    if (movementData.truckNumber) {
-      updateUnitInfo('trailerNumber', movementData.truckNumber)
-      setContainerNumberEntered(true)
+    if (isBotada) {
+      // BOTADO: truckid es el tractor, eqpcode es '** Botada **'
+      updateUnitInfo('tractorNumber', movementData.truckNumber || '')
+      updateUnitInfo('trailerNumber', '')
+      updateUnitInfo('sealNumber', '')
+      updateUnitInfo('lockNumber', '')
+      setTractorNumberEntered(!!movementData.truckNumber)
+      setContainerNumberEntered(false)
+    } else {
+      // LOADED o EMPTY: truckid es trailer/contenedor
+      updateUnitInfo('trailerNumber', movementData.truckNumber || '')
+      updateUnitInfo('sealNumber', movementData.seal || '')
+      setContainerNumberEntered(!!movementData.truckNumber)
+      
+      // Para LOADED, marcar que tiene sello
+      if (tprType === 'LOADED' && movementData.seal) {
+        setHasSeal(true)
+        setSealLockEntered(true)
+        if (onSealChange) onSealChange(true)
+      }
+      
+      // Determinar tipo de trailer basado en eqpcode
+      if (eqpCode) {
+        const eqpUpper = eqpCode.toUpperCase()
+        
+        // ISO container prefix pattern: XXXX-######-#
+        const isIsoContainer = /^[A-Z]{4}-\d{6}-\d$/.test(eqpUpper)
+        // CXC = Crown Container
+        const isCxcContainer = eqpUpper.startsWith('CXC')
+        // Known ISO prefixes
+        const isoPrefixes = ['CSNU', 'TGBU', 'GCXU', 'EMHU', 'UMXU', 'MEDU', 'MSCU', 'MAEU', 'CMAU', 'HLXU', 'OOLU', 'TCNU', 'TRLU']
+        const hasIsoPrefix = isoPrefixes.some(p => eqpUpper.startsWith(p))
+        
+        // Caja/Rabon patterns: CXT, ABBA, RBX, JGB, R###, D#####
+        const isBox = eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') || 
+                      eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB') ||
+                      /^R\d{3}/.test(eqpUpper) || /^D\d{5}/.test(eqpUpper)
+        
+        if (isIsoContainer || isCxcContainer || hasIsoPrefix) {
+          // CONTENEDOR
+          handleTrailerTypeChange('CONTAINER')
+          
+          // Detectar tamaño del contenedor
+          const sizeMatch = eqpCode.match(/-(\d{2})\d{4}-/)
+          const containerSize = sizeMatch ? sizeMatch[1] : '40'
+          handleTrailerSizeChange(containerSize)
+          
+          // Contenedores ISO siempre son de CLIENTE (a menos sea CXC)
+          if (isCxcContainer) {
+            handleEquipmentOwnerChange('CROWN')
+            setCrownFleet('CXTC')
+          } else {
+            handleEquipmentOwnerChange('CUSTOMER')
+            const prefix = isoPrefixes.find(p => eqpUpper.startsWith(p))
+            if (prefix) setCustomerPrefix(prefix)
+          }
+        } else if (isBox) {
+          // CAJA (incluye Rabon R###)
+          handleTrailerTypeChange('BOX')
+          
+          // Rabones (R###) son tipicamente mas cortos
+          const isRabon = /^R\d{3}/.test(eqpUpper)
+          const boxSize = isRabon ? '28' : '53'
+          handleTrailerSizeChange(boxSize)
+          
+          // Determinar propietario para cajas
+          if (eqpUpper.startsWith('CXT') || eqpUpper.startsWith('RBX') || 
+              eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('JGB')) {
+            handleEquipmentOwnerChange('CROWN')
+            if (eqpUpper.startsWith('CXT')) setCrownFleet('CXT')
+            else if (eqpUpper.startsWith('RBX')) setCrownFleet('RBX')
+            else if (eqpUpper.startsWith('ABBA')) setCrownFleet('ABBA')
+            else if (eqpUpper.startsWith('JGB')) setCrownFleet('JGB')
+          } else {
+            // D##### u otros - asumir CLIENTE por ahora
+            handleEquipmentOwnerChange('CUSTOMER')
+          }
+        } else {
+          // Default a CAJA para cualquier otro eqpcode
+          handleTrailerTypeChange('BOX')
+          handleTrailerSizeChange('53')
+          handleEquipmentOwnerChange('CUSTOMER')
+        }
+      }
     }
   }
 
@@ -470,9 +557,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'CARGADO' : 'LOADED'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Trailer con carga. Requiere sello O candado.' 
-                  : 'Trailer with cargo. Requires seal OR lock.'}
+                {language === 'es'
+                  ? 'Trailer con carga. Requiere sello O candado. Inspeccion completa de 20 puntos incluyendo pared frontal, piso interior y limpieza.'
+                  : 'Trailer with cargo. Requires seal OR lock. Full 20-point inspection including front wall, interior floor and cleanliness.'}
               </span>
               <span className="text-xs font-semibold text-emerald-600">20 {language === 'es' ? 'puntos' : 'points'}</span>
             </button>
@@ -490,9 +577,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'VACÍO' : 'EMPTY'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Trailer sin carga. Sin sello ni candado.' 
-                  : 'Empty trailer. No seal or lock.'}
+                {language === 'es'
+                  ? 'Trailer sin carga. Sin sello ni candado. 17 puntos (excluye pared frontal, piso interior y limpieza).'
+                  : 'Empty trailer. No seal or lock. 17 points (excludes front wall, interior floor and cleanliness).'}
               </span>
               <span className="text-xs font-semibold text-amber-600">17 {language === 'es' ? 'puntos' : 'points'}</span>
             </button>
@@ -510,9 +597,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'BOTADO' : 'BOBTAIL'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Solo tractor. Sin trailer ni contenedor.' 
-                  : 'Tractor only. No trailer or container.'}
+                {language === 'es'
+                  ? 'Solo tractor sin trailer (Botada). 10 puntos de inspeccion solo del tractor.'
+                  : 'Tractor only, no trailer (Bobtail). 10 inspection points for tractor only.'}
               </span>
               <span className="text-xs font-semibold text-blue-600">10 {language === 'es' ? 'puntos' : 'points'}</span>
             </button>

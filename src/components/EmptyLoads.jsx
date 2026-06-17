@@ -78,6 +78,25 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   }
 
   const handleSelectMovement = (movement) => {
+    // Determinar tipo de equipo e inspección basado en campos TPR
+    const el = movement.equipment_type?.trim() // 'L' = Loaded, 'E' = Empty
+    const eqpcode = movement.equipment_code?.trim() || ''
+    const isBotada = eqpcode.includes('Botada') || eqpcode.includes('BOTADA')
+    
+    let inspectionType = 'LOADED'
+    let inspectionReason = ''
+    
+    if (isBotada) {
+      inspectionType = 'BOBTAIL'
+      inspectionReason = 'Botada - Solo tractor sin trailer'
+    } else if (el === 'E') {
+      inspectionType = 'EMPTY'
+      inspectionReason = 'Vacío - Trailer sin carga'
+    } else if (el === 'L') {
+      inspectionType = 'LOADED'
+      inspectionReason = 'Cargado - Trailer con carga'
+    }
+
     // Preparar datos para la inspección
     const inspectionData = {
       workOrder: movement.work_order,
@@ -94,12 +113,16 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         state: movement.to_state?.trim()
       },
       customer: movement.customer?.trim(),
-      equipmentCode: movement.equipment_code?.trim(),
+      equipmentCode: eqpcode,
+      equipmentType: el, // 'L' o 'E'
       seal: movement.seal?.trim(),
       instructions: [movement.instructions_1, movement.instructions_2].filter(Boolean).join(' | '),
       arrivalTime: movement.arrival_time,
       departureTime: movement.departure_time,
       operator: movement.operator?.trim(),
+      inspectionType: inspectionType, // 'LOADED', 'EMPTY', o 'BOBTAIL'
+      inspectionReason: inspectionReason,
+      date: movement.date,
       tprData: movement // Guardar datos originales por si se necesitan
     }
 
@@ -224,6 +247,38 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                             {movement.driver_code?.trim() || '-'}
                           </span>
                         </div>
+                        {/* Equipment type badge */}
+                        {(() => {
+                          const el = movement.equipment_type?.trim()
+                          const eqp = movement.equipment_code?.trim() || ''
+                          const eqpUpper = eqp.toUpperCase()
+                          
+                          // Detectar tipo de equipo basado en eqpcode
+                          let tipoEquipo = ''
+                          if (eqp.includes('Botada') || eqp.includes('BOTADA')) {
+                            tipoEquipo = 'BOTADO'
+                          } else if (eqpUpper.startsWith('CXC') || /^[A-Z]{4}-\d{6}-\d$/.test(eqpUpper)) {
+                            tipoEquipo = 'CONTENEDOR'
+                          } else if (eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB') || /^R\d{3}/.test(eqpUpper)) {
+                            tipoEquipo = 'CAJA'
+                          } else if (/^D\d{5}/.test(eqpUpper)) {
+                            tipoEquipo = 'CAJA'
+                          } else {
+                            tipoEquipo = 'CAJA'
+                          }
+                          
+                          // Color segun tipo
+                          if (tipoEquipo === 'BOTADO') {
+                            return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">BOTADO</span>
+                          }
+                          if (el === 'L') {
+                            return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">{tipoEquipo} · CARGADO</span>
+                          }
+                          if (el === 'E') {
+                            return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">{tipoEquipo} · VACIO</span>
+                          }
+                          return <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full">{tipoEquipo}</span>
+                        })()}
                       </div>
 
                       {/* Route */}

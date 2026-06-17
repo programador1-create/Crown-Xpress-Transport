@@ -15,8 +15,11 @@ export function getSql() {
   return sqlInstance
 }
 
-/** Quick helper for SELECT one */
+/** Quick helper for SELECT one — must be called as tagged template: queryOne`SELECT...` */
 export async function queryOne(strings, ...values) {
+  if (!Array.isArray(strings)) {
+    throw new Error('queryOne must be called as a tagged template: queryOne`SELECT...`')
+  }
   const sql = getSql()
   const rows = await sql(strings, ...values)
   return rows[0] || null
