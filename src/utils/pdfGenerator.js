@@ -492,11 +492,11 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase6
   doc.setFillColor(...COLORS.gold)
   doc.rect(0, 28, pageWidth, 1.5, 'F')
 
-  // Crown Xpress Logo (PNG image) - made larger
-  const logoWidth = 80
-  const logoHeight = 30
+  // Crown Xpress Logo (PNG image) - compact size
+  const logoWidth = 45
+  const logoHeight = 17
   const logoX = margin
-  const logoY = 2
+  const logoY = 5
   
   if (logoBase64) {
     try {
