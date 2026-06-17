@@ -1,5 +1,5 @@
-import sql from '../_lib/db.js'
-import { generatePDF } from '../_lib/pdf-generator.js'
+// import sql from '../_lib/db.js'
+// import { generatePDF } from '../_lib/pdf-generator.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query
+  console.log('Endpoint called:', req.method, req.url, 'ID:', id)
 
   try {
     if (req.method === 'GET') {
