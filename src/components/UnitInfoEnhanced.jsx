@@ -520,7 +520,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             {/* NBCW OUTPUTS */}
             <button
               type="button"
-              onClick={() => setShowEmptyLoads(true)}
+              onClick={() => {
+              console.log('NBCW button clicked, setting showEmptyLoads to true')
+              setShowEmptyLoads(true)
+            }}
               className="p-6 border-2 border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all flex flex-col items-center gap-3 group"
             >
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors">

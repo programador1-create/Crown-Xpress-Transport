@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getTprMovements } from '../utils/api'
 
 export default function EmptyLoads({ onSelectMovement, onClose }) {
+  console.log('EmptyLoads component rendered')
   const { t, language } = useLanguage()
   const [movements, setMovements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -13,6 +14,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [filteredMovements, setFilteredMovements] = useState([])
 
   useEffect(() => {
+    console.log('EmptyLoads useEffect triggered, loading movements...')
     loadMovements()
   }, [])
 
@@ -21,17 +23,24 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   }, [movements, searchTerm, selectedDate])
 
   const loadMovements = async () => {
+    console.log('loadMovements called')
     try {
       setLoading(true)
+      console.log('Calling getTprMovements with type: pending')
       const res = await getTprMovements({ type: 'pending' })
+      console.log('getTprMovements response:', res)
       if (res.success) {
+        console.log('Success, setting movements:', res.data)
         setMovements(res.data || [])
       } else {
+        console.log('Error in response:', res)
         setError(language === 'es' ? 'Error al cargar salidas pendientes' : 'Error loading pending outputs')
       }
     } catch (err) {
+      console.log('Exception in loadMovements:', err)
       setError(err.message || (language === 'es' ? 'Error de conexión' : 'Connection error'))
     } finally {
+      console.log('Setting loading to false')
       setLoading(false)
     }
   }
