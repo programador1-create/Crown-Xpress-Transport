@@ -3,6 +3,9 @@ import { neon, neonConfig } from '@neondatabase/serverless'
 // Allow node connection in dev
 neonConfig.fetchConnectionCache = true
 
+// Suppress deprecation warning
+process.env.NO_DEPRECATION = 'url'
+
 let sqlInstance = null
 
 export function getSql() {
