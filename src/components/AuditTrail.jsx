@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, User, FileText, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react'
+import { Clock, User, FileText, ShieldCheck, CheckCircle2, XCircle, Edit3, Eye, Download, AlertTriangle, RefreshCw } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { getInspection } from '../utils/api'
 
@@ -81,39 +81,117 @@ export default function AuditTrail({ inspectionId, className = '' }) {
       <div>
         <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4" />
-          {language === 'es' ? 'Historial de acciones' : 'Action History'}
+          {language === 'es' ? 'Historial de Acciones' : 'Action History'}
+          <span className="text-xs font-normal text-slate-400 ml-auto">
+            {audits.length} {language === 'es' ? 'registros' : 'records'}
+          </span>
         </h4>
-        <div className="space-y-2">
-          {audits.map((a, i) => (
-            <div key={a.id} className="flex items-start gap-3 p-2 rounded-lg bg-slate-50 border border-slate-100">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                a.role === 'guard' ? 'bg-crown-navy text-white' :
-                a.role === 'auditor' ? 'bg-crown-gold text-white' :
-                'bg-slate-200 text-slate-600'
-              }`}>
-                {a.role === 'guard' ? <ShieldCheck className="w-4 h-4" /> :
-                 a.role === 'auditor' ? <User className="w-4 h-4" /> :
-                 <User className="w-4 h-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-slate-800 truncate">{a.user_name}</div>
-                <div className="text-xs text-slate-500 capitalize">{a.role}</div>
-                <div className="text-xs text-slate-400">{new Date(a.created_at).toLocaleString()}</div>
-                <div className="text-xs text-crown-navy font-medium mt-0.5">
-                  {a.action === 'created' ? (language === 'es' ? 'Creó la inspección' : 'Created inspection') :
-                   a.action === 'signed_guard' ? (language === 'es' ? 'Firmó como guardia' : 'Signed as guard') :
-                   a.action === 'signed_auditor' ? (language === 'es' ? 'Firmó como auditor' : 'Signed as auditor') :
-                   a.action === 'downloaded_pdf' ? (language === 'es' ? 'Descargó PDF' : 'Downloaded PDF') :
-                   a.action}
+        <div className="relative">
+          {/* Timeline line */}
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200" />
+          
+          <div className="space-y-3">
+            {audits.map((a, i) => {
+              const getActionIcon = () => {
+                switch(a.action) {
+                  case 'created': return <FileText className="w-3.5 h-3.5" />
+                  case 'signed_guard': return <ShieldCheck className="w-3.5 h-3.5" />
+                  case 'signed_auditor': 
+                  case 'signed_supervisor': return <Edit3 className="w-3.5 h-3.5" />
+                  case 'downloaded_pdf': return <Download className="w-3.5 h-3.5" />
+                  case 'viewed': return <Eye className="w-3.5 h-3.5" />
+                  case 'reconfirmed': return <RefreshCw className="w-3.5 h-3.5" />
+                  case 'point_changed': return <AlertTriangle className="w-3.5 h-3.5" />
+                  default: return <User className="w-3.5 h-3.5" />
+                }
+              }
+              
+              const getActionColor = () => {
+                switch(a.action) {
+                  case 'created': return 'bg-blue-500 text-white'
+                  case 'signed_guard': return 'bg-crown-navy text-white'
+                  case 'signed_auditor':
+                  case 'signed_supervisor': return 'bg-emerald-500 text-white'
+                  case 'downloaded_pdf': return 'bg-purple-500 text-white'
+                  case 'reconfirmed': return 'bg-amber-500 text-white'
+                  case 'point_changed': return 'bg-rose-500 text-white'
+                  default: return 'bg-slate-400 text-white'
+                }
+              }
+              
+              const getActionText = () => {
+                switch(a.action) {
+                  case 'created': return language === 'es' ? 'Creó la inspección' : 'Created inspection'
+                  case 'signed_guard': return language === 'es' ? 'Firmó como guardia' : 'Signed as guard'
+                  case 'signed_auditor': return language === 'es' ? 'Firmó como auditor' : 'Signed as auditor'
+                  case 'signed_supervisor': return language === 'es' ? 'Firmó como supervisor' : 'Signed as supervisor'
+                  case 'downloaded_pdf': return language === 'es' ? 'Descargó PDF' : 'Downloaded PDF'
+                  case 'viewed': return language === 'es' ? 'Visualizó inspección' : 'Viewed inspection'
+                  case 'reconfirmed': return language === 'es' ? 'Reconfirmó inspección' : 'Reconfirmed inspection'
+                  case 'point_changed': return language === 'es' ? 'Modificó punto de inspección' : 'Changed inspection point'
+                  default: return a.action
+                }
+              }
+              
+              const getRoleLabel = () => {
+                switch(a.role) {
+                  case 'guard': return language === 'es' ? 'Guardia' : 'Guard'
+                  case 'auditor': return language === 'es' ? 'Auditor' : 'Auditor'
+                  case 'supervisor': return language === 'es' ? 'Supervisor' : 'Supervisor'
+                  case 'admin': return language === 'es' ? 'Administrador' : 'Admin'
+                  default: return a.role
+                }
+              }
+              
+              return (
+                <div key={a.id} className="flex items-start gap-3 pl-1 relative">
+                  {/* Timeline dot */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 shadow-sm ${getActionColor()}`}>
+                    {getActionIcon()}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 bg-white rounded-lg border border-slate-200 p-3 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="font-semibold text-sm text-slate-800 truncate flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        {a.user_name || (language === 'es' ? 'Usuario desconocido' : 'Unknown user')}
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        a.role === 'guard' ? 'bg-crown-navy/10 text-crown-navy' :
+                        a.role === 'supervisor' || a.role === 'auditor' ? 'bg-emerald-100 text-emerald-700' :
+                        a.role === 'admin' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {getRoleLabel()}
+                      </span>
+                    </div>
+                    
+                    <div className="text-sm text-crown-navy font-medium mb-1">
+                      {getActionText()}
+                    </div>
+                    
+                    {a.details && (
+                      <div className="text-xs text-slate-500 bg-slate-50 rounded p-2 mt-2">
+                        {a.details}
+                      </div>
+                    )}
+                    
+                    <div className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(a.created_at).toLocaleString()}
+                    </div>
+                  </div>
                 </div>
+              )
+            })}
+            
+            {audits.length === 0 && (
+              <div className="text-center text-slate-400 py-6 text-sm bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                {language === 'es' ? 'Sin acciones registradas aún' : 'No actions recorded yet'}
               </div>
-            </div>
-          ))}
-          {audits.length === 0 && (
-            <div className="text-center text-slate-400 py-4 text-sm">
-              {language === 'es' ? 'Sin acciones registradas' : 'No actions recorded'}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

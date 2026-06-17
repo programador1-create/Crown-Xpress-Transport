@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X, PenTool } from 'lucide-react'
+import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X, PenTool, Eye } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, signSupervisor } from '../utils/api'
@@ -91,6 +91,16 @@ export default function SupervisorView() {
       URL.revokeObjectURL(url)
     } catch (e) {
       alert(language === 'es' ? 'Error descargando PDF' : 'Error downloading PDF')
+    }
+  }
+
+  const handleViewPdf = async (id) => {
+    try {
+      const blob = await downloadPdf(id)
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch (e) {
+      alert(language === 'es' ? 'Error abriendo PDF' : 'Error opening PDF')
     }
   }
 
@@ -359,17 +369,27 @@ export default function SupervisorView() {
                           {insp.status === 'audited' ? (language === 'es' ? 'Supervisada' : 'Supervised') : insp.status}
                         </span>
                         {insp.status === 'completed' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleSignSupervisor(insp) }}
-                            className="p-1 rounded hover:bg-emerald-200"
-                            title={language === 'es' ? 'Firmar como supervisor' : 'Sign as supervisor'}
-                          >
-                            <PenTool className="w-4 h-4 text-emerald-600" />
-                          </button>
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleViewPdf(insp.id) }}
+                              className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                              title={language === 'es' ? 'Ver PDF antes de firmar' : 'View PDF before signing'}
+                            >
+                              <Eye className="w-4 h-4 text-blue-600" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleSignSupervisor(insp) }}
+                              className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors"
+                              title={language === 'es' ? 'Firmar como supervisor' : 'Sign as supervisor'}
+                            >
+                              <PenTool className="w-4 h-4 text-emerald-600" />
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDownload(insp.id, insp.pdf_filename) }}
-                          className="p-1 rounded hover:bg-slate-200"
+                          className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+                          title={language === 'es' ? 'Descargar PDF' : 'Download PDF'}
                         >
                           <Download className="w-4 h-4 text-slate-600" />
                         </button>
