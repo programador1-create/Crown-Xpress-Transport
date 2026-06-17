@@ -118,7 +118,9 @@ export default async function handler(req, res) {
           LIMIT 50`
         
         console.log('Executing query:', query)
-        outputs = await nbcwSql.unsafe(query)
+        const result = await nbcwSql.unsafe(query)
+        outputs = Array.isArray(result) ? result : []
+        console.log(`Query returned ${outputs.length} outputs`)
       } catch (e) {
         console.error('Error querying tpr table:', e.message)
         console.error('Full error details:', e)
