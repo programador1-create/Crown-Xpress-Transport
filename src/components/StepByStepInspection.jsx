@@ -56,6 +56,9 @@ export default function StepByStepInspection({ onAllCompleted }) {
   }
 
   const goToNext = () => {
+    // If all points are completed, allow advancing to next step
+    const allCompleted = completedCount === totalPoints
+    
     if (!isLastStep) {
       // Check if current point is not completed
       if (!isCurrentPointCompleted()) {
@@ -63,6 +66,9 @@ export default function StepByStepInspection({ onAllCompleted }) {
         return
       }
       setCurrentStep(prev => prev + 1)
+    } else if (allCompleted && onAllCompleted) {
+      // All points completed and on last step - advance to next phase
+      onAllCompleted()
     }
   }
 
@@ -343,20 +349,28 @@ export default function StepByStepInspection({ onAllCompleted }) {
               {currentStep + 1} / {totalPoints}
             </div>
 
-            <button
-              onClick={goToNext}
-              disabled={isLastStep}
-              className={`flex items-center gap-3 px-5 py-3 rounded-xl font-bold text-lg transition-all ${
-                isLastStep
-                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-2 border-slate-300'
-                  : 'bg-crown-navy text-white hover:bg-crown-navy/90 border-2 border-crown-navy-dark shadow-lg'
-              }`}
-            >
-              <span className="hidden sm:inline">
-                {language === 'es' ? 'Siguiente' : 'Next'}
-              </span>
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            const allCompleted = completedCount === totalPoints
+            const canAdvance = !isLastStep || (allCompleted && onAllCompleted)
+            
+            return (
+              <button
+                onClick={goToNext}
+                disabled={!canAdvance}
+                className={`flex items-center gap-3 px-5 py-3 rounded-xl font-bold text-lg transition-all ${
+                  !canAdvance
+                    ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-2 border-slate-300'
+                    : 'bg-crown-navy text-white hover:bg-crown-navy/90 border-2 border-crown-navy-dark shadow-lg'
+                }`}
+              >
+                <span className="hidden sm:inline">
+                  {allCompleted && isLastStep && onAllCompleted
+                    ? language === 'es' ? 'Continuar' : 'Continue'
+                    : language === 'es' ? 'Siguiente' : 'Next'
+                  }
+                </span>
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )
           </div>
         </div>
 
