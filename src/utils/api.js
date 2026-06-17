@@ -50,7 +50,7 @@ export async function getInspection(id) {
 
 /** Download PDF binary */
 export async function downloadPdf(id) {
-  const res = await fetch(`${API_BASE}/inspections/${id}/pdf`)
+  const res = await fetch(`${API_BASE}/inspections/${id}?download=pdf`)
   if (!res.ok) throw new Error('Failed to download PDF')
   const blob = await res.blob()
   return blob
@@ -58,9 +58,9 @@ export async function downloadPdf(id) {
 
 /** Add supervisor signature later (optional) */
 export async function signSupervisor(id, { name, signedAt }) {
-  const res = await fetchJson(`${API_BASE}/inspections/${id}/sign-supervisor`, {
+  const res = await fetchJson(`${API_BASE}/inspections/${id}`, {
     method: 'POST',
-    body: JSON.stringify({ name, signedAt }),
+    body: JSON.stringify({ action: 'sign-supervisor', name, signedAt }),
   })
   return res // { success, id, supervisor_name, supervisor_signed_at, status }
 }
@@ -90,9 +90,9 @@ export async function listOperators() {
 
 /** Reconfirm an inspection (create new linked record) */
 export async function reconfirmInspection(originalId, payload) {
-  const res = await fetchJson(`${API_BASE}/inspections/${originalId}/reconfirm`, {
+  const res = await fetchJson(`${API_BASE}/inspections/${originalId}`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ action: 'reconfirm', ...payload }),
   })
   return res
 }
