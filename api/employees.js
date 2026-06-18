@@ -95,9 +95,10 @@ export default async function handler(req, res) {
       // If id is provided, get single employee
       if (req.query.id) {
         const [employee] = await sql`
-          SELECT id, username, password_hash, full_name, role, location_id, location_name, active, created_at, profile_photo
-          FROM employees
-          WHERE id = ${parseInt(req.query.id)}
+          SELECT e.id, e.username, e.password_hash, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo, y.code as location_code
+          FROM employees e
+          LEFT JOIN yards y ON e.location_id = y.id
+          WHERE e.id = ${parseInt(req.query.id)}
         `
         if (!employee) {
           return res.status(404).json({ error: 'Employee not found' })

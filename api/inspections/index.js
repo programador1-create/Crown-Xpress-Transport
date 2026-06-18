@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       let inspections
       let countResult
 
-      if (yardCode) {
+      if (yardCode && yardCode.trim() !== '') {
         inspections = await sql`
           SELECT
             id, uuid, trailer_number, container_number, seal_number, lock_number,
