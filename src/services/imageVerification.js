@@ -1,30 +1,14 @@
-// Image Verification Service using AI (Google Gemini)
-// This service validates that captured photos match the expected inspection point
-
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+// Image Verification Service - calls backend to keep API key secure
+// Backend handles Gemini API communication
 
 /**
- * Verify if an image matches the expected inspection point using Google Gemini
+ * Verify if an image matches the expected inspection point via backend
  * @param {string} imageBase64 - Base64 encoded image data
  * @param {object} point - Inspection point object with id, es, en, keywords
  * @param {string} language - Current language ('es' or 'en')
  * @returns {Promise<{valid: boolean, confidence: number, message: string, suggestedIssues: number[]}>}
  */
 export async function verifyInspectionImage(imageBase64, point, language = 'es') {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-
-  if (!apiKey) {
-    console.warn('Gemini API key not configured, skipping image verification')
-    return {
-      valid: true,
-      confidence: 0,
-      message: language === 'es'
-        ? 'Verificación de IA no disponible'
-        : 'AI verification not available',
-      suggestedIssues: []
-    }
-  }
-
   const pointName = point[language]
   const keywords = point.keywords || []
   const issues = point.issues || []
@@ -43,89 +27,37 @@ Possible issues: ${issues.map((i, idx) => `${idx + 1}. ${i.en}`).join(', ')}
 Respond ONLY with valid JSON (no markdown):
 {"valid": true/false, "confidence": 0-100, "message": "brief explanation", "detectedIssues": [], "recommendation": ""}`
 
-  // Retry logic
-  const maxRetries = 2
-  let lastError = null
+  try {
+    const response = await fetch('/api/verify-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64, prompt })
+    })
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)))
-      }
-
-      // Extract pure base64 data (remove data:image/... prefix if present)
-      let base64Data = imageBase64
-      if (imageBase64.startsWith('data:')) {
-        base64Data = imageBase64.split(',')[1]
-      }
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: base64Data
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            maxOutputTokens: 300,
-            temperature: 0.1
-          }
-        })
-      })
-
-      if (response.status === 429) {
-        console.warn(`Gemini rate limited (attempt ${attempt + 1}/${maxRetries + 1})`)
-        lastError = new Error('Rate limited')
-        continue
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
-      }
-
-      const data = await response.json()
-      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-      // Clean response (remove markdown if present)
-      const cleanJson = textResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const result = JSON.parse(cleanJson)
-
-      console.log('Gemini verification result:', result)
-
+    if (!response.ok) {
+      console.warn('Backend verification failed:', response.status)
       return {
-        valid: result.valid ?? true,
-        confidence: result.confidence ?? 0,
-        message: result.message || '',
-        suggestedIssues: result.detectedIssues || [],
-        recommendation: result.recommendation || ''
+        valid: true,
+        confidence: 0,
+        message: language === 'es' ? 'Verificación IA no disponible' : 'AI verification unavailable',
+        suggestedIssues: [],
+        skipped: true
       }
-    } catch (error) {
-      console.error(`Gemini verification error (attempt ${attempt + 1}):`, error)
-      lastError = error
     }
-  }
 
-  // All retries failed - return graceful fallback
-  console.warn('Gemini verification unavailable, skipping')
-  return {
-    valid: true,
-    confidence: 0,
-    message: language === 'es'
-      ? 'Verificación IA no disponible'
-      : 'AI verification unavailable',
-    suggestedIssues: [],
-    skipped: true
+    const result = await response.json()
+    console.log('AI verification result:', result)
+    return result
+
+  } catch (error) {
+    console.error('AI verification error:', error)
+    return {
+      valid: true,
+      confidence: 0,
+      message: language === 'es' ? 'Verificación IA no disponible' : 'AI verification unavailable',
+      suggestedIssues: [],
+      skipped: true
+    }
   }
 }
 
