@@ -408,10 +408,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       setTractorNumberEntered(!!movementData.truckNumber)
       setContainerNumberEntered(false)
     } else {
-      // LOADED o EMPTY: truckid es trailer/contenedor
-      updateUnitInfo('trailerNumber', movementData.truckNumber || '')
+      // LOADED o EMPTY
       updateUnitInfo('sealNumber', movementData.seal || '')
-      setContainerNumberEntered(!!movementData.truckNumber)
+      // truckid es el tractor/camion
+      updateUnitInfo('tractorNumber', movementData.truckNumber || '')
+      setTractorNumberEntered(!!movementData.truckNumber)
       
       // Para LOADED, marcar que tiene sello
       if (tprType === 'LOADED' && movementData.seal) {
@@ -448,6 +449,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           const containerSize = sizeMatch ? sizeMatch[1] : '40'
           setTrailerSize(containerSize)
           updateUnitInfo('trailerSize', containerSize)
+          
+          // Extraer numero de contenedor del eqpcode ISO: XXXX-######-#
+          const containerNumMatch = eqpCode.match(/^[A-Z]{4}-(\d{6})-\d$/i)
+          const containerNumber = containerNumMatch ? containerNumMatch[1] : ''
+          updateUnitInfo('trailerNumber', containerNumber)
+          setContainerNumberEntered(!!containerNumber)
           
           // Contenedores ISO
           if (isCxcContainer) {

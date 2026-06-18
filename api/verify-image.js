@@ -1,94 +1,82 @@
-// Backend endpoint for Gemini image verification
-// Keeps API key secure on server side
-
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
+// Respuesta de fallback reutilizable
+const SKIP_RESPONSE = {
+  valid: true,
+  confidence: 0,
+  message: 'AI verification unavailable',
+  suggestedIssues: [],
+  skipped: true
+}
+
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  // Try GEMINI_API_KEY first, then fall back to VITE_GEMINI_API_KEY
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
-
   if (!apiKey) {
-    console.warn('GEMINI_API_KEY not configured on server')
-    return res.status(503).json({
-      valid: true,
-      confidence: 0,
-      message: 'AI verification not configured',
-      suggestedIssues: [],
-      skipped: true
-    })
+    console.warn('GEMINI_API_KEY not configured')
+    return res.status(200).json({ ...SKIP_RESPONSE, message: 'AI verification not configured' })
   }
 
   const { imageBase64, prompt } = req.body
-
   if (!imageBase64 || !prompt) {
     return res.status(400).json({ error: 'Missing imageBase64 or prompt' })
   }
 
-  // Extract pure base64 data
-  let base64Data = imageBase64
-  if (imageBase64.startsWith('data:')) {
-    base64Data = imageBase64.split(',')[1]
-  }
+  let base64Data = imageBase64.startsWith('data:')
+    ? imageBase64.split(',')[1]
+    : imageBase64
 
-  const maxRetries = 2
+  // Helper con timeout propio
+  async function callGemini() {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 7000) // 7s max por intento
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)))
-      }
-
       const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{
             parts: [
               { text: prompt },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: base64Data
-                }
-              }
+              { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
             ]
           }],
-          generationConfig: {
-            maxOutputTokens: 300,
-            temperature: 0.1
-          }
+          generationConfig: { maxOutputTokens: 300, temperature: 0.1 }
         })
       })
 
-      if (response.status === 429) {
-        console.warn(`Gemini rate limited (attempt ${attempt + 1}/${maxRetries + 1})`)
-        continue
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
-      }
+      if (response.status === 429) return { rateLimited: true }
+      if (!response.ok) throw new Error(`Gemini ${response.status}`)
 
       const data = await response.json()
-      const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      return { result: JSON.parse(clean) }
 
-      // Clean response (remove markdown if present)
-      const cleanJson = textResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const result = JSON.parse(cleanJson)
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  // Solo 1 reintento, delay corto
+  for (let attempt = 0; attempt <= 1; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1000)) // fijo 1s, no exponencial
+
+      const { result, rateLimited } = await callGemini()
+
+      if (rateLimited) {
+        console.warn(`Gemini rate limited (attempt ${attempt + 1})`)
+        continue
+      }
 
       return res.status(200).json({
         valid: result.valid ?? true,
@@ -99,16 +87,11 @@ export default async function handler(req, res) {
       })
 
     } catch (error) {
-      console.error(`Gemini verification error (attempt ${attempt + 1}):`, error)
-      if (attempt === maxRetries) {
-        return res.status(200).json({
-          valid: true,
-          confidence: 0,
-          message: 'AI verification unavailable',
-          suggestedIssues: [],
-          skipped: true
-        })
-      }
+      const reason = error.name === 'AbortError' ? 'timeout' : error.message
+      console.error(`Gemini attempt ${attempt + 1} failed: ${reason}`)
     }
   }
+
+  // Si todo falló, responde 200 para no bloquear el flujo
+  return res.status(200).json(SKIP_RESPONSE)
 }
