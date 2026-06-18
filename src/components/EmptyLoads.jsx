@@ -300,29 +300,6 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                         })()}
                       </div>
 
-                      {/* Route */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span className="text-slate-600">
-                            {movement.from_city?.trim() || '-'}
-                          </span>
-                          <span className="text-slate-400">
-                            {movement.from_state?.trim() || ''}
-                          </span>
-                        </div>
-                        <ArrowRight className="w-3 h-3 text-slate-400" />
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span className="text-slate-600">
-                            {movement.to_city?.trim() || '-'}
-                          </span>
-                          <span className="text-slate-400">
-                            {movement.to_state?.trim() || ''}
-                          </span>
-                        </div>
-                      </div>
-
                       {/* Details */}
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <div className="flex items-center gap-1">
@@ -447,21 +424,6 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                 </div>
               </div>
 
-              {/* Route */}
-              <div className="bg-slate-50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">
-                  {language === 'es' ? 'Ruta' : 'Route'}
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <DetailRow label={language === 'es' ? 'Origen (Código)' : 'From (Code)'} value={selectedMovement.from_code} />
-                  <DetailRow label={language === 'es' ? 'Origen (Ciudad)' : 'From (City)'} value={selectedMovement.from_city} />
-                  <DetailRow label={language === 'es' ? 'Origen (Estado)' : 'From (State)'} value={selectedMovement.from_state} />
-                  <DetailRow label={language === 'es' ? 'Destino (Código)' : 'To (Code)'} value={selectedMovement.to_code} />
-                  <DetailRow label={language === 'es' ? 'Destino (Ciudad)' : 'To (City)'} value={selectedMovement.to_city} />
-                  <DetailRow label={language === 'es' ? 'Destino (Estado)' : 'To (State)'} value={selectedMovement.to_state} />
-                </div>
-              </div>
-
               {/* Customer & Instructions */}
               <div className="bg-slate-50 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">
@@ -469,7 +431,6 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <DetailRow label={language === 'es' ? 'Cliente' : 'Customer'} value={selectedMovement.customer} />
-                  <DetailRow label={language === 'es' ? 'Monto' : 'Amount'} value={selectedMovement.amount} />
                   <DetailRow label={language === 'es' ? 'Hora Arribo' : 'Arrival Time'} value={selectedMovement.arrival_time} />
                   <DetailRow label={language === 'es' ? 'Hora Salida' : 'Departure Time'} value={selectedMovement.departure_time} />
                 </div>
