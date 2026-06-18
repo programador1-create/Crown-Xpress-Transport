@@ -337,7 +337,13 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   y = doc.lastAutoTable.finalY + 5
 
   // ===== FAILURE PHOTOS =====
-  const failures = inspectionPoints.filter(p => points[p.id]?.status === 'bad' && points[p.id]?.photo)
+  // Only show failures that have a real photo (valid base64 string or URL)
+  const failures = inspectionPoints.filter(p => {
+    const state = points[p.id]
+    const hasPhoto = state?.photo && typeof state.photo === 'string' && state.photo.length > 100
+    return state?.status === 'bad' && hasPhoto
+  })
+
   if (failures.length > 0) {
     if (y > pageHeight - 60) {
       doc.addPage()
@@ -412,32 +418,34 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     y += Math.ceil(failures.length / cols) * (photoH + 22)
   }
 
-  // ===== PAGE 2: TRUCK DIAGRAM (vertical page, horizontal image centered) =====
-  doc.addPage()
-  drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
-  
-  let diagramY = 38
-  
-  // Title
-  doc.setFillColor(...COLORS.navy)
-  doc.rect(margin, diagramY, pageWidth - margin * 2, 6, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text(language === 'es' ? 'DIAGRAMA DE INSPECCIÓN' : 'INSPECTION DIAGRAM', margin + 2, diagramY + 4)
-  diagramY += 10
+  // ===== PAGE 2: TRUCK DIAGRAM (only if diagram image exists) =====
+  if (truckDiagramBase64) {
+    doc.addPage()
+    drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
 
-  // Legend for B/W printing
-  doc.setFontSize(7)
-  doc.setTextColor(30, 41, 59)
-  doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo | P = Pendiente' : 'Legend: G = Good | B = Bad | P = Pending', margin, diagramY)
-  diagramY += 8
+    let diagramY = 38
 
-  // Draw truck diagram - use full page width and maximize height for better visibility
-  // The image is horizontal (wide), so we use full width and calculate proportional height
-  const diagramWidth = pageWidth - margin * 2
-  const diagramHeight = 200 // Increased height for better visibility
-  drawTruckDiagramPDF(doc, margin, diagramY, diagramWidth, diagramHeight, points, language, T, truckDiagramBase64)
+    // Title
+    doc.setFillColor(...COLORS.navy)
+    doc.rect(margin, diagramY, pageWidth - margin * 2, 6, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.text(language === 'es' ? 'DIAGRAMA DE INSPECCIÓN' : 'INSPECTION DIAGRAM', margin + 2, diagramY + 4)
+    diagramY += 10
+
+    // Legend for B/W printing
+    doc.setFontSize(7)
+    doc.setTextColor(30, 41, 59)
+    doc.text(language === 'es' ? 'Leyenda: B = Bueno | M = Malo' : 'Legend: G = Good | B = Bad', margin, diagramY)
+    diagramY += 8
+
+    // Draw truck diagram - use full page width and maximize height for better visibility
+    // The image is horizontal (wide), so we use full width and calculate proportional height
+    const diagramWidth = pageWidth - margin * 2
+    const diagramHeight = 200 // Increased height for better visibility
+    drawTruckDiagramPDF(doc, margin, diagramY, diagramWidth, diagramHeight, points, language, T, truckDiagramBase64)
+  }
 
   // ===== PAGE 3: SEAL PHOTO + SIGNATURES =====
   doc.addPage()
