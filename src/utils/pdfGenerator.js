@@ -108,7 +108,7 @@ async function loadTruckDiagramImage(inspectionType) {
   }
 }
 
-export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guardSignature, supervisorSignature, operatorSignature, language = 'es' }) {
+export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guardSignature, supervisorSignature, operatorSignature, language = 'es', yardCode = '' }) {
   // Pre-load images (pass inspection type to get correct diagram)
   const logoBase64 = await loadLogoImage()
   const ctpatLogoBase64 = await loadCtpatLogoImage()
@@ -230,49 +230,29 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   doc.text(T.unitInfo, margin + 2, y + 4)
   y += 6
 
-  // Build info rows - show lock number only for LOADED type
+  // Build info rows
   const infoRows = []
-  
-  // Row 1: Trailer/Container and Seal/Lock based on inspection type
-  if (inspectionType === 'LOADED') {
-    // LOADED can have seal OR lock
-    const lockLabel = language === 'es' ? 'No. Candado' : 'Lock No.'
-    const sealOrLock = unitInfo.sealNumber || unitInfo.lockNumber || 'N/A'
-    const sealOrLockLabel = unitInfo.sealNumber ? T.sealNumber : lockLabel
-    infoRows.push([T.trailerNumber, unitInfo.trailerNumber || '—', sealOrLockLabel, sealOrLock])
-  } else {
-    // EMPTY and BOBTAIL don't use seal or lock
-    infoRows.push([T.trailerNumber, unitInfo.trailerNumber || '—', '', ''])
-  }
-  
+
+  // Row 1: Yard Code (prefijo de la yarda)
+  infoRows.push([language === 'es' ? 'Código de Yarda' : 'Yard Code', yardCode || unitInfo.location || '—', '', ''])
+
   // Row 2: Driver and Date
   infoRows.push([T.driverName, unitInfo.driverName || '—', T.date, formatDate(unitInfo.inspectionDate)])
 
-  // Row 3: Location
+  // Row 3: Location (nombre de la yarda)
   infoRows.push([T.location, unitInfo.location || '—', '', ''])
 
-  // Row 4: Work Order
-  if (unitInfo.workOrder) {
-    infoRows.push([T.workOrder, unitInfo.workOrder, '', ''])
-  }
-
-  // Row 5: Origin and Destination
-  const originText = unitInfo.origin?.city ? `${unitInfo.origin.city}${unitInfo.origin.state ? `, ${unitInfo.origin.state}` : ''}` : '—'
-  const destinationText = unitInfo.destination?.city ? `${unitInfo.destination.city}${unitInfo.destination.state ? `, ${unitInfo.destination.state}` : ''}` : '—'
-  infoRows.push([T.origin, originText, T.destination, destinationText])
-
-  // Row 6: Customer
-  if (unitInfo.customer) {
-    infoRows.push([T.customer, unitInfo.customer, '', ''])
-  }
-
-  // Row 7: Equipment and Tractor
+  // Row 4: Equipment and Tractor
   const equipmentText = unitInfo.equipmentNomenclature || unitInfo.trailerNumber || '—'
   infoRows.push([T.equipment, equipmentText, T.tractorNumber, unitInfo.tractorNumber || '—'])
 
-  // Row 8: Seal info only for LOADED
+  // Row 5: Seal info only for LOADED
   if (inspectionType === 'LOADED') {
-    infoRows.push([T.highSecuritySeal, unitInfo.highSecuritySeal === 'yes' ? T.yes : 'N/A', T.sealAffixed, unitInfo.sealAffixed === 'yes' ? T.yes : 'N/A'])
+    const lockLabel = language === 'es' ? 'No. Candado' : 'Lock No.'
+    const sealOrLock = unitInfo.sealNumber || unitInfo.lockNumber || 'N/A'
+    const sealOrLockLabel = unitInfo.sealNumber ? T.sealNumber : lockLabel
+    infoRows.push([sealOrLockLabel, sealOrLock, T.highSecuritySeal, unitInfo.highSecuritySeal === 'yes' ? T.yes : 'N/A'])
+    infoRows.push([T.sealAffixed, unitInfo.sealAffixed === 'yes' ? T.yes : 'N/A', '', ''])
   }
 
   autoTable(doc, {
@@ -294,9 +274,8 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   // Count only applicable points
   const goodCount = applicablePoints.filter(p => points[p.id]?.status === 'good').length
   const badCount = applicablePoints.filter(p => points[p.id]?.status === 'bad').length
-  const pendingCount = applicablePoints.length - goodCount - badCount
 
-  drawSummaryBar(doc, margin, y, pageWidth - margin * 2, T, goodCount, badCount, pendingCount)
+  drawSummaryBar(doc, margin, y, pageWidth - margin * 2, T, goodCount, badCount)
   y += 12
 
   // ===== INSPECTION TABLE =====
@@ -608,8 +587,8 @@ function drawFooter(doc, T, pageWidth, pageHeight, margin) {
   }
 }
 
-function drawSummaryBar(doc, x, y, w, T, good, bad, pending) {
-  const segW = w / 3
+function drawSummaryBar(doc, x, y, w, T, good, bad) {
+  const segW = w / 2
   // Good
   doc.setFillColor(220, 252, 231)
   doc.rect(x, y, segW, 10, 'F')
@@ -632,17 +611,6 @@ function drawSummaryBar(doc, x, y, w, T, good, bad, pending) {
   doc.text(bad.toString(), x + segW * 1.5, y + 5, { align: 'center' })
   doc.setFontSize(7)
   doc.text(T.totalBad, x + segW * 1.5, y + 8.5, { align: 'center' })
-
-  // Pending
-  doc.setFillColor(241, 245, 249)
-  doc.rect(x + segW * 2, y, segW, 10, 'F')
-  doc.setDrawColor(...COLORS.slateLight)
-  doc.rect(x + segW * 2, y, segW, 10)
-  doc.setTextColor(...COLORS.slate)
-  doc.setFontSize(11)
-  doc.text(pending.toString(), x + segW * 2.5, y + 5, { align: 'center' })
-  doc.setFontSize(7)
-  doc.text(T.totalPending, x + segW * 2.5, y + 8.5, { align: 'center' })
 }
 
 function drawSignatureBox(doc, x, y, w, h, label, sig, T) {

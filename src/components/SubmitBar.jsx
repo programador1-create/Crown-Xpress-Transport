@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FileText, AlertCircle, CheckCircle2, Loader2, X, Truck, PenLine, Home, Download, ExternalLink } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 import { useInspection } from '../context/InspectionContext'
 import { generateInspectionPDF } from '../utils/pdfGenerator'
 import { createInspection, buildPayload } from '../utils/api'
@@ -9,6 +10,7 @@ import { useRef } from 'react'
 
 export default function SubmitBar({ onSuccess }) {
   const { t, language } = useLanguage()
+  const { user } = useAuth()
   const ctx = useInspection()
   const { canSubmit, validation, completedCount, failedCount, operatorSignature, setOperatorSignature, unitInfo } = ctx
   const [generating, setGenerating] = useState(false)
@@ -77,6 +79,7 @@ export default function SubmitBar({ onSuccess }) {
             signedAt: new Date().toISOString()
           },
           language,
+          yardCode: user?.location_code || '',
         })
         const pdfBase64 = pdfResult.doc.output('datauristring')
         const pdfFilename = pdfResult.filename
