@@ -36,6 +36,12 @@ const TRAILER_TYPES = {
     icon: 'flatbed',
     sizes: ['53', '40']
   },
+  RABON: {
+    es: 'RABÓN',
+    en: 'RABON',
+    icon: 'rabon',
+    sizes: ['28', '32']
+  },
   OTHER: {
     es: 'OTROS',
     en: 'OTHER',
@@ -740,7 +746,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               ? 'Seleccione el tipo de remolque:' 
               : 'Select the trailer type:'}
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {/* BOX / CAJA */}
             <button
               type="button"
@@ -789,6 +795,23 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               </span>
               <span className="text-xs text-slate-500 text-center">
                 {language === 'es' ? 'Plataforma abierta' : 'Open flatbed'}
+              </span>
+            </button>
+
+            {/* RABON */}
+            <button
+              type="button"
+              onClick={() => handleTrailerTypeChange('RABON')}
+              className="p-6 border-2 border-slate-200 rounded-xl hover:border-crown-gold hover:bg-crown-gold/5 transition-all flex flex-col items-center gap-3 group"
+            >
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <Truck className="w-8 h-8 text-amber-600" />
+              </div>
+              <span className="font-bold text-lg text-slate-800">
+                {language === 'es' ? 'RABÓN' : 'RABON'}
+              </span>
+              <span className="text-xs text-slate-500 text-center">
+                {language === 'es' ? 'Remolque rabón' : 'Rabon trailer'}
               </span>
             </button>
 
