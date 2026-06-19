@@ -69,9 +69,14 @@ export default async function handler(req, res) {
           query += ` AND (eqpcode LIKE '%** Botada **%' OR TRIM(tablecode) = 'BOTADA')`
         }
 
-        // Filtrar por yarda (fromd) si se proporciona
+        // Filtrar por yarda (fromd) si se proporciona (soporta múltiples códigos separados por coma)
         if (yardCode) {
-          query += ` AND TRIM(fromd) = '${yardCode.toUpperCase()}'`
+          const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
+          if (yardCodes.length > 0) {
+            const yardCodesStr = yardCodes.map(c => `'${c}'`).join(', ')
+            query += ` AND TRIM(fromd) IN (${yardCodesStr})`
+            console.log('TPR - Filtering by yard codes:', yardCodes)
+          }
         }
 
         // Filtrar por fecha si se proporciona
