@@ -104,10 +104,12 @@ export default async function handler(req, res) {
     // Filtro por yarda (soporta múltiples códigos separados por coma)
     if (effectiveYardCode) {
       const yardCodes = effectiveYardCode.split(',').map(c => c.trim()).filter(Boolean)
+      console.log('TPR V2 - Filtering by yard codes:', yardCodes)
       if (yardCodes.length > 0) {
         const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
         params.push(...yardCodes)
         addCondition(`TRIM(fromd) IN (${placeholders})`)
+        console.log('TPR V2 - Yard filter condition:', `TRIM(fromd) IN (${placeholders})`)
       }
     }
 
@@ -195,7 +197,11 @@ export default async function handler(req, res) {
       OFFSET ${offset}
     `
 
+    console.log('TPR V2 - Executing query:', query)
+    console.log('TPR V2 - Query params:', params)
+
     const result = await client.query(query, params)
+    console.log('TPR V2 - Query result count:', result.rows.length)
     const movements = result.rows
 
     // ============================================================
