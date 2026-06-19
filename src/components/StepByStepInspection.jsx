@@ -11,6 +11,9 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [showSummary, setShowSummary] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
+  const [showResultModal, setShowResultModal] = useState(false)
+  const [markedGoodPoints, setMarkedGoodPoints] = useState([])
+  const [keptBadPoints, setKeptBadPoints] = useState([])
 
   // Filter inspection points based on inspection type
   const applicablePoints = useMemo(() => {
@@ -69,37 +72,33 @@ export default function StepByStepInspection({ onAllCompleted }) {
   // Mark all applicable points as good, or mark remaining as good if some are bad
   const handleMarkAllGood = () => {
     const badPoints = applicablePoints.filter(point => points[point.id]?.status === 'bad')
-    
+
     if (badPoints.length > 0) {
       // Mark only the non-bad points as good
       const goodPoints = applicablePoints.filter(point => points[point.id]?.status !== 'bad')
       goodPoints.forEach(point => {
         setPointStatus(point.id, 'good')
       })
-      
-      // Show confirmation with details
-      const badPointNames = badPoints.map(p => p[language] || p.es || p.en || p.id).join(', ')
-      const goodPointNames = goodPoints.map(p => p[language] || p.es || p.en || p.id).join(', ')
-      
-      // Close modal immediately
+
+      // Store points for result modal
+      setMarkedGoodPoints(goodPoints)
+      setKeptBadPoints(badPoints)
+
+      // Close confirmation modal
       setShowConfirmAllOk(false)
       // Jump to the last point after marking
       setCurrentStep(totalPoints - 1)
-      
-      // Show alert after modal is closed and state has updated
+
+      // Show result modal after state has updated
       setTimeout(() => {
-        alert(
-          language === 'es' 
-            ? `✅ Se marcaron como BUENOS:\n${goodPointNames}\n\n❌ Se mantienen como MALOS:\n${badPointNames}`
-            : `✅ Marked as GOOD:\n${goodPointNames}\n\n❌ Kept as BAD:\n${badPointNames}`
-        )
+        setShowResultModal(true)
       }, 300)
     } else {
       // Mark all points as good (original behavior)
       applicablePoints.forEach(point => {
         setPointStatus(point.id, 'good')
       })
-      
+
       // Close modal immediately
       setShowConfirmAllOk(false)
       // Jump to the last point after marking
@@ -229,20 +228,20 @@ export default function StepByStepInspection({ onAllCompleted }) {
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-white text-center">
               <CheckCheck className="w-12 h-12 mx-auto mb-3" />
               <h3 className="font-bold text-xl">
-                {hasBadPoints 
+                {hasBadPoints
                 ? (language === 'es' ? '¿MARCAR RESTO EN BUENO?' : 'MARK REST AS GOOD?')
                 : (language === 'es' ? '¿MARCAR TODO COMO BUENO?' : 'MARK ALL AS GOOD?')
-              }
+                }
               </h3>
             </div>
             <div className="p-6">
               <p className="text-center text-slate-700 text-lg mb-6">
-                {hasBadPoints 
-                  ? (language === 'es' 
-                      ? `ESTO MARCARÁ SOLO LOS PUNTOS NO MARCADOS COMO "MALO" COMO "BUENO". ¿ESTÁ SEGURO?` 
+                {hasBadPoints
+                  ? (language === 'es'
+                      ? `ESTO MARCARÁ SOLO LOS PUNTOS NO MARCADOS COMO "MALO" COMO "BUENO". ¿ESTÁ SEGURO?`
                       : `THIS WILL MARK ONLY POINTS NOT MARKED AS "BAD" AS "GOOD". ARE YOU SURE?`)
-                  : (language === 'es' 
-                      ? `ESTO MARCARÁ LOS ${totalPoints} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?` 
+                  : (language === 'es'
+                      ? `ESTO MARCARÁ LOS ${totalPoints} PUNTOS DE INSPECCIÓN COMO "BUENO". ¿ESTÁ SEGURO?`
                       : `THIS WILL MARK ALL ${totalPoints} INSPECTION POINTS AS "GOOD". ARE YOU SURE?`)
                 }
               </p>
@@ -261,6 +260,72 @@ export default function StepByStepInspection({ onAllCompleted }) {
                   {language === 'es' ? 'SÍ, CONFIRMAR' : 'YES, CONFIRM'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Modal - Shows after marking points */}
+      {showResultModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border-2 border-slate-200">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-white text-center">
+              <CheckCheck className="w-12 h-12 mx-auto mb-3" />
+              <h3 className="font-bold text-xl">
+                {language === 'es' ? '¡PUNTOS ACTUALIZADOS!' : 'POINTS UPDATED!'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Marked as Good */}
+              {markedGoodPoints.length > 0 && (
+                <div className="bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    <h4 className="font-bold text-emerald-800">
+                      {language === 'es' ? 'Marcados como BUENOS' : 'Marked as GOOD'}
+                    </h4>
+                    <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      {markedGoodPoints.length}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {markedGoodPoints.map(point => (
+                      <span key={point.id} className="text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium">
+                        {point.id}. {point[language] || point.es || point.en}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Kept as Bad */}
+              {keptBadPoints.length > 0 && (
+                <div className="bg-rose-50 rounded-xl p-4 border-2 border-rose-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-rose-600" />
+                    <h4 className="font-bold text-rose-800">
+                      {language === 'es' ? 'Mantienen como MALOS' : 'Kept as BAD'}
+                    </h4>
+                    <span className="text-xs bg-rose-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      {keptBadPoints.length}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {keptBadPoints.map(point => (
+                      <span key={point.id} className="text-sm bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-medium">
+                        {point.id}. {point[language] || point.es || point.en}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowResultModal(false)}
+                className="w-full py-4 px-5 bg-crown-navy text-white rounded-xl font-bold text-lg hover:bg-crown-navy/90 transition flex items-center justify-center gap-3 border-2 border-crown-navy-dark"
+              >
+                {language === 'es' ? 'ENTENDIDO' : 'UNDERSTOOD'}
+              </button>
             </div>
           </div>
         </div>

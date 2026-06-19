@@ -32,28 +32,47 @@ export default function GuidedInspection() {
 
   // Check if unit info is valid
   useEffect(() => {
+    // Reset to unitInfo stage when inspection is reset (unitInfo becomes empty)
+    if (!unitInfo?.inspectionType && currentStage !== 'unitInfo') {
+      setCurrentStage('unitInfo')
+      setUnitInfoValid(false)
+      setUnitInfoFlowComplete(false)
+      return
+    }
+
     // For BOBTAIL: only need driverName and location (no trailer, no container, no seal)
     if (unitInfo?.inspectionType === 'BOBTAIL') {
       const required = ['driverName', 'location']
       const isValid = required.every(field => unitInfo[field] && unitInfo[field].trim() !== '')
       setUnitInfoValid(isValid)
-      // Auto-complete flow for BOBTAIL since there's no trailer info to capture
+      // Auto-complete flow for BOBBTAIL since there's no trailer info to capture
       if (isValid && !unitInfoFlowComplete) {
         setUnitInfoFlowComplete(true)
       }
       return
     }
-    
+
+    // For FLATBED: need driverName, location, tractorNumber, and trailerNumber (platform number)
+    if (unitInfo?.inspectionType === 'FLATBED') {
+      const required = ['trailerNumber', 'driverName', 'location', 'tractorNumber']
+      const isValid = required.every(field => unitInfo[field] && unitInfo[field].trim() !== '')
+      setUnitInfoValid(isValid)
+      if (isValid && !unitInfoFlowComplete) {
+        setUnitInfoFlowComplete(true)
+      }
+      return
+    }
+
     const required = ['trailerNumber', 'driverName', 'location', 'tractorNumber']
     const optional = []
-    
+
     if (hasSeal) required.push('sealNumber')
     if (hasContainer) required.push('containerNumber')
     if (hasLock) required.push('lockNumber')
-    
+
     const isValid = required.every(field => unitInfo[field] && unitInfo[field].trim() !== '')
     setUnitInfoValid(isValid)
-  }, [unitInfo, hasSeal, hasContainer, hasLock, unitInfoFlowComplete])
+  }, [unitInfo, hasSeal, hasContainer, hasLock, unitInfoFlowComplete, currentStage])
 
   // Auto-advance stages
   useEffect(() => {
