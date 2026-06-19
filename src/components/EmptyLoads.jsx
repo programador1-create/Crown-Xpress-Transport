@@ -40,13 +40,15 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     console.log('loadMovements called')
     try {
       setLoading(true)
-      // Refresh user data to ensure yard code is current
+      // Refresh user data to ensure yard codes are current
       let refreshedUser = user
       if (refreshUser) {
         refreshedUser = await refreshUser() || user
       }
-      const yardCode = refreshedUser?.location_code
-      console.log('Calling getTprMovements with type: pending, yardCode:', yardCode)
+      // Get all yard codes from yard_assignments
+      const yardCodes = refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
+      const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
+      console.log('Calling getTprMovements with type: pending, yardCode:', yardCode, 'yardCodes:', yardCodes)
       const res = await getTprMovements({ type: 'pending', yardCode })
       console.log('getTprMovements response:', res)
       if (res.success) {

@@ -101,10 +101,14 @@ export default async function handler(req, res) {
       addCondition(`(eqpcode LIKE '%Botada%' OR TRIM(tablecode) = 'BOTADA')`)
     }
 
-    // Filtro por yarda
+    // Filtro por yarda (soporta múltiples códigos separados por coma)
     if (effectiveYardCode) {
-      params.push(effectiveYardCode)
-      addCondition(`TRIM(fromd) = $${paramIdx++}`)
+      const yardCodes = effectiveYardCode.split(',').map(c => c.trim()).filter(Boolean)
+      if (yardCodes.length > 0) {
+        const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
+        params.push(...yardCodes)
+        addCondition(`TRIM(fromd) IN (${placeholders})`)
+      }
     }
 
     // Filtro por fecha exacta

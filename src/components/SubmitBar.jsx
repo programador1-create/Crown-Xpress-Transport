@@ -79,7 +79,7 @@ export default function SubmitBar({ onSuccess }) {
             signedAt: new Date().toISOString()
           },
           language,
-          yardCode: user?.location_code || '',
+          yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
         })
         const pdfBase64 = pdfResult.doc.output('datauristring')
         const pdfFilename = pdfResult.filename

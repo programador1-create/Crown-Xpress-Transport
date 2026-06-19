@@ -149,6 +149,7 @@ export function AuthProvider({ children }) {
         location_id: data.user.location_id,
         location_name: data.user.location_name,
         location_code: data.user.location_code,
+        yard_assignments: data.user.yard_assignments || [],
         active: data.user.active,
         profile_photo: data.user.profile_photo
       }
@@ -177,6 +178,7 @@ export function AuthProvider({ children }) {
           location_id: emp.location_id,
           location_name: emp.location_name,
           location_code: emp.location_code,
+          yard_assignments: emp.yard_assignments || [],
           active: emp.active,
           profile_photo: emp.profile_photo
         }

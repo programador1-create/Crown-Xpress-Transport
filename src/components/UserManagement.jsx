@@ -35,8 +35,9 @@ export default function UserManagement() {
     password: '',
     full_name: '',
     role: 'guard',
-    location_id: 1,
-    location_name: 'Yard A - Laredo',
+    location_id: null,
+    location_name: '',
+    yard_assignments: [],
     profile_photo: null
   })
   const [successModal, setSuccessModal] = useState({ show: false, message: '', isEdit: false })
@@ -100,13 +101,9 @@ export default function UserManagement() {
     return matchesSearch && matchesRole && matchesActive
   })
 
-  const getEmployeeYard = (employeeId) => {
+  const getEmployeeYards = (employeeId) => {
     const employee = employees.find(e => e.id === employeeId)
-    if (employee?.location_id) {
-      const yard = yards.find(y => y.id === employee.location_id)
-      return yard
-    }
-    return null
+    return employee?.yard_assignments || []
   }
 
   const handleLocationChange = (locationId) => {
@@ -142,7 +139,7 @@ export default function UserManagement() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
 
-      await loadEmployees()
+      await loadData()
       const isEdit = !!editingId
       resetForm()
       setSuccessModal({
@@ -166,8 +163,9 @@ export default function UserManagement() {
       password: '',
       full_name: emp.full_name,
       role: emp.role,
-      location_id: emp.location_id || 1,
+      location_id: emp.location_id || null,
       location_name: emp.location_name || '',
+      yard_assignments: emp.yard_assignments?.map(ya => ya.yard_id) || [],
       current_password: emp.password_hash || '',
       active: emp.active !== false,
     })
@@ -276,8 +274,9 @@ export default function UserManagement() {
       password: '',
       full_name: '',
       role: 'guard',
-      location_id: 1,
-      location_name: 'Yard A - Laredo',
+      location_id: null,
+      location_name: '',
+      yard_assignments: [],
       profile_photo: null
     })
     setEditingId(null)
@@ -395,16 +394,20 @@ export default function UserManagement() {
                       <div className="flex items-center gap-2 text-xs text-slate-600 mt-1">
                         <MapPin className="w-3 h-3" />
                         {(() => {
-                          const assignedYard = getEmployeeYard(emp.id)
-                          if (assignedYard) {
+                          const assignedYards = getEmployeeYards(emp.id)
+                          if (assignedYards.length > 0) {
                             return (
-                              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                                assignedYard.type === 'PHYSICAL' 
-                                  ? 'bg-blue-100 text-blue-700' 
-                                  : 'bg-purple-100 text-purple-700'
-                              }`}>
-                                {assignedYard.name}
-                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {assignedYards.map((yard, idx) => (
+                                  <span key={idx} className={`px-2 py-0.5 rounded-full text-xs ${
+                                    yard.yard_type === 'PHYSICAL' 
+                                      ? 'bg-blue-100 text-blue-700' 
+                                      : 'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {yard.yard_name}
+                                  </span>
+                                ))}
+                              </div>
                             )
                           }
                           return (
@@ -572,21 +575,47 @@ export default function UserManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {language === 'es' ? 'Ubicación' : 'Location'}
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  {language === 'es' ? 'Yardas Asignadas' : 'Assigned Yards'}
                 </label>
-                <select
-                  value={formData.location_id}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-                >
-                  <option value="">{language === 'es' ? 'Seleccionar yarda...' : 'Select yard...'}</option>
-                  {yards.map(yard => (
-                    <option key={yard.id} value={yard.id}>
-                      {yard.name} ({yard.type === 'PHYSICAL' ? 'Física' : 'Virtual'})
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                  {yards.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      {language === 'es' ? 'No hay yardas disponibles' : 'No yards available'}
+                    </p>
+                  ) : (
+                    yards.map(yard => (
+                      <label key={yard.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.yard_assignments?.includes(yard.id)}
+                          onChange={(e) => {
+                            const newAssignments = e.target.checked
+                              ? [...(formData.yard_assignments || []), yard.id]
+                              : formData.yard_assignments?.filter(id => id !== yard.id) || []
+                            setFormData(prev => ({ ...prev, yard_assignments: newAssignments }))
+                          }}
+                          className="rounded border-slate-300 text-crown-navy focus:ring-crown-navy/20"
+                        />
+                        <span className="text-sm text-slate-700">
+                          {yard.name}
+                          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                            yard.type === 'PHYSICAL' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {yard.type === 'PHYSICAL' ? 'Física' : 'Virtual'}
+                          </span>
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {formData.yard_assignments?.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    {language === 'es' ? '⚠️ Selecciona al menos una yarda' : '⚠️ Select at least one yard'}
+                  </p>
+                )}
               </div>
 
               {/* Status and Actions - Only show when editing */}

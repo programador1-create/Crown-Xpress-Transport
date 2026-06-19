@@ -141,9 +141,24 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Employee ID and Yard ID required' })
         }
 
-        // Deactivate existing assignments
-        await sql`UPDATE yard_assignments SET is_active = false WHERE employee_id = ${employee_id} AND is_active = true`
+        // Check if assignment already exists
+        const [existing] = await sql`
+          SELECT id FROM yard_assignments 
+          WHERE employee_id = ${employee_id} AND yard_id = ${yard_id}
+        `
 
+        if (existing) {
+          // Reactivate if exists
+          const [assignment] = await sql`
+            UPDATE yard_assignments 
+            SET is_active = true, assigned_by = ${assigned_by || null}, updated_at = NOW()
+            WHERE id = ${existing.id}
+            RETURNING *
+          `
+          return res.status(200).json({ success: true, assignment })
+        }
+
+        // Create new assignment (don't deactivate existing ones - allow multiple)
         const [assignment] = await sql`
           INSERT INTO yard_assignments (employee_id, yard_id, assigned_by)
           VALUES (${employee_id}, ${yard_id}, ${assigned_by || null})

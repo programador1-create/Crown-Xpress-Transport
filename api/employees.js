@@ -92,26 +92,65 @@ export default async function handler(req, res) {
         })
       }
       
-      // If id is provided, get single employee
+      // If id is provided, get single employee with yard assignments
       if (req.query.id) {
         const [employee] = await sql`
-          SELECT e.id, e.username, e.password_hash, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo, y.code as location_code
+          SELECT e.id, e.username, e.password_hash, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo
           FROM employees e
-          LEFT JOIN yards y ON e.location_id = y.id
           WHERE e.id = ${parseInt(req.query.id)}
         `
         if (!employee) {
           return res.status(404).json({ error: 'Employee not found' })
         }
+
+        // Get all active yard assignments for this employee
+        const yardAssignments = await sql`
+          SELECT ya.id as assignment_id, ya.yard_id, y.name as yard_name, y.code as yard_code, y.type as yard_type
+          FROM yard_assignments ya
+          JOIN yards y ON ya.yard_id = y.id
+          WHERE ya.employee_id = ${parseInt(req.query.id)} AND ya.is_active = true
+        `
+
+        employee.yard_assignments = yardAssignments
+        employee.location_code = yardAssignments.length > 0 ? yardAssignments.map(y => y.yard_code).join(',') : null
+
         return res.status(200).json({ data: employee })
       }
-      
-      // Otherwise, list all employees
+
+      // Otherwise, list all employees with yard assignments
       const employees = await sql`
-        SELECT id, username, password_hash, full_name, role, location_id, location_name, active, created_at, profile_photo
-        FROM employees
+        SELECT e.id, e.username, e.password_hash, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo
+        FROM employees e
         ORDER BY role, full_name
       `
+
+      // Get yard assignments for all employees
+      const allAssignments = await sql`
+        SELECT ya.employee_id, y.code as yard_code, y.name as yard_name, y.type as yard_type
+        FROM yard_assignments ya
+        JOIN yards y ON ya.yard_id = y.id
+        WHERE ya.is_active = true
+      `
+
+      // Group assignments by employee
+      const assignmentsByEmployee = {}
+      allAssignments.forEach(a => {
+        if (!assignmentsByEmployee[a.employee_id]) {
+          assignmentsByEmployee[a.employee_id] = []
+        }
+        assignmentsByEmployee[a.employee_id].push({
+          yard_code: a.yard_code,
+          yard_name: a.yard_name,
+          yard_type: a.yard_type
+        })
+      })
+
+      // Add yard assignments to each employee
+      employees.forEach(emp => {
+        emp.yard_assignments = assignmentsByEmployee[emp.id] || []
+        emp.location_code = emp.yard_assignments.length > 0 ? emp.yard_assignments.map(y => y.yard_code).join(',') : null
+      })
+
       return res.status(200).json({ data: employees })
     }
 
@@ -140,7 +179,7 @@ export default async function handler(req, res) {
 
     // PUT - Update employee
     if (req.method === 'PUT') {
-      const { id, username, password, full_name, role, location_id, location_name, active, profile_photo } = req.body
+      const { id, username, password, full_name, role, location_id, location_name, active, profile_photo, yard_assignments } = req.body
 
       if (!id) {
         return res.status(400).json({ error: 'Employee ID required' })
@@ -181,6 +220,24 @@ export default async function handler(req, res) {
 
       if (updateQuery.length === 0) {
         return res.status(404).json({ error: 'Employee not found' })
+      }
+
+      // Handle yard assignments if provided
+      if (yard_assignments && Array.isArray(yard_assignments)) {
+        // Deactivate all existing assignments for this employee
+        await sql`UPDATE yard_assignments SET is_active = false WHERE employee_id = ${id}`
+
+        // Create new assignments for each yard
+        for (const yardId of yard_assignments) {
+          if (yardId) {
+            await sql`
+              INSERT INTO yard_assignments (employee_id, yard_id, is_active)
+              VALUES (${id}, ${yardId}, true)
+              ON CONFLICT (employee_id, yard_id) 
+              DO UPDATE SET is_active = true, updated_at = NOW()
+            `
+          }
+        }
       }
 
       return res.status(200).json({ success: true, employee: updateQuery[0] })
