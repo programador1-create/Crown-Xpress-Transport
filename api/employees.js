@@ -230,12 +230,15 @@ export default async function handler(req, res) {
         // Create new assignments for each yard
         for (const yardId of yard_assignments) {
           if (yardId) {
-            await sql`
-              INSERT INTO yard_assignments (employee_id, yard_id, is_active)
-              VALUES (${id}, ${yardId}, true)
-              ON CONFLICT (employee_id, yard_id) 
-              DO UPDATE SET is_active = true, updated_at = NOW()
-            `
+            const numericYardId = parseInt(yardId)
+            if (!isNaN(numericYardId)) {
+              await sql`
+                INSERT INTO yard_assignments (employee_id, yard_id, is_active)
+                VALUES (${id}, ${numericYardId}, true)
+                ON CONFLICT (employee_id, yard_id) 
+                DO UPDATE SET is_active = true, updated_at = NOW()
+              `
+            }
           }
         }
       }

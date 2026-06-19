@@ -131,12 +131,16 @@ export default function UserManagement() {
       const method = editingId ? 'PUT' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
 
+      console.log('Submitting user data:', body)
+      console.log('Yard assignments being sent:', body.yard_assignments)
+
       const res = await fetch(`${API_BASE}/employees`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
       const data = await res.json()
+      console.log('API response:', data)
       if (data.error) throw new Error(data.error)
 
       await loadData()
@@ -144,8 +148,8 @@ export default function UserManagement() {
       resetForm()
       setSuccessModal({
         show: true,
-        message: language === 'es' 
-          ? (isEdit ? '¡Usuario actualizado exitosamente!' : '¡Usuario creado exitosamente!') 
+        message: language === 'es'
+          ? (isEdit ? '¡Usuario actualizado exitosamente!' : '¡Usuario creado exitosamente!')
           : (isEdit ? 'User updated successfully!' : 'User created successfully!'),
         isEdit
       })
