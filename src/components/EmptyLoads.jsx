@@ -280,7 +280,9 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                             tipoEquipo = 'BOTADO'
                           } else if (eqpUpper.startsWith('CXC') || /^[A-Z]{4}-\d{6}-\d$/.test(eqpUpper)) {
                             tipoEquipo = 'CONTENEDOR'
-                          } else if (eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB') || /^R\d{3}/.test(eqpUpper)) {
+                          } else if (/^R\d{3}/.test(eqpUpper)) {
+                            tipoEquipo = 'RABÓN' // R020, R### son prefijos de rabón
+                          } else if (eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') || eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB')) {
                             tipoEquipo = 'CAJA'
                           } else if (/^D\d{5}/.test(eqpUpper)) {
                             tipoEquipo = 'CAJA'

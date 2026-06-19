@@ -445,10 +445,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         const isoPrefixes = ['CSNU', 'TGBU', 'GCXU', 'EMHU', 'UMXU', 'MEDU', 'MSCU', 'MAEU', 'CMAU', 'HLXU', 'OOLU', 'TCNU', 'TRLU']
         const hasIsoPrefix = isoPrefixes.some(p => eqpUpper.startsWith(p))
         
-        // Caja/Rabon patterns: CXT, ABBA, RBX, JGB, R###, D#####
-        const isBox = eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') || 
+        // Caja patterns: CXT, ABBA, RBX, JGB, D#####
+        // Rabon patterns: R###
+        const isRabon = /^R\d{3}/.test(eqpUpper)
+        const isBox = eqpUpper.startsWith('CXT') || eqpUpper.startsWith('ABBA') ||
                       eqpUpper.startsWith('RBX') || eqpUpper.startsWith('JGB') ||
-                      /^R\d{3}/.test(eqpUpper) || /^D\d{5}/.test(eqpUpper)
+                      /^D\d{5}/.test(eqpUpper)
         
         // === CONTENEDOR ===
         if (isIsoContainer || isCxcContainer || hasIsoPrefix) {
@@ -484,16 +486,34 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             }
           }
         
-        // === CAJA / RABON ===
+        // === RABON ===
+        } else if (isRabon) {
+          setTrailerType('RABON')
+          updateUnitInfo('trailerType', 'RABON')
+
+          // Rabones son típicamente mas cortos
+          setTrailerSize('28')
+          updateUnitInfo('trailerSize', '28')
+
+          // Extraer numero de rabon del eqpcode (R###)
+          const rabonNumber = eqpUpper.match(/^R(\d{3})/)?.[1] || ''
+          updateUnitInfo('trailerNumber', rabonNumber)
+          setContainerNumberEntered(!!rabonNumber)
+
+          // Rabones son de CROWN
+          setEquipmentOwner('CROWN')
+          updateUnitInfo('equipmentOwner', 'CROWN')
+          setCrownFleet('RAB')
+          updateUnitInfo('crownFleet', 'RAB')
+
+        // === CAJA ===
         } else if (isBox) {
           setTrailerType('BOX')
           updateUnitInfo('trailerType', 'BOX')
 
-          // Rabones (R###) son típicamente mas cortos
-          const isRabon = /^R\d{3}/.test(eqpUpper)
-          const boxSize = isRabon ? '28' : '53'
-          setTrailerSize(boxSize)
-          updateUnitInfo('trailerSize', boxSize)
+          // Cajas son típicamente 53'
+          setTrailerSize('53')
+          updateUnitInfo('trailerSize', '53')
 
           // Extraer numero de caja/rabon del eqpcode
           let boxNumber = ''
