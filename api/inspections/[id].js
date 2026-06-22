@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
       // Get audit logs
       const audits = await sql`
-        SELECT * FROM audit_logs
+        SELECT * FROM audit_log
         WHERE inspection_id = ${inspection.id}
         ORDER BY created_at DESC
       `
