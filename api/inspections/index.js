@@ -139,7 +139,7 @@ export default async function handler(req, res) {
 
       // Create audit log
       await sql`
-        INSERT INTO audit_logs (inspection_id, action, actor_name, details)
+        INSERT INTO audit_log (inspection_id, action, user_name, details)
         VALUES (
           ${inspection.id},
           'created',

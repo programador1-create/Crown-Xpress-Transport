@@ -9,7 +9,8 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
-  const { id } = req.query
+  // Check both req.query and req.params for id (Express compatibility)
+  const id = req.query.id || req.params.id
 
   try {
     const sql = getSql()
@@ -30,10 +31,10 @@ export default async function handler(req, res) {
 
       // Get points
       const points = await sql`
-        SELECT point_number, status, issue_id, issue_text, has_photo
+        SELECT point_id, status, issue_id, issue_text, photo
         FROM inspection_points
         WHERE inspection_id = ${inspection.id}
-        ORDER BY point_number
+        ORDER BY point_id
       `
 
       // Get audit logs
@@ -102,12 +103,12 @@ export default async function handler(req, res) {
       // Merge points with modifications
       const pointsMap = {}
       originalPoints.forEach(p => {
-        pointsMap[p.point_number] = {
-          point_number: p.point_number,
+        pointsMap[p.point_id] = {
+          point_id: p.point_id,
           status: p.status,
           issue_id: p.issue_id,
           issue_text: p.issue_text,
-          has_photo: p.has_photo
+          photo: p.photo
         }
       })
 
@@ -116,7 +117,7 @@ export default async function handler(req, res) {
           pointsMap[mod.pointId].status = mod.status
           pointsMap[mod.pointId].issue_id = mod.issueId
           pointsMap[mod.pointId].issue_text = mod.issueText
-          pointsMap[mod.pointId].has_photo = mod.photo ? true : false
+          pointsMap[mod.pointId].photo = mod.photo
         }
       })
 
@@ -152,9 +153,9 @@ export default async function handler(req, res) {
       // Insert merged points
       for (const pt of allPoints) {
         await sql`
-          INSERT INTO inspection_points (inspection_id, point_number, status, issue_id, issue_text, has_photo)
-          VALUES (${newInsp.id}, ${pt.point_number}, ${pt.status}, ${pt.issue_id}, ${pt.issue_text}, ${pt.has_photo})
-          ON CONFLICT (inspection_id, point_number) DO NOTHING
+          INSERT INTO inspection_points (inspection_id, point_id, status, issue_id, issue_text, photo)
+          VALUES (${newInsp.id}, ${pt.point_id}, ${pt.status}, ${pt.issue_id}, ${pt.issue_text}, ${pt.photo})
+          ON CONFLICT (inspection_id, point_id) DO NOTHING
         `
       }
 

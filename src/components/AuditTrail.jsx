@@ -132,7 +132,7 @@ export default function AuditTrail({ inspectionId, className = '' }) {
                 </div>
                 <div className="flex-1 text-xs">
                   <div className="font-medium text-rose-800">{p.issue_text}</div>
-                  {p.has_photo && <span className="text-rose-600">📷 {language === 'es' ? 'con foto' : 'photo'}</span>}
+                  {p.photo && <span className="text-rose-600">📷 {language === 'es' ? 'con foto' : 'photo'}</span>}
                 </div>
               </div>
             ))}

@@ -2,13 +2,14 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import { createInspection, listInspections, getInspection, downloadPdf, signAuditor, healthCheck, reconfirmInspection, getInspectionChain } from './api/_lib/handlers.js'
+import { createInspection, listInspections, downloadPdf, signAuditor, healthCheck, reconfirmInspection, getInspectionChain } from './api/_lib/handlers.js'
 import authHandler from './api/auth.js'
 import employeesHandler from './api/employees.js'
 import yardManagementHandler from './api/yard-management.js'
 import tprHandler from './api/tpr.js'
 import tprV2Handler from './api/tpr-v2.js'
 import verifyImageHandler from './api/verify-image.js'
+import inspectionIdHandler from './api/inspections/[id].js'
 
 dotenv.config()
 const app = express()
@@ -41,7 +42,7 @@ app.get('/api/tpr-v2', adaptHandler(tprV2Handler))
 app.post('/api/verify-image', adaptHandler(verifyImageHandler))
 app.post('/api/inspections', adaptHandler(createInspection))
 app.get('/api/inspections', adaptHandler(listInspections))
-app.get('/api/inspections/:id', adaptHandler((req, res, id) => getInspection(req, res, id)))
+app.all('/api/inspections/:id', adaptHandler(inspectionIdHandler))
 app.get('/api/inspections/:id/pdf', adaptHandler((req, res, id) => downloadPdf(req, res, id)))
 app.post('/api/inspections/:id/sign-auditor', adaptHandler((req, res, id) => signAuditor(req, res, id)))
 app.post('/api/inspections/:id/reconfirm', adaptHandler((req, res, id) => reconfirmInspection(req, res, id)))

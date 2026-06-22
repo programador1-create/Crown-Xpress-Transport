@@ -90,9 +90,9 @@ export async function createInspection(req, res) {
     }))
     for (const pt of pointRows) {
       await sql`
-        INSERT INTO inspection_points (inspection_id, point_number, status, issue_id, issue_text, has_photo)
-        VALUES (${inspection.id}, ${pt.id}, ${pt.status}, ${pt.issueId}, ${pt.issueText}, ${pt.hasPhoto})
-        ON CONFLICT (inspection_id, point_number) DO NOTHING
+        INSERT INTO inspection_points (inspection_id, point_id, status, issue_id, issue_text, photo)
+        VALUES (${inspection.id}, ${pt.id}, ${pt.status}, ${pt.issueId}, ${pt.issueText}, ${pt.photo})
+        ON CONFLICT (inspection_id, point_id) DO NOTHING
       `
     }
 
@@ -140,7 +140,7 @@ export async function listInspections(req, res) {
     const offset = parseInt(url.searchParams.get('offset') || '0', 10)
 
     const rows = await sql`
-      SELECT * FROM v_inspections_list
+      SELECT * FROM inspections
       ORDER BY created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `
@@ -155,13 +155,13 @@ export async function listInspections(req, res) {
 export async function getInspection(req, res, id) {
   try {
     const sql = getSql()
-    const [insp] = await sql`SELECT * FROM v_inspections_list WHERE id = ${id} LIMIT 1`
+    const [insp] = await sql`SELECT * FROM inspections WHERE id = ${id} LIMIT 1`
     if (!insp) return res.status(404).json({ error: 'Not found' })
 
     const points = await sql`
-      SELECT point_number, status, issue_id, issue_text, has_photo
+      SELECT point_id, status, issue_id, issue_text, photo
       FROM inspection_points WHERE inspection_id = ${id}
-      ORDER BY point_number
+      ORDER BY point_id
     `
     const audits = await sql`
       SELECT id, user_name, role, action, details, ip_address, created_at
@@ -259,18 +259,18 @@ export async function reconfirmInspection(req, res, originalId) {
 
     // Compute new totals from modifications + original points
     const origPoints = await sql`
-      SELECT point_number, status, issue_id, issue_text, has_photo
+      SELECT point_id, status, issue_id, issue_text, photo
       FROM inspection_points WHERE inspection_id = ${originalId}
     `
     const pointsMap = {}
-    for (const p of origPoints) pointsMap[p.point_number] = { ...p }
+    for (const p of origPoints) pointsMap[p.point_id] = { ...p }
     for (const mod of modifications) {
-      pointsMap[mod.point_number] = {
-        point_number: mod.point_number,
+      pointsMap[mod.point_id] = {
+        point_id: mod.point_id,
         status: mod.new_status,
         issue_id: mod.new_issue_id || null,
         issue_text: mod.new_issue_text || null,
-        has_photo: !!mod.new_photo,
+        photo: mod.new_photo,
       }
     }
     const allPoints = Object.values(pointsMap)
@@ -304,9 +304,9 @@ export async function reconfirmInspection(req, res, originalId) {
     // Insert merged points
     for (const pt of allPoints) {
       await sql`
-        INSERT INTO inspection_points (inspection_id, point_number, status, issue_id, issue_text, has_photo)
-        VALUES (${newInsp.id}, ${pt.point_number}, ${pt.status}, ${pt.issue_id}, ${pt.issue_text}, ${pt.has_photo})
-        ON CONFLICT (inspection_id, point_number) DO NOTHING
+        INSERT INTO inspection_points (inspection_id, point_id, status, issue_id, issue_text, photo)
+        VALUES (${newInsp.id}, ${pt.point_id}, ${pt.status}, ${pt.issue_id}, ${pt.issue_text}, ${pt.photo})
+        ON CONFLICT (inspection_id, point_id) DO NOTHING
       `
     }
 
@@ -349,7 +349,7 @@ export async function getInspectionChain(req, res, id) {
     const sql = getSql()
     const chain = await sql`
       WITH RECURSIVE chain AS (
-        SELECT * FROM v_inspections_list WHERE id = ${id} OR original_inspection_id = ${id}
+        SELECT * FROM inspections WHERE id = ${id} OR original_inspection_id = ${id}
       )
       SELECT * FROM chain ORDER BY created_at ASC
     `
