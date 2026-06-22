@@ -76,10 +76,11 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
     }))
   }
 
-  const modifiedPoints = Object.entries(reconfirmPoints).filter(([_, p]) => p.modified)
+  const modifiedPoints = Object.entries(reconfirmPoints || {}).filter(([_, p]) => p && p.modified)
   
   // Validate: bad points must have issue and photo
   const badPointsValid = modifiedPoints.every(([_, p]) => {
+    if (!p) return true
     if (p.status === 'bad') {
       return p.issueId && p.photo
     }
@@ -97,7 +98,8 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
     let badCount = 0
     let pendingCount = 0
 
-    for (const [id, p] of Object.entries(reconfirmPoints)) {
+    for (const [id, p] of Object.entries(reconfirmPoints || {})) {
+      if (!p) continue
       if (p.modified) {
         modifications.push({
           pointId: parseInt(id),
