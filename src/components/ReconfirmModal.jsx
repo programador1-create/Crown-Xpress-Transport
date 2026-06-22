@@ -90,29 +90,31 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    
-    // Build points payload with all 20 points
-    const pointsPayload = {}
+
+    // Build modifications array with only modified points
+    const modifications = []
     let goodCount = 0
     let badCount = 0
     let pendingCount = 0
-    
+
     for (const [id, p] of Object.entries(reconfirmPoints)) {
-      pointsPayload[id] = {
-        status: p.status || 'pending',
-        issueId: p.issueId || null,
-        issueText: null,
-        photo: p.photo || null,
-        modified: p.modified || false,
+      if (p.modified) {
+        modifications.push({
+          pointId: parseInt(id),
+          status: p.status || 'pending',
+          issueId: p.issueId || null,
+          issueText: null,
+          photo: p.photo || null,
+        })
       }
       if (p.status === 'good') goodCount++
       else if (p.status === 'bad') badCount++
       else pendingCount++
     }
-    
+
     // Get original inspection data
     const orig = originalInspection.inspection || originalInspection
-    
+
     onSubmit({
       original_inspection_id: orig.id,
       unitInfo: {
@@ -127,7 +129,7 @@ export default function ReconfirmModal({ open, originalInspection, onClose, onSu
         highSecuritySeal: orig.high_security_seal,
         sealAffixed: orig.seal_affixed,
       },
-      points: pointsPayload,
+      modifications,
       guardSignature: {
         name: user.full_name,
         signature: null, // Reconfirmations don't require new signature

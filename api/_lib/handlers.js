@@ -265,12 +265,12 @@ export async function reconfirmInspection(req, res, originalId) {
     const pointsMap = {}
     for (const p of origPoints) pointsMap[p.point_id] = { ...p }
     for (const mod of modifications) {
-      pointsMap[mod.point_id] = {
-        point_id: mod.point_id,
-        status: mod.new_status,
-        issue_id: mod.new_issue_id || null,
-        issue_text: mod.new_issue_text || null,
-        photo: mod.new_photo,
+      pointsMap[mod.pointId] = {
+        point_id: mod.pointId,
+        status: mod.status,
+        issue_id: mod.issueId || null,
+        issue_text: mod.issueText || null,
+        photo: mod.photo,
       }
     }
     const allPoints = Object.values(pointsMap)
