@@ -159,6 +159,7 @@ export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) 
 /** Build payload for createInspection (with aggressive image compression) */
 export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   const { unitInfo, points, sealPhoto, guardSignature, supervisorSignature, operatorSignature, completedCount, failedCount, goodCount } = ctx
+  const supervisorSig = supervisorSignature || { name: '', signature: null, signedAt: null }
   
   // Compress seal photo more aggressively (400px, 40% quality)
   const compressedSealPhoto = sealPhoto ? await compressImage(sealPhoto, 400, 0.4) : null
@@ -179,8 +180,8 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   const compressedGuardSig = guardSignature?.signature
     ? await compressImage(guardSignature.signature, 300, 0.4)
     : null
-  const compressedSupervisorSig = supervisorSignature?.signature
-    ? await compressImage(supervisorSignature.signature, 300, 0.4)
+  const compressedSupervisorSig = supervisorSig?.signature
+    ? await compressImage(supervisorSig.signature, 300, 0.4)
     : null
   const compressedOperatorSig = operatorSignature?.signature
     ? await compressImage(operatorSignature.signature, 300, 0.4)
@@ -192,7 +193,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     unitInfo,
     points: pointsPayload,
     guardSignature: { ...guardSignature, signature: compressedGuardSig },
-    supervisorSignature: { ...supervisorSignature, signature: compressedSupervisorSig },
+    supervisorSignature: { ...supervisorSig, signature: compressedSupervisorSig },
     operatorSignature: { ...operatorSignature, signature: compressedOperatorSig },
     sealPhoto: compressedSealPhoto,
     language: 'es',
@@ -200,7 +201,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     pdfFilename,
     counts: {
       good: goodCount || 0,
-      bad: failedCount || 0, 
+      bad: failedCount || 0,
       pending: Math.max(0, getApplicablePoints(unitInfo?.inspectionType).length - (completedCount || 0))
     },
   }
