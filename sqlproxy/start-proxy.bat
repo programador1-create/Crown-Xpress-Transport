@@ -13,5 +13,5 @@ start "" /B "C:\Program Files\nodejs\node.exe" server.js
 
 timeout /t 4 /nobreak >nul
 
-:: Iniciar tunel Cloudflare permanente
-start "" /B cloudflared tunnel --config "C:\Users\Eduardo Aispuro\.cloudflared\config.yml" run
+:: Iniciar tunel y capturar URL, luego actualizar Vercel automaticamente
+"C:\Program Files\nodejs\node.exe" update-tunnel.mjs
