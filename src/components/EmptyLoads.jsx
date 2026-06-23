@@ -93,8 +93,9 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const filterMovements = () => {
     let filtered = [...movements]
 
-    // Ocultar ya inspeccionadas si el toggle está activo
-    if (hideInspected) {
+    // Ocultar ya inspeccionadas: siempre para roles normales, o si el toggle está activo para admin/auditor
+    const isAdminOrAuditor = user?.role === 'admin' || user?.role === 'auditor'
+    if (!isAdminOrAuditor || hideInspected) {
       filtered = filtered.filter(m => !m.already_inspected)
     }
 
@@ -237,24 +238,26 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
           </div>
         </div>
 
-        {/* Toggle hide inspected */}
-        <div className="flex items-center gap-3 mb-3 p-2 bg-slate-50 rounded-lg">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={hideInspected}
-              onChange={e => setHideInspected(e.target.checked)}
-              className="w-4 h-4 rounded accent-crown-navy"
-            />
-            <span className="text-sm font-medium text-slate-700">
-              {language === 'es' ? 'Ocultar ya inspeccionadas' : 'Hide already inspected'}
+        {/* Toggle hide inspected - solo admin/auditor */}
+        {(user?.role === 'admin' || user?.role === 'auditor') && (
+          <div className="flex items-center gap-3 mb-3 p-2 bg-slate-50 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hideInspected}
+                onChange={e => setHideInspected(e.target.checked)}
+                className="w-4 h-4 rounded accent-crown-navy"
+              />
+              <span className="text-sm font-medium text-slate-700">
+                {language === 'es' ? 'Ocultar ya inspeccionadas' : 'Hide already inspected'}
+              </span>
+            </label>
+            <span className="ml-auto text-xs text-slate-500">
+              {movements.filter(m => m.already_inspected).length}{' '}
+              {language === 'es' ? 'ya inspeccionadas en últimos 30 días' : 'already inspected in last 30 days'}
             </span>
-          </label>
-          <span className="ml-auto text-xs text-slate-500">
-            {movements.filter(m => m.already_inspected).length}{' '}
-            {language === 'es' ? 'ya inspeccionadas en últimos 30 días' : 'already inspected in last 30 days'}
-          </span>
-        </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -420,10 +423,18 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                       </button>
                       <button
                         onClick={() => handleSelectMovement(movement)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-crown-navy text-white text-sm rounded-lg hover:bg-crown-navy/90 transition-colors"
+                        disabled={movement.already_inspected}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                          movement.already_inspected
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : 'bg-crown-navy text-white hover:bg-crown-navy/90'
+                        }`}
                       >
                         <ClipboardCheck className="w-3.5 h-3.5" />
-                        {language === 'es' ? 'Inspeccionar' : 'Inspect'}
+                        {movement.already_inspected
+                          ? (language === 'es' ? 'Ya inspeccionada' : 'Already inspected')
+                          : (language === 'es' ? 'Inspeccionar' : 'Inspect')
+                        }
                       </button>
                     </div>
                   </div>
