@@ -46,7 +46,7 @@ export async function createInspection(req, res) {
       INSERT INTO inspections (
         trailer_number, seal_number, lock_number, driver_name, odometer, location,
         inspection_date, high_security_seal, seal_affixed, language,
-        guard_name, guard_signed_at,
+        operator_name, guard_name, guard_signed_at,
         auditor_name, auditor_signed_at,
         status, total_good, total_bad, total_pending,
         pdf_filename, pdf_data, pdf_size_bytes,
@@ -62,6 +62,7 @@ export async function createInspection(req, res) {
         ${ui.highSecuritySeal === 'yes' || ui.high_security_seal === true},
         ${ui.sealAffixed === 'yes' || ui.seal_affixed === true},
         ${language},
+        ${driver_name},
         ${guard_name_field},
         ${guardSignature.signedAt ? new Date(guardSignature.signedAt) : new Date()},
         ${auditorSignature.name || null},
@@ -282,7 +283,7 @@ export async function reconfirmInspection(req, res, originalId) {
       INSERT INTO inspections (
         trailer_number, seal_number, lock_number, driver_name, location,
         inspection_date, language,
-        guard_name, guard_signed_at,
+        operator_name, guard_name, guard_signed_at,
         status, total_good, total_bad, total_pending,
         original_inspection_id, reconfirmation_reason, is_reconfirmation,
         created_ip, created_user_agent
@@ -290,6 +291,7 @@ export async function reconfirmInspection(req, res, originalId) {
         ${original.trailer_number}, ${original.seal_number}, ${original.lock_number},
         ${original.driver_name}, ${original.location},
         NOW(), ${original.language},
+        ${reconfirmed_by_name || original.operator_name || original.guard_name},
         ${reconfirmed_by_name || original.guard_name},
         NOW(),
         'reconfirmed', ${total_good}, ${total_bad}, ${total_pending},
