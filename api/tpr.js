@@ -1,6 +1,4 @@
 import { getSql } from './_lib/db.js'
-import { getSqlServerPool } from './_lib/sqlserver.js'
-import sql from 'mssql'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -18,79 +16,40 @@ export default async function handler(req, res) {
   try {
     const { type, date, yardCode } = req.query
 
-    // Verify SQL Server credentials are configured
-    if (!process.env.SQLSERVER_HOST || !process.env.SQLSERVER_USER || !process.env.SQLSERVER_PASSWORD) {
+    // SQL Proxy URL — set SQLPROXY_URL in Vercel env vars pointing to the Cloudflare tunnel
+    const proxyUrl = process.env.SQLPROXY_URL
+    if (!proxyUrl) {
       return res.status(500).json({
-        error: 'SQL Server credentials not configured',
-        details: 'Set SQLSERVER_HOST, SQLSERVER_USER, SQLSERVER_PASSWORD in Vercel environment variables'
+        error: 'SQLPROXY_URL not configured',
+        details: 'Set SQLPROXY_URL in Vercel to the Cloudflare tunnel URL (e.g. https://xxxx.trycloudflare.com)'
       })
     }
 
-    // Connect to SQL Server GPSActivity
-    const pool = await getSqlServerPool()
-    const request = pool.request()
+    // Build query params for the local proxy
+    const params = new URLSearchParams({ type: type || 'pending' })
+    if (yardCode) params.append('yardCode', yardCode)
+    if (date) params.append('date', date)
 
-    // Build WHERE conditions
-    const conditions = ['1=1']
+    // Call the local SQL proxy through the Cloudflare tunnel
+    // cf-bypass-tunnel-reminder bypasses the Cloudflare quick-tunnel warning page
+    const proxyRes = await fetch(`${proxyUrl}/tpr?${params}`, {
+      headers: {
+        'Accept': 'application/json',
+        'cf-bypass-tunnel-reminder': 'x'
+      },
+      signal: AbortSignal.timeout(25000)
+    })
 
-    if (type === 'pending') {
-      conditions.push("RTRIM(STATUS) = 'OPEN'")
-    } else if (type === 'empty') {
-      conditions.push("(EQPCODE LIKE '%Botada%' OR RTRIM(TABLECODE) = 'BOTADA')")
+    if (!proxyRes.ok) {
+      const err = await proxyRes.text()
+      return res.status(502).json({
+        error: 'SQL proxy returned an error',
+        details: err
+      })
     }
 
-    if (yardCode) {
-      const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
-      if (yardCodes.length > 0) {
-        const placeholders = yardCodes.map((c, i) => {
-          request.input(`yard${i}`, sql.VarChar, c)
-          return `@yard${i}`
-        }).join(', ')
-        conditions.push(`RTRIM(FROMD) IN (${placeholders})`)
-      }
-    }
-
-    if (date) {
-      request.input('fecha', sql.VarChar, date)
-      conditions.push('CONVERT(varchar, FECHA, 101) = @fecha')
-    }
-
-    const whereClause = conditions.join(' AND ')
-
-    const query = `
-      SELECT
-        RTRIM(DRVCODE)   AS driver_code,
-        RTRIM(WONO)      AS work_order,
-        RTRIM(BLNO)      AS bill_of_lading,
-        CONVERT(varchar, FECHA, 101) AS date,
-        RTRIM(FROMD)     AS from_code,
-        RTRIM(FROMCITY)  AS from_city,
-        RTRIM(FROMEDO)   AS from_state,
-        RTRIM(TOD)       AS to_code,
-        RTRIM(TOCITY)    AS to_city,
-        RTRIM(TOEDO)     AS to_state,
-        RTRIM(TIPMOV)    AS movement_type,
-        RTRIM(STATUS)    AS status,
-        RTRIM(EL)        AS equipment_type,
-        RTRIM(EQPCODE)   AS equipment_code,
-        CONVERT(varchar, DELDATE, 101) AS delivery_date,
-        RTRIM(CSTMER)    AS customer,
-        RTRIM(TIMEARRV)  AS arrival_time,
-        RTRIM(TIMEDEPAR) AS departure_time,
-        RTRIM(OPER)      AS operator,
-        RTRIM(TRUCKID)   AS truck_id,
-        RTRIM(SEAL)      AS seal,
-        RTRIM(INSTRUC1)  AS instructions_1,
-        RTRIM(INSTRUC2)  AS instructions_2,
-        AMOUNT           AS amount,
-        RTRIM(TABLECODE) AS table_code
-      FROM tpr
-      WHERE ${whereClause}
-      ORDER BY FECHA DESC, TIMEARRV DESC
-    `
-
-    const result = await request.query(query)
-    const allMovements = result.recordset
+    const proxyData = await proxyRes.json()
+    const allMovements = proxyData.data || []
 
     // Cross-filter: get already-inspected numbers from local Neon PostgreSQL
     let inspectedSet = new Set()
@@ -132,14 +91,13 @@ export default async function handler(req, res) {
       data: movements,
       count: movements.length,
       pending_count: pendingCount,
-      last_updated: new Date().toISOString(),
-      _source: `SQL Server ${process.env.SQLSERVER_HOST}\\${process.env.SQLSERVER_INSTANCE || 'BKUPEXEC'}`
+      last_updated: new Date().toISOString()
     })
 
   } catch (error) {
     console.error('TPR Query Error:', error)
     return res.status(500).json({
-      error: 'Failed to query SQL Server GPSActivity.tpr',
+      error: 'Failed to query TPR data',
       details: error.message
     })
   }
