@@ -52,9 +52,9 @@ export default function GuidedInspection() {
       return
     }
 
-    // For FLATBED: need driverName, location, tractorNumber, and trailerNumber (platform number)
+    // For FLATBED: need location, tractorNumber, and trailerNumber (platform number) - driverName is optional
     if (unitInfo?.inspectionType === 'FLATBED') {
-      const required = ['trailerNumber', 'driverName', 'location', 'tractorNumber']
+      const required = ['trailerNumber', 'location', 'tractorNumber']
       const isValid = required.every(field => unitInfo[field] && unitInfo[field].trim() !== '')
       setUnitInfoValid(isValid)
       if (isValid && !unitInfoFlowComplete) {
@@ -63,7 +63,7 @@ export default function GuidedInspection() {
       return
     }
 
-    const required = ['trailerNumber', 'driverName', 'location', 'tractorNumber']
+    const required = ['trailerNumber', 'location', 'tractorNumber']
     const optional = []
 
     if (hasSeal) required.push('sealNumber')
