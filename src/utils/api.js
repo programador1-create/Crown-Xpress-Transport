@@ -158,7 +158,7 @@ export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) 
 
 /** Build payload for createInspection (with aggressive image compression) */
 export async function buildPayload(ctx, pdfBase64, pdfFilename) {
-  const { unitInfo, points, sealPhoto, guardSignature, supervisorSignature, completedCount, failedCount, goodCount } = ctx
+  const { unitInfo, points, sealPhoto, guardSignature, supervisorSignature, operatorSignature, completedCount, failedCount, goodCount } = ctx
   
   // Compress seal photo more aggressively (400px, 40% quality)
   const compressedSealPhoto = sealPhoto ? await compressImage(sealPhoto, 400, 0.4) : null
@@ -176,13 +176,16 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   }
   
   // Compress signatures (300px, 40% quality)
-  const compressedGuardSig = guardSignature?.signature 
-    ? await compressImage(guardSignature.signature, 300, 0.4) 
+  const compressedGuardSig = guardSignature?.signature
+    ? await compressImage(guardSignature.signature, 300, 0.4)
     : null
-  const compressedSupervisorSig = supervisorSignature?.signature 
-    ? await compressImage(supervisorSignature.signature, 300, 0.4) 
+  const compressedSupervisorSig = supervisorSignature?.signature
+    ? await compressImage(supervisorSignature.signature, 300, 0.4)
     : null
-  
+  const compressedOperatorSig = operatorSignature?.signature
+    ? await compressImage(operatorSignature.signature, 300, 0.4)
+    : null
+
   // Don't send the full PDF - it's too large. Backend can regenerate if needed.
   // Just send a flag that PDF was generated
   return {
@@ -190,12 +193,13 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     points: pointsPayload,
     guardSignature: { ...guardSignature, signature: compressedGuardSig },
     supervisorSignature: { ...supervisorSignature, signature: compressedSupervisorSig },
+    operatorSignature: { ...operatorSignature, signature: compressedOperatorSig },
     sealPhoto: compressedSealPhoto,
     language: 'es',
     pdfGenerated: true,  // Flag instead of full PDF
     pdfFilename,
-    counts: { 
-      good: goodCount || 0, 
+    counts: {
+      good: goodCount || 0,
       bad: failedCount || 0, 
       pending: Math.max(0, getApplicablePoints(unitInfo?.inspectionType).length - (completedCount || 0))
     },
