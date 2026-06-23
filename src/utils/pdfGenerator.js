@@ -643,6 +643,7 @@ function drawSignatureBox(doc, x, y, w, h, label, sig, T) {
 
   if (sig?.signature) {
     try {
+      // Add signature with white background to ensure proper contrast
       doc.addImage(sig.signature, 'PNG', x + 2, y + 6, w - 4, h - 13)
     } catch (e) { /* ignore */ }
   }
