@@ -1,7 +1,5 @@
-import { neon, neonConfig } from '@neondatabase/serverless'
+import { neon } from '@neondatabase/serverless'
 
-// Allow node connection in dev
-neonConfig.fetchConnectionCache = true
 
 let sqlInstance = null
 
