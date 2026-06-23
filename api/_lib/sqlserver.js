@@ -8,15 +8,18 @@ import sql from 'mssql'
 //   SQLSERVER_DATABASE  = GPSActivity
 //   SQLSERVER_USER      = ccentral
 //   SQLSERVER_PASSWORD  = <password>
+const host = process.env.SQLSERVER_HOST || ''
+const isTunnel = host.includes('trycloudflare.com') || host.includes('cloudflare')
+
 const config = {
-  server: process.env.SQLSERVER_HOST,
-  port: parseInt(process.env.SQLSERVER_PORT) || 1433,
+  server: host,
+  port: isTunnel ? 443 : (parseInt(process.env.SQLSERVER_PORT) || 1433),
   database: process.env.SQLSERVER_DATABASE || 'GPSActivity',
   user: process.env.SQLSERVER_USER,
   password: process.env.SQLSERVER_PASSWORD,
   options: {
-    instanceName: process.env.SQLSERVER_INSTANCE || 'BKUPEXEC',
-    encrypt: false, // SQL Server 2008 R2 on local network – no SSL required
+    instanceName: isTunnel ? undefined : (process.env.SQLSERVER_INSTANCE || 'BKUPEXEC'),
+    encrypt: isTunnel,          // TLS required through Cloudflare tunnel
     trustServerCertificate: true,
     enableArithAbort: true
   },
