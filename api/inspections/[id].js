@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST' && req.url.includes('sign-supervisor')) {
-      const { name, signedAt } = req.body
+      const { name, signature, signedAt } = req.body
 
       if (!name || !signedAt) {
         return res.status(400).json({ error: 'Name and signedAt are required' })
@@ -61,7 +61,8 @@ export default async function handler(req, res) {
       // Update inspection with supervisor signature and mark as supervised
       const result = await sql`
         UPDATE inspections
-        SET supervisor_signature = ${name},
+        SET supervisor_name = ${name},
+            supervisor_signature = ${signature || null},
             supervisor_signed_at = ${signedAt},
             status = 'supervised',
             updated_at = NOW()

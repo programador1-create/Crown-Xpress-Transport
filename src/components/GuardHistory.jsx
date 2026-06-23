@@ -230,7 +230,7 @@ export default function GuardHistory() {
           points: pointsObj,
           sealPhoto: insp.seal_photo,
           guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
-          supervisorSignature: insp.supervisor_signature ? { name: insp.supervisor_signature, signedAt: insp.supervisor_signed_at } : null,
+          supervisorSignature: insp.supervisor_name ? { name: insp.supervisor_name, signature: insp.supervisor_signature, signedAt: insp.supervisor_signed_at } : null,
           operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature } : null,
           language: insp.language || 'es',
           yardCode: insp.location || ''
