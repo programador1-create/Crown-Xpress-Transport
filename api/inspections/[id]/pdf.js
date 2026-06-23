@@ -69,7 +69,8 @@ export default async function handler(req, res) {
           highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
-          workOrder: insp.wono
+          workOrder: insp.wono,
+          trailerType: insp.trailer_type
         }
         
         // Generate PDF

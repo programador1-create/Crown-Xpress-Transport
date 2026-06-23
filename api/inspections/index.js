@@ -31,7 +31,7 @@ export default async function handler(req, res) {
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
             good_count, bad_count, pending_count,
-            status, language, created_at, original_inspection_id, wono, inspection_type
+            status, language, created_at, original_inspection_id, wono, inspection_type, trailer_type
           FROM inspections
           WHERE location = ${yardCode}
           ORDER BY created_at DESC
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
             good_count, bad_count, pending_count,
-            status, language, created_at, original_inspection_id, wono, inspection_type
+            status, language, created_at, original_inspection_id, wono, inspection_type, trailer_type
           FROM inspections
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
           auditor_name, auditor_signature, auditor_signed_at,
           seal_photo, pdf_data, pdf_filename,
           language, good_count, bad_count, pending_count,
-          status, inspection_type, wono
+          status, inspection_type, wono, trailer_type
         ) VALUES (
           ${unitInfo?.trailerNumber || null},
           ${unitInfo?.tractorNumber || null},
@@ -117,7 +117,8 @@ export default async function handler(req, res) {
           ${counts?.pending || 0},
           ${auditorSignature ? 'completed' : 'pending'},
           ${unitInfo?.inspectionType || 'LOADED'},
-          ${unitInfo?.workOrder || null}
+          ${unitInfo?.workOrder || null},
+          ${unitInfo?.trailerType || null}
         )
         RETURNING id, uuid, created_at
       `

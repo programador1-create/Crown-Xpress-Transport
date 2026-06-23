@@ -242,7 +242,11 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   // Row 3: Location (nombre de la yarda)
   infoRows.push([T.location, unitInfo.location || '—', '', ''])
 
-  // Row 4: Equipment and Tractor
+  // Row 4: Equipment Type (CAJA, CONTENEDOR, PLATAFORMA, RABÓN)
+  const trailerTypeLabel = unitInfo.trailerType || '—'
+  infoRows.push([language === 'es' ? 'Tipo de Equipo' : 'Equipment Type', trailerTypeLabel, '', ''])
+
+  // Row 5: Equipment Nomenclature and Tractor
   const equipmentText = unitInfo.equipmentNomenclature || unitInfo.trailerNumber || '—'
   infoRows.push([T.equipment, equipmentText, T.tractorNumber, unitInfo.tractorNumber || '—'])
 
