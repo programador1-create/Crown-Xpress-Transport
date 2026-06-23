@@ -131,4 +131,12 @@ BEGIN
         ALTER TABLE inspections ADD COLUMN location_id INT REFERENCES locations(id) ON DELETE SET NULL;
     END IF;
 
+    -- Add updated_at if missing
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'inspections' AND column_name = 'updated_at'
+    ) THEN
+        ALTER TABLE inspections ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    END IF;
+
 END $$;
