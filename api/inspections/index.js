@@ -72,6 +72,7 @@ export default async function handler(req, res) {
         points,
         guardSignature,
         auditorSignature,
+        supervisorSignature,
         operatorSignature,
         language,
         pdfBase64,
