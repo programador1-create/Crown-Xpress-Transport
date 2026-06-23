@@ -625,14 +625,18 @@ function drawSummaryBar(doc, x, y, w, T, good, bad) {
 }
 
 function drawSignatureBox(doc, x, y, w, h, label, sig, T) {
-  doc.setFillColor(241, 245, 249) // Light gray background
+  doc.setFillColor(241, 245, 249) // Light gray background for header
   doc.rect(x, y, w, 5, 'F')
   doc.setTextColor(30, 41, 59) // Dark text
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)
   doc.text(label.toUpperCase(), x + 2, y + 3.5)
 
-  // Box
+  // White background for signature area
+  doc.setFillColor(255, 255, 255)
+  doc.rect(x, y + 5, w, h - 5, 'F')
+
+  // Box border
   doc.setDrawColor(180, 200, 215)
   doc.setLineWidth(0.3)
   doc.rect(x, y + 5, w, h - 5)
