@@ -35,6 +35,7 @@ export default function InspectionHistory() {
 
   const filtered = inspections.filter(i =>
     i.trailer_number?.toLowerCase().includes(search.toLowerCase()) ||
+    i.tractor_number?.toLowerCase().includes(search.toLowerCase()) ||
     i.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
     i.location?.toLowerCase().includes(search.toLowerCase())
   )
@@ -116,13 +117,26 @@ export default function InspectionHistory() {
                   <div className="flex items-center gap-3">
                     {expanded[insp.id] ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                     <div>
-                      <div className="font-semibold text-slate-800">{insp.trailer_number || '—'}</div>
+                      <div className="font-semibold text-slate-800">
+                        {insp.tractor_number || insp.trailer_number || '—'}
+                        {insp.tractor_number && insp.trailer_number && <span className="text-slate-400 text-xs ml-1">(T: {insp.trailer_number})</span>}
+                      </div>
                       <div className="text-xs text-slate-500">
                         {insp.driver_name} · {insp.location} · {new Date(insp.created_at).toLocaleString()}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {insp.inspection_type && (
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                        insp.inspection_type === 'BOBTAIL' ? 'bg-purple-100 text-purple-700' :
+                        insp.inspection_type === 'EMPTY' ? 'bg-amber-100 text-amber-700' :
+                        insp.inspection_type === 'LOADED' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {insp.inspection_type}
+                      </span>
+                    )}
                     <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
                       insp.status === 'audited' ? 'bg-emerald-100 text-emerald-700' :
                       insp.status === 'completed' ? 'bg-blue-100 text-blue-700' :

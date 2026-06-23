@@ -25,13 +25,13 @@ export default async function handler(req, res) {
       if (yardCode && yardCode.trim() !== '') {
         inspections = await sql`
           SELECT
-            id, uuid, trailer_number, container_number, seal_number, lock_number,
+            id, uuid, trailer_number, tractor_number, container_number, seal_number, lock_number,
             driver_name, odometer, location, inspection_date,
             high_security_seal, seal_affixed,
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
             good_count, bad_count, pending_count,
-            status, language, created_at, original_inspection_id
+            status, language, created_at, original_inspection_id, wono, inspection_type
           FROM inspections
           WHERE location = ${yardCode}
           ORDER BY created_at DESC
@@ -41,13 +41,13 @@ export default async function handler(req, res) {
       } else {
         inspections = await sql`
           SELECT
-            id, uuid, trailer_number, container_number, seal_number, lock_number,
+            id, uuid, trailer_number, tractor_number, container_number, seal_number, lock_number,
             driver_name, odometer, location, inspection_date,
             high_security_seal, seal_affixed,
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
             good_count, bad_count, pending_count,
-            status, language, created_at, original_inspection_id
+            status, language, created_at, original_inspection_id, wono, inspection_type
           FROM inspections
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
           auditor_name, auditor_signature, auditor_signed_at,
           seal_photo, pdf_data, pdf_filename,
           language, good_count, bad_count, pending_count,
-          status
+          status, inspection_type, wono
         ) VALUES (
           ${unitInfo?.trailerNumber || null},
           ${unitInfo?.tractorNumber || null},
@@ -115,7 +115,9 @@ export default async function handler(req, res) {
           ${counts?.good || 0},
           ${counts?.bad || 0},
           ${counts?.pending || 0},
-          ${auditorSignature ? 'completed' : 'pending'}
+          ${auditorSignature ? 'completed' : 'pending'},
+          ${unitInfo?.inspectionType || 'LOADED'},
+          ${unitInfo?.workOrder || null}
         )
         RETURNING id, uuid, created_at
       `
