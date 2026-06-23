@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       // Insert inspection
       const [inspection] = await sql`
         INSERT INTO inspections (
-          trailer_number, container_number, seal_number, lock_number,
+          trailer_number, tractor_number, container_number, seal_number, lock_number,
           driver_name, odometer, location, inspection_date,
           high_security_seal, seal_affixed,
           guard_name, guard_signature, guard_signed_at,
@@ -92,6 +92,7 @@ export default async function handler(req, res) {
           status
         ) VALUES (
           ${unitInfo?.trailerNumber || null},
+          ${unitInfo?.tractorNumber || null},
           ${unitInfo?.containerNumber || null},
           ${unitInfo?.sealNumber || null},
           ${unitInfo?.lockNumber || null},
