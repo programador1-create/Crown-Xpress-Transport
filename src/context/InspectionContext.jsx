@@ -49,6 +49,7 @@ export function InspectionProvider({ children }) {
   const [guardSignature, setGuardSignature] = useState({ name: '', signature: null, signedAt: null })
   const [supervisorSignature, setSupervisorSignature] = useState({ name: '', signature: null, signedAt: null })
   const [operatorSignature, setOperatorSignature] = useState({ name: '', signature: null, signedAt: null })
+  const [auditorSignature, setAuditorSignature] = useState({ name: '', signature: null, signedAt: null })
 
   // Helpers
   const updateUnitInfo = useCallback((field, value) => {
@@ -133,6 +134,7 @@ export function InspectionProvider({ children }) {
       guardSignature, setGuardSignature,
       supervisorSignature, setSupervisorSignature,
       operatorSignature, setOperatorSignature,
+      auditorSignature, setAuditorSignature,
       resetInspection,
       completedCount, failedCount, goodCount, progressPercent,
       validation, canSubmit,

@@ -33,7 +33,7 @@ export default function SignatureSection() {
 
   const handleAuditorSignatureSave = (signature) => {
     setAuditorSignature({
-      name: auditorSignature.name || '',
+      name: auditorSignature?.name || '',
       signature,
       signedAt: new Date().toISOString()
     })
@@ -154,7 +154,7 @@ export default function SignatureSection() {
                   : 'Check the box if this inspection requires auditor signature'}
               </p>
             </div>
-          ) : auditorSignature.signature ? (
+          ) : auditorSignature?.signature ? (
             <div className="space-y-3">
               <div className="border border-slate-200 rounded p-2 bg-white">
                 <img 
