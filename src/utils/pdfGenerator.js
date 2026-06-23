@@ -121,7 +121,6 @@ async function loadTruckDiagramImage(inspectionType, trailerType) {
 export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guardSignature, supervisorSignature, operatorSignature, language = 'es', yardCode = '' }) {
   // Pre-load images (pass inspection type to get correct diagram)
   const logoBase64 = await loadLogoImage()
-  const ctpatLogoBase64 = await loadCtpatLogoImage()
   const truckDiagramBase64 = await loadTruckDiagramImage(unitInfo?.inspectionType, unitInfo?.trailerType)
   
   const T = language === 'es' ? {
@@ -227,7 +226,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     : inspectionPoints
 
   // ===== HEADER =====
-  drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
+  drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
 
   let y = 38
 
@@ -400,7 +399,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
 
       if (cellY + photoH + 22 > pageHeight - 25) {
         doc.addPage()
-        drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
+        drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
         y = 38
         continue
       }
@@ -467,7 +466,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     // The image is horizontal (wide), so we use full width and calculate proportional height
     const diagramWidth = pageWidth - margin * 2
     const diagramHeight = 200 // Increased height for better visibility
-    drawTruckDiagramPDF(doc, margin, diagramY, diagramWidth, diagramHeight, points, language, T, truckDiagramBase64)
+    drawTruckDiagramPDF(doc, margin, diagramY, diagramWidth, diagramHeight, points, language, T, truckDiagramBase64, applicablePoints)
   }
 
   // ===== PAGE 3: SEAL PHOTO + SIGNATURES =====
@@ -524,7 +523,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   return { filename, doc }
 }
 
-function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase64 = null, inspectionType = 'LOADED', language = 'es') {
+function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, inspectionType = 'LOADED', language = 'es') {
   // Top navy bar
   doc.setFillColor(...COLORS.navyDark)
   doc.rect(0, 0, pageWidth, 28, 'F')
@@ -538,7 +537,7 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase6
   const logoHeight = 17
   const logoX = margin
   const logoY = 5
-  
+
   if (logoBase64) {
     try {
       doc.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight)
@@ -549,20 +548,6 @@ function drawHeader(doc, T, pageWidth, margin, logoBase64 = null, ctpatLogoBase6
   } else {
     // Fallback to text-based logo
     drawFallbackLogo(doc, margin)
-  }
-
-  // C-TPAT Logo - load image if available
-  const ctpatLogoX = logoX + logoWidth + 10
-  const ctpatLogoY = logoY + 5
-  if (ctpatLogoBase64) {
-    try {
-      doc.addImage(ctpatLogoBase64, 'PNG', ctpatLogoX, ctpatLogoY, 35, 20)
-    } catch (e) {
-      // Fallback to drawn logo if image fails
-      drawCtpatLogo(doc, ctpatLogoX, ctpatLogoY, 35, 20)
-    }
-  } else {
-    drawCtpatLogo(doc, ctpatLogoX, ctpatLogoY, 35, 20)
   }
 
   // Right side - inspection title and form code
@@ -680,7 +665,7 @@ function formatDate(value) {
 }
 
 // Draw truck diagram for PDF with real image and B/W friendly markers
-function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramBase64) {
+function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramBase64, applicablePoints = []) {
   // Draw the truck diagram image
   if (truckDiagramBase64) {
     try {
@@ -688,18 +673,18 @@ function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramB
       // We want to display it horizontally on a vertical page
       // Image aspect ratio is approximately 2.2:1 (width:height)
       const aspectRatio = 2.2
-      
+
       // Calculate dimensions to fit the width while maintaining aspect ratio
       const imgWidth = w
       const imgHeight = imgWidth / aspectRatio
-      
+
       // Center the image vertically in the available space
       const imgY = y + (h - imgHeight - 30) / 2 // Leave space for legend
-      
+
       // Detect format from data URI (supports both JPEG and PNG diagrams)
       const imgFormat = truckDiagramBase64.startsWith('data:image/png') ? 'PNG' : 'JPEG'
       doc.addImage(truckDiagramBase64, imgFormat, x, imgY, imgWidth, imgHeight)
-      
+
       // Point positions matching the TruckDiagramVisual.jsx positions (in percentages)
       // These match the exact positions from the visual component
       const pointPositions = [
@@ -726,9 +711,13 @@ function drawTruckDiagramPDF(doc, x, y, w, h, points, language, T, truckDiagramB
         { id: 19, xPct: 50, yPct: 10 },     // Refrigeración
         { id: 20, xPct: 9.2, yPct: 87 },    // Limpieza
       ]
-      
+
+      // Filter to only applicable points for this inspection type
+      const applicableIds = applicablePoints.map(p => p.id)
+      const filteredPositions = pointPositions.filter(pos => applicableIds.includes(pos.id))
+
       // Draw point markers on the image
-      pointPositions.forEach(pos => {
+      filteredPositions.forEach(pos => {
         const px = x + (pos.xPct / 100) * imgWidth
         const py = imgY + (pos.yPct / 100) * imgHeight
         const state = points[pos.id] || { status: null }
