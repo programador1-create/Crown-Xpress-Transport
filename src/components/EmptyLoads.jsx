@@ -16,7 +16,6 @@ function DetailRow({ label, value }) {
 }
 
 export default function EmptyLoads({ onSelectMovement, onClose }) {
-  console.log('EmptyLoads component rendered')
   const { t, language } = useLanguage()
   const { user, refreshUser } = useAuth()
   const [movements, setMovements] = useState([])
@@ -49,32 +48,32 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         setLastUpdated(res.last_updated ? new Date(res.last_updated) : new Date())
         setError(null)
       } else {
-        setError(language === 'es' ? 'Error al cargar salidas pendientes' : 'Error loading pending outputs')
+        setError('Error al cargar salidas pendientes')
       }
     } catch (err) {
       const errorMsg = err.message || ''
-      if (errorMsg.includes('DATABASE_URL_NBCW')) {
-        setError(language === 'es'
-          ? 'Base de datos NBCW no configurada. Configure DATABASE_URL_NBCW en Vercel.'
-          : 'NBCW database not configured. Set DATABASE_URL_NBCW in Vercel.'
-        )
+      if (errorMsg.includes('SQL Server') || errorMsg.includes('credentials')) {
+        setError('SQL Server no configurado. Configura SQLSERVER_HOST, SQLSERVER_USER y SQLSERVER_PASSWORD en Vercel.')
       } else {
-        setError(err.message || (language === 'es' ? 'Error de conexión' : 'Connection error'))
+        setError(err.message || 'Error de conexión')
       }
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [user, refreshUser, language])
+  }, [user, refreshUser])
 
   // Initial load
-  useEffect(() => { loadMovements() }, [])
+  useEffect(() => { loadMovements() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Polling every 60 seconds
+  // Polling every 60 seconds — stable ref avoids re-creating interval on re-renders
+  const loadMovementsRef = useRef(loadMovements)
+  useEffect(() => { loadMovementsRef.current = loadMovements }, [loadMovements])
+
   useEffect(() => {
     setCountdown(60)
     pollingRef.current = setInterval(() => {
-      loadMovements(true)
+      loadMovementsRef.current(true)
       setCountdown(60)
     }, 60000)
     countdownRef.current = setInterval(() => {
@@ -84,7 +83,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       clearInterval(pollingRef.current)
       clearInterval(countdownRef.current)
     }
-  }, [loadMovements])
+  }, []) // run once on mount
 
   useEffect(() => {
     filterMovements()
