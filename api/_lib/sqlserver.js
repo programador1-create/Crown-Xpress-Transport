@@ -1,7 +1,13 @@
 import sql from 'mssql'
 
 // SQL Server configuration for GPSActivity database
-// Uses Vercel environment variables
+// Uses Vercel environment variables — set these in the Vercel dashboard:
+//   SQLSERVER_HOST      = 192.168.5.13
+//   SQLSERVER_INSTANCE  = BKUPEXEC
+//   SQLSERVER_PORT      = 1433
+//   SQLSERVER_DATABASE  = GPSActivity
+//   SQLSERVER_USER      = ccentral
+//   SQLSERVER_PASSWORD  = <password>
 const config = {
   server: process.env.SQLSERVER_HOST,
   port: parseInt(process.env.SQLSERVER_PORT) || 1433,
@@ -9,8 +15,9 @@ const config = {
   user: process.env.SQLSERVER_USER,
   password: process.env.SQLSERVER_PASSWORD,
   options: {
-    encrypt: true, // Use encryption (required for Azure)
-    trustServerCertificate: true, // Trust self-signed certificates
+    instanceName: process.env.SQLSERVER_INSTANCE || 'BKUPEXEC',
+    encrypt: false, // SQL Server 2008 R2 on local network – no SSL required
+    trustServerCertificate: true,
     enableArithAbort: true
   },
   pool: {
