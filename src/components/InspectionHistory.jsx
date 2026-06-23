@@ -171,6 +171,11 @@ export default function InspectionHistory() {
                         <div className="text-xs text-slate-600">{t('pending')}</div>
                       </div>
                     </div>
+                    <div className="text-xs text-slate-600 mb-3 space-y-1">
+                      <div><span className="font-semibold">Tractor:</span> {insp.tractor_number || '—'}</div>
+                      <div><span className="font-semibold">Trailer:</span> {insp.trailer_number || '—'}</div>
+                      <div><span className="font-semibold">Tipo:</span> {insp.inspection_type || '—'}</div>
+                    </div>
                     <AuditTrail inspectionId={insp.id} />
                   </div>
                 )}

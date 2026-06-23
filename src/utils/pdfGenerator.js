@@ -82,6 +82,9 @@ async function loadTruckDiagramImage(inspectionType) {
     // Select the appropriate image based on inspection type
     let truckDiagramImage
     switch (inspectionType) {
+      case 'BOBTAIL':
+        truckDiagramImage = truckDiagramDropped
+        break
       case 'EMPTY':
         truckDiagramImage = truckDiagramEmpty
         break
