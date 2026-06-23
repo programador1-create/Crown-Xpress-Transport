@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       const id = req.query.id || req.url.split('/')[3]
       
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_base64 
+        SELECT pdf_filename, pdf_data 
         FROM inspections 
         WHERE id = ${parseInt(id)}
       `
@@ -24,12 +24,12 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
-      if (!inspection.pdf_base64) {
+      if (!inspection.pdf_data) {
         return res.status(404).json({ error: 'PDF not found' })
       }
 
-      // Convert base64 back to binary
-      const pdfBuffer = Buffer.from(inspection.pdf_base64, 'base64')
+      // pdf_data is already BYTEA (binary)
+      const pdfBuffer = inspection.pdf_data
       
       res.setHeader('Content-Type', 'application/pdf')
       res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename}"`)

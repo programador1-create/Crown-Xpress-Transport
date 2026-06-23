@@ -240,6 +240,8 @@ export async function reconfirmInspection(req, res, originalId) {
       modifications = [],
       reconfirmed_by,
       reconfirmed_by_name,
+      pdfBase64,
+      pdfFilename,
     } = body
 
     if (!reason || reason.trim().length < 10) {
@@ -286,6 +288,7 @@ export async function reconfirmInspection(req, res, originalId) {
         operator_name, guard_name, guard_signed_at,
         status, total_good, total_bad, total_pending,
         original_inspection_id, reconfirmation_reason, is_reconfirmation,
+        pdf_filename, pdf_data, pdf_size_bytes,
         created_ip, created_user_agent
       ) VALUES (
         ${original.trailer_number}, ${original.seal_number}, ${original.lock_number},
@@ -296,6 +299,9 @@ export async function reconfirmInspection(req, res, originalId) {
         NOW(),
         'reconfirmed', ${total_good}, ${total_bad}, ${total_pending},
         ${originalId}, ${reason}, TRUE,
+        ${pdfFilename || 'inspection.pdf'},
+        ${pdfBase64 ? Buffer.from(pdfBase64, 'base64') : null},
+        ${pdfBase64 ? Buffer.from(pdfBase64, 'base64').length : null},
         ${ip}, ${ua}
       )
       RETURNING id, inspection_uuid, created_at
