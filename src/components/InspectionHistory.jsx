@@ -118,11 +118,11 @@ export default function InspectionHistory() {
                     {expanded[insp.id] ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                     <div>
                       <div className="font-semibold text-slate-800">
-                        {insp.tractor_number || insp.trailer_number || '—'}
+                        {insp.tractor_number || insp.trailer_number || `Inspección #${insp.id}`}
                         {insp.tractor_number && insp.trailer_number && <span className="text-slate-400 text-xs ml-1">(T: {insp.trailer_number})</span>}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {insp.driver_name} · {insp.location} · {new Date(insp.created_at).toLocaleString()}
+                        {insp.driver_name || 'Sin operador'} · {insp.location || 'Sin ubicación'} · {new Date(insp.created_at).toLocaleString()}
                       </div>
                     </div>
                   </div>
