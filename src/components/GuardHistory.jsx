@@ -184,66 +184,30 @@ export default function GuardHistory() {
       newWindow.location.href = url
     } catch (e) {
       console.error('PDF view error:', e)
-      
-      // If PDF doesn't exist in backend, try to generate it on the fly
-      try {
-        // Get inspection data
-        const inspectionData = await getInspection(id)
-        const insp = inspectionData.inspection
 
-        // Map snake_case DB fields to camelCase expected by generateInspectionPDF
-        const unitInfo = {
-          trailerNumber: insp.trailer_number,
-          tractorNumber: insp.tractor_number,
-          containerNumber: insp.container_number,
-          equipmentNomenclature: insp.equipment_nomenclature,
-          sealNumber: insp.seal_number,
-          lockNumber: insp.lock_number,
-          driverName: insp.driver_name,
-          odometer: insp.odometer,
-          location: insp.location,
-          inspectionDate: insp.inspection_date,
-          highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
-          sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
-          inspectionType: insp.inspection_type || 'LOADED',
-          trailerType: insp.trailer_type,
-          workOrder: insp.wono
-        }
-
-        // Convert points array to object keyed by point_id with camelCase
-        const pointsObj = {}
-        for (const p of (inspectionData.points || [])) {
-          pointsObj[p.point_id] = {
-            status: p.status,
-            issueId: p.issue_id,
-            issueCustomText: p.issue_text,
-            photo: p.photo
-          }
-        }
-
-        // Generate PDF on the fly
-        const pdfResult = await generateInspectionPDF({
-          unitInfo,
-          points: pointsObj,
-          sealPhoto: insp.seal_photo,
-          guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
-          supervisorSignature: insp.supervisor_signature ? { name: insp.supervisor_signature, signedAt: insp.supervisor_signed_at } : null,
-          operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature } : null,
-          language: insp.language || 'es',
-          yardCode: insp.location || ''
-        })
-        
-        // Open PDF in the already-opened window
-        const pdfBlob = pdfResult.doc.output('blob')
-        const url = URL.createObjectURL(pdfBlob)
-        newWindow.location.href = url
-      } catch (genError) {
-        console.error('PDF generation error:', genError)
-        newWindow.close()
-        alert(language === 'es' 
-          ? 'Error generando PDF. Por favor intente descargarlo.' 
-          : 'Error generating PDF. Please try downloading it.')
-      }
+      // Show error message in new window
+      newWindow.document.write(`
+        <html>
+          <head><title>${language === 'es' ? 'Error' : 'Error'}</title></head>
+          <body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f1f5f9;">
+            <div style="text-align:center;max-width:400px;padding:20px;">
+              <div style="font-size:48px;margin-bottom:20px;">❌</div>
+              <div style="font-size:18px;font-weight:bold;margin-bottom:10px;color:#dc2626;">
+                ${language === 'es' ? 'PDF no disponible' : 'PDF not available'}
+              </div>
+              <div style="font-size:14px;color:#64748b;margin-bottom:20px;">
+                ${language === 'es'
+                  ? 'Esta inspección fue creada antes de la actualización del sistema de PDFs. El PDF no está disponible.'
+                  : 'This inspection was created before the PDF system update. The PDF is not available.'}
+              </div>
+              <button onclick="window.close()" style="padding:10px 20px;background:#1e5b7a;color:white;border:none;border-radius:8px;cursor:pointer;">
+                ${language === 'es' ? 'Cerrar' : 'Close'}
+              </button>
+            </div>
+          </body>
+        </html>
+      `)
+      return
     }
   }
 

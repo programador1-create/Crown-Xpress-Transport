@@ -95,8 +95,8 @@ export default function SignatureSection() {
                 />
               </div>
               <div className="text-sm text-slate-600">
-                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {guardSignature.name}</p>
-                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {new Date(guardSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US')}</p>
+                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {guardSignature?.name || '—'}</p>
+                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {guardSignature?.signedAt ? new Date(guardSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
               </div>
               <button
                 onClick={() => setShowGuardSignature(true)}
@@ -164,8 +164,8 @@ export default function SignatureSection() {
                 />
               </div>
               <div className="text-sm text-slate-600">
-                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {auditorSignature.name}</p>
-                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {new Date(auditorSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US')}</p>
+                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {auditorSignature?.name || '—'}</p>
+                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {auditorSignature?.signedAt ? new Date(auditorSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
               </div>
               <button
                 onClick={() => setShowAuditorSignature(true)}
@@ -179,7 +179,7 @@ export default function SignatureSection() {
             <div className="space-y-3">
               <input
                 type="text"
-                value={auditorSignature.name}
+                value={auditorSignature?.name || ''}
                 onChange={(e) => setAuditorSignature(prev => ({ ...prev, name: e.target.value }))}
                 placeholder={language === 'es' ? 'Nombre del auditor' : 'Auditor name'}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
@@ -190,7 +190,7 @@ export default function SignatureSection() {
                 </p>
                 <button
                   onClick={() => setShowAuditorSignature(true)}
-                  disabled={!auditorSignature.name}
+                  disabled={!auditorSignature?.name}
                   className="btn-gold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PenTool className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function SignatureSection() {
         onClose={() => setShowAuditorSignature(false)}
         onSave={handleAuditorSignatureSave}
         title={language === 'es' ? 'Firma del Auditor' : 'Auditor Signature'}
-        signerName={auditorSignature.name}
+        signerName={auditorSignature?.name || ''}
       />
     </section>
   )

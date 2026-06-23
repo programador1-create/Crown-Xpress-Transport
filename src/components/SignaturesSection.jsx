@@ -56,7 +56,7 @@ export default function SignaturesSection() {
               <ShieldCheck className="w-4 h-4" /> {t('guardSignature').toUpperCase()}
             </span>
           }
-          name={guardSignature.name}
+          name={guardSignature?.name || ''}
           onNameChange={(name) => setGuardSignature(prev => ({ ...prev, name: name.toUpperCase() }))}
           namePlaceholder={t('guardName').toUpperCase()}
           value={guardSignature.signature}
@@ -95,7 +95,7 @@ export default function SignaturesSection() {
                   <UserCheck className="w-4 h-4" /> {t('supervisorSignature').toUpperCase()}
                 </span>
               }
-              name={supervisorSignature.name}
+              name={supervisorSignature?.name || ''}
               onNameChange={(name) => setSupervisorSignature(prev => ({ ...prev, name: name.toUpperCase() }))}
               namePlaceholder={t('supervisorName').toUpperCase()}
               value={supervisorSignature.signature}

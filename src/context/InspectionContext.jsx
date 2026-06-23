@@ -119,8 +119,8 @@ export function InspectionProvider({ children }) {
     hasSealPhoto: !!sealPhoto,
     sealPhotoValid: requiresSeal ? !!sealPhoto : true,
     sealPhotoRequired: requiresSeal,
-    guardSigned: !!(guardSignature.signature && guardSignature.name.trim()),
-    operatorSigned: !!(operatorSignature.signature && operatorSignature.name.trim()),
+    guardSigned: !!(guardSignature?.signature && guardSignature?.name?.trim()),
+    operatorSigned: !!(operatorSignature?.signature && operatorSignature?.name?.trim()),
   }
 
   const canSubmit = validation.allPointsEvaluated && validation.failuresHaveIssue && validation.failuresHavePhoto && validation.guardSigned && validation.sealPhotoValid
