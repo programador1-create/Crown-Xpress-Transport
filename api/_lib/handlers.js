@@ -306,7 +306,6 @@ export async function reconfirmInspection(req, res, originalId) {
       await sql`
         INSERT INTO inspection_points (inspection_id, point_id, status, issue_id, issue_text, photo)
         VALUES (${newInsp.id}, ${pt.point_id}, ${pt.status}, ${pt.issue_id}, ${pt.issue_text}, ${pt.photo})
-        ON CONFLICT (inspection_id, point_id) DO NOTHING
       `
     }
 
