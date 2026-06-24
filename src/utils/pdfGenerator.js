@@ -369,7 +369,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   if (failures.length > 0) {
     if (y > pageHeight - 60) {
       doc.addPage()
-      drawHeader(doc, T, pageWidth, margin, logoBase64, ctpatLogoBase64, inspectionType, language)
+      drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
       y = 38
     }
 
