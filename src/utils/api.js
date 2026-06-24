@@ -122,7 +122,7 @@ export async function getInspectionChain(id) {
  * @param {number} quality - JPEG quality 0-1 (default 0.6)
  * @returns {Promise<string>} - Compressed base64 image
  */
-export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) {
+export async function compressImage(base64Image, maxWidth = 800, quality = 0.6, format = 'image/jpeg') {
   if (!base64Image) return null
   
   return new Promise((resolve) => {
@@ -144,8 +144,8 @@ export async function compressImage(base64Image, maxWidth = 800, quality = 0.6) 
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, width, height)
       
-      // Convert to compressed JPEG
-      const compressed = canvas.toDataURL('image/jpeg', quality)
+      // Convert to compressed format (JPEG or PNG)
+      const compressed = canvas.toDataURL(format, quality)
       resolve(compressed)
     }
     img.onerror = () => {
@@ -177,14 +177,15 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   }
 
   // Compress signatures (300px, 95% quality for guard/supervisor, 80% for operator)
+  // Keep as PNG to preserve transparency, don't convert to JPEG
   const compressedGuardSig = guardSignature?.signature
-    ? await compressImage(guardSignature.signature, 300, 0.95)
+    ? await compressImage(guardSignature.signature, 300, 0.95, 'image/png')
     : null
   const compressedSupervisorSig = supervisorSig?.signature
-    ? await compressImage(supervisorSig.signature, 300, 0.95)
+    ? await compressImage(supervisorSig.signature, 300, 0.95, 'image/png')
     : null
   const compressedOperatorSig = operatorSignature?.signature
-    ? await compressImage(operatorSignature.signature, 300, 0.8)
+    ? await compressImage(operatorSignature.signature, 300, 0.8, 'image/png')
     : null
 
   // Don't send the full PDF - it's too large. Backend can regenerate if needed.
