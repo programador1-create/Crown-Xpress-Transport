@@ -3,6 +3,7 @@ import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, 
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf, signSupervisor } from '../utils/api'
+import { generateInspectionPDF } from '../utils/pdfGenerator'
 import AuditTrail from './AuditTrail'
 import SignatureCanvas from './SignatureCanvas'
 
@@ -115,6 +116,7 @@ export default function SupervisorView() {
     if (!signingInspection || !signatureImage) return
     
     try {
+      // Sign supervisor without PDF regeneration for now
       await signSupervisor(signingInspection.id, {
         name: user?.full_name || 'Supervisor',
         signature: signatureImage,
@@ -374,7 +376,7 @@ export default function SupervisorView() {
                            insp.status === 'pending' ? (language === 'es' ? 'Pendiente' : 'Pending') :
                            insp.status}
                         </span>
-                        {(!insp.supervisor_signature) && (
+                        {(!insp.supervisor_signature && insp.status !== 'completed') && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleSignSupervisor(insp) }}
                             className="p-1 rounded hover:bg-emerald-200"

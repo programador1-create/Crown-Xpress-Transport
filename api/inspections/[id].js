@@ -17,18 +17,31 @@ export default async function handler(req, res) {
 
     // PDF download endpoint
     if (req.method === 'GET' && req.query.pdf === 'true') {
+      console.log('PDF download request for ID:', id, 'Type:', typeof id)
+      
+      // Clean ID - remove .pdf extension if present
+      const cleanId = String(id).replace(/\.pdf$/, '')
+      const inspectionId = parseInt(cleanId)
+      
+      if (isNaN(inspectionId)) {
+        console.error('Invalid inspection ID:', id, 'Cleaned:', cleanId)
+        return res.status(400).json({ error: 'Invalid inspection ID' })
+      }
+
       const [inspection] = await sql`
         SELECT pdf_filename, pdf_data
         FROM inspections
-        WHERE id = ${parseInt(id)}
+        WHERE id = ${inspectionId}
       `
+
+      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data))
 
       if (!inspection) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
       if (!inspection.pdf_data) {
-        return res.status(404).json({ error: 'PDF not available' })
+        return res.status(404).json({ error: 'PDF not available - this inspection was created before PDF storage was implemented. Please create a new inspection.' })
       }
 
       const pdfBuffer = inspection.pdf_data
@@ -40,11 +53,13 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get inspection by ID or UUID
-      const isUuid = id.includes('-')
+      // Clean ID - remove .pdf extension if present
+      const cleanId = String(id).replace(/\.pdf$/, '')
+      const isUuid = cleanId.includes('-')
 
       const inspections = isUuid
-        ? await sql`SELECT * FROM inspections WHERE uuid = ${id}`
-        : await sql`SELECT * FROM inspections WHERE id = ${parseInt(id)}`
+        ? await sql`SELECT * FROM inspections WHERE uuid = ${cleanId}`
+        : await sql`SELECT * FROM inspections WHERE id = ${parseInt(cleanId)}`
 
       if (inspections.length === 0) {
         return res.status(404).json({ error: 'Inspection not found' })
@@ -75,10 +90,23 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, signature, signedAt } = req.body
+      const { name, signature, signedAt, pdfBase64, pdfFilename } = req.body
 
       if (!name || !signedAt) {
         return res.status(400).json({ error: 'Name and signedAt are required' })
+      }
+
+      // Clean ID - remove .pdf extension if present
+      const cleanId = String(id).replace(/\.pdf$/, '')
+      const inspectionId = parseInt(cleanId)
+
+      // Prepare PDF update if provided
+      let pdfUpdate = ''
+      let pdfBuffer = null
+      if (pdfBase64) {
+        const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf;base64,/, '')
+        pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+        pdfUpdate = `, pdf_filename = ${pdfFilename || 'inspection.pdf'}, pdf_data = ${pdfBuffer}, pdf_size_bytes = ${pdfBuffer.length}`
       }
 
       // Update inspection with supervisor signature and mark as completed
@@ -89,7 +117,8 @@ export default async function handler(req, res) {
             supervisor_signed_at = ${signedAt},
             status = 'completed',
             updated_at = NOW()
-        WHERE id = ${parseInt(id)}
+            ${sql.unsafe(pdfUpdate)}
+        WHERE id = ${inspectionId}
         RETURNING *
       `
 

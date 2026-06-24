@@ -27,7 +27,7 @@
     },
     {
       "source": "/api/inspections/:id/pdf",
-      "destination": "/api/inspections/[id]/pdf.js"
+      "destination": "/api/inspections/[id].js"
     },
     {
       "source": "/api/inspections/:id/sign-auditor",
