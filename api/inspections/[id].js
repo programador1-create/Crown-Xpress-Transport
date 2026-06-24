@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       }
 
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_data
+        SELECT pdf_filename, pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language
         FROM inspections
         WHERE id = ${inspectionId}
       `
@@ -40,15 +40,16 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
-      if (!inspection.pdf_data) {
-        return res.status(404).json({ error: 'PDF not available - this inspection was created before PDF storage was implemented. Please create a new inspection.' })
+      if (inspection.pdf_data) {
+        // Return stored PDF
+        const pdfBuffer = inspection.pdf_data
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+        return res.send(pdfBuffer)
       }
 
-      const pdfBuffer = inspection.pdf_data
-
-      res.setHeader('Content-Type', 'application/pdf')
-      res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
-      return res.send(pdfBuffer)
+      // PDF not stored - return error message
+      return res.status(404).json({ error: 'PDF not available - this inspection was created before PDF storage was implemented. Please create a new inspection.' })
     }
 
     if (req.method === 'GET') {

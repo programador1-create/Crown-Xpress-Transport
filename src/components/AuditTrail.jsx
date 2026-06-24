@@ -117,45 +117,6 @@ export default function AuditTrail({ inspectionId, className = '' }) {
         </div>
       </div>
 
-      {/* All Points */}
-      {points.length > 0 && (
-        <div>
-          <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-crown-navy" />
-            {language === 'es' ? 'Puntos de inspección' : 'Inspection Points'}
-          </h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {points.map(p => (
-              <div key={p.point_id} className={`flex items-center gap-2 p-2 rounded-lg border ${
-                p.status === 'good' ? 'bg-emerald-50 border-emerald-100' :
-                p.status === 'bad' ? 'bg-rose-50 border-rose-100' :
-                'bg-slate-50 border-slate-100'
-              }`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  p.status === 'good' ? 'bg-emerald-600 text-white' :
-                  p.status === 'bad' ? 'bg-rose-600 text-white' :
-                  'bg-slate-400 text-white'
-                }`}>
-                  {p.point_id}
-                </div>
-                <div className="flex-1 text-xs">
-                  <div className={`font-medium ${
-                    p.status === 'good' ? 'text-emerald-800' :
-                    p.status === 'bad' ? 'text-rose-800' :
-                    'text-slate-600'
-                  }`}>
-                    {p.status === 'good' ? (language === 'es' ? 'Bueno' : 'Good') :
-                     p.status === 'bad' ? (language === 'es' ? 'Malo' : 'Bad') :
-                     (language === 'es' ? 'Pendiente' : 'Pending')}
-                  </div>
-                  {p.issue_text && <div className="text-slate-600 mt-0.5">{p.issue_text}</div>}
-                  {p.photo && <span className="text-slate-500">📷 {language === 'es' ? 'con foto' : 'photo'}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
