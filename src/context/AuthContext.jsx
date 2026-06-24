@@ -192,7 +192,11 @@ export function AuthProvider({ children }) {
     return null
   }, [user?.id])
 
-  const canEdit = () => user?.role === 'guard' || user?.role === 'inspector' || user?.role === 'admin'
+  const canEdit = () => {
+    const result = user?.role === 'guard' || user?.role === 'inspector' || user?.role === 'admin'
+    console.log('canEdit check:', { userRole: user?.role, result })
+    return result
+  }
   const canViewAll = () => user?.role === 'supervisor' || user?.role === 'admin'
   const canReconfirm = () => user?.role === 'guard' || user?.role === 'inspector' || user?.role === 'admin'
 

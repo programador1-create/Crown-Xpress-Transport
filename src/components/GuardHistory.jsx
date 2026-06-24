@@ -64,10 +64,12 @@ export default function GuardHistory() {
     setError(null)
     try {
       const res = await listInspections({ limit: 200, yardCode: user?.location_name || '' })
-      // Only show inspections from current guard - more flexible matching
+      // Only show inspections from current guard/inspector - more flexible matching
       const userName = user?.full_name?.toLowerCase().trim()
+      console.log('Loading history for user:', userName, 'role:', user?.role)
       const mine = Array.isArray(res.data) ? res.data.filter(i => {
         const guardName = i.guard_name?.toLowerCase().trim()
+        console.log('Checking inspection:', i.id, 'guard_name:', guardName, 'match:', guardName === userName || guardName.includes(userName) || userName.includes(guardName))
         // Exact match or contains (to handle variations)
         return guardName && (guardName === userName || guardName.includes(userName) || userName.includes(guardName))
       }) : []
