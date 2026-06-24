@@ -152,6 +152,8 @@ export default function GuardHistory() {
   }
 
   const handleViewPdf = async (id, filename) => {
+    console.log('handleViewPdf called with ID:', id, 'filename:', filename)
+    
     // For iPad/iOS: Open a blank window FIRST (must be in direct click handler)
     // Then load the PDF into it after async operations
     const newWindow = window.open('about:blank', '_blank')
@@ -177,8 +179,10 @@ export default function GuardHistory() {
     `)
 
     try {
+      console.log('Attempting to download PDF from backend for ID:', id)
       // First try to download PDF from backend
       const blob = await downloadPdf(id)
+      console.log('PDF download result, blob size:', blob.size)
       if (blob.size === 0) {
         throw new Error('PDF vacío')
       }
@@ -189,9 +193,12 @@ export default function GuardHistory() {
 
       // If PDF doesn't exist in backend, try to generate it on the fly
       try {
+        console.log('Attempting to generate PDF on-the-fly for ID:', id)
         // Get inspection data
         const inspectionData = await getInspection(id)
+        console.log('Inspection data received:', inspectionData)
         const insp = inspectionData.inspection
+        console.log('Inspection object:', insp)
 
         // Map snake_case DB fields to camelCase expected by generateInspectionPDF
         const unitInfo = {
@@ -211,6 +218,7 @@ export default function GuardHistory() {
           trailerType: insp.trailer_type,
           workOrder: insp.wono
         }
+        console.log('UnitInfo mapped:', unitInfo)
 
         // Convert points array to object keyed by point_id with camelCase
         const pointsObj = {}
@@ -222,6 +230,7 @@ export default function GuardHistory() {
             photo: p.photo
           }
         }
+        console.log('Points object created with', Object.keys(pointsObj).length, 'points')
 
         // Generate PDF on the fly
         const pdfResult = await generateInspectionPDF({
@@ -234,6 +243,7 @@ export default function GuardHistory() {
           language: insp.language || 'es',
           yardCode: insp.location || ''
         })
+        console.log('PDF generated successfully')
 
         // Open PDF in the already-opened window
         const pdfBlob = pdfResult.doc.output('blob')

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X, PenTool, Eye } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { listInspections, downloadPdf, signSupervisor } from '../utils/api'
+import { listInspections, downloadPdf, signSupervisor, getInspection } from '../utils/api'
 import { generateInspectionPDF } from '../utils/pdfGenerator'
 import AuditTrail from './AuditTrail'
 import SignatureCanvas from './SignatureCanvas'
@@ -100,10 +100,72 @@ export default function SupervisorView() {
   const handleViewPdf = async (id) => {
     try {
       const blob = await downloadPdf(id)
+      if (blob.size === 0) {
+        throw new Error('PDF vacío')
+      }
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
     } catch (e) {
-      alert(language === 'es' ? 'Error al ver PDF' : 'Error viewing PDF')
+      console.error('PDF view error:', e)
+
+      // If PDF doesn't exist in backend, try to generate it on the fly
+      try {
+        // Get inspection data
+        const inspectionData = await getInspection(id)
+        const insp = inspectionData.inspection
+
+        // Map snake_case DB fields to camelCase expected by generateInspectionPDF
+        const unitInfo = {
+          trailerNumber: insp.trailer_number,
+          tractorNumber: insp.tractor_number,
+          containerNumber: insp.container_number,
+          equipmentNomenclature: insp.equipment_nomenclature,
+          sealNumber: insp.seal_number,
+          lockNumber: insp.lock_number,
+          driverName: insp.driver_name,
+          odometer: insp.odometer,
+          location: insp.location,
+          inspectionDate: insp.inspection_date,
+          highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
+          sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
+          inspectionType: insp.inspection_type || 'LOADED',
+          trailerType: insp.trailer_type,
+          workOrder: insp.wono
+        }
+
+        // Convert points array to object keyed by point_id with camelCase
+        const pointsObj = {}
+        for (const p of (inspectionData.points || [])) {
+          pointsObj[p.point_id] = {
+            status: p.status,
+            issueId: p.issue_id,
+            issueCustomText: p.issue_text,
+            photo: p.photo
+          }
+        }
+
+        // Generate PDF on the fly
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points: pointsObj,
+          sealPhoto: insp.seal_photo,
+          guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
+          supervisorSignature: insp.supervisor_name ? { name: insp.supervisor_name, signature: insp.supervisor_signature, signedAt: insp.supervisor_signed_at } : null,
+          operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature } : null,
+          language: insp.language || 'es',
+          yardCode: insp.location || ''
+        })
+
+        // Open PDF in new window
+        const pdfBlob = pdfResult.doc.output('blob')
+        const url = URL.createObjectURL(pdfBlob)
+        window.open(url, '_blank')
+      } catch (genError) {
+        console.error('PDF generation error:', genError)
+        alert(language === 'es'
+          ? 'Error generando PDF. Por favor intente descargarlo.'
+          : 'Error generating PDF. Please try downloading it.')
+      }
     }
   }
 
