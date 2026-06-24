@@ -1487,11 +1487,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     )
   }
 
-  // Step: Enter tractor number (after seal/lock for LOADED, after container for EMPTY)
+  // Step: Enter tractor number (after seal/lock for LOADED/EMPTY, after container for others)
   // For FLATBED and RABON: skip seal/lock step entirely
   const shouldShowTractorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') &&
     containerNumberEntered &&
-    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
+    (sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
     !tractorNumberEntered
 
   if (shouldShowTractorStep) {
