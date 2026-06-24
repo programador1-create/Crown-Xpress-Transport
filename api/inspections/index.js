@@ -90,7 +90,7 @@ export default async function handler(req, res) {
           guard_name, guard_signature, guard_signed_at,
           auditor_name, auditor_signature, auditor_signed_at,
           supervisor_name, supervisor_signature, supervisor_signed_at,
-          operator_name, operator_signature,
+          operator_name, operator_signature, operator_signed_at,
           seal_photo, pdf_data, pdf_filename,
           language, good_count, bad_count, pending_count,
           status, inspection_type, wono, trailer_type
@@ -117,6 +117,7 @@ export default async function handler(req, res) {
           ${supervisorSignature?.signedAt ? new Date(supervisorSignature.signedAt) : null},
           ${operatorSignature?.name || null},
           ${operatorSignature?.signature || null},
+          ${operatorSignature?.signedAt ? new Date(operatorSignature.signedAt) : null},
           ${sealPhoto || null},
           ${pdfBase64 || null},
           ${pdfFilename || null},
