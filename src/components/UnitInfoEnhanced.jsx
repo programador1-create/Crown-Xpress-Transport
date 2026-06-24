@@ -394,10 +394,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
     // Determinar automáticamente tipo de inspección y pre-llenar datos
     handleInspectionTypeChange(tprType)
-    
-    // Datos básicos del operador
-    updateUnitInfo('driverName', movementData.operator || '')
-    updateUnitInfo('employeeNumber', movementData.driverCode || '')
+
+    // Datos básicos del operador - NO establecer automáticamente, se capturará en paso de búsqueda de operador
+    // updateUnitInfo('driverName', movementData.operator || '')
+    // updateUnitInfo('employeeNumber', movementData.driverCode || '')
     updateUnitInfo('workOrder', movementData.workOrder || '')
     updateUnitInfo('origin', movementData.origin || {})
     updateUnitInfo('destination', movementData.destination || {})
@@ -415,12 +415,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     const nomenclatureMatch = eqpCode.match(/[A-Z]+-?(\d+)/i)
     updateUnitInfo('equipmentNumber', nomenclatureMatch ? nomenclatureMatch[1] : '')
     
-    // Establecer el operador como encontrado
-    setOperatorFound({
-      fullName: movementData.operator || 'Desconocido',
-      employeeNumber: movementData.driverCode || 'TPR'
-    })
-    setOperatorStepCompleted(true)
+    // NO establecer el operador automáticamente - se capturará en paso de búsqueda de operador
+    // setOperatorFound({
+    //   fullName: movementData.operator || 'Desconocido',
+    //   employeeNumber: movementData.driverCode || 'TPR'
+    // })
+    // setOperatorStepCompleted(true)
     
     if (isBotada) {
       // BOTADO: truckid es el tractor, eqpcode es '** Botada **'
@@ -1548,9 +1548,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   }
 
   // Step: Operator search (after tractor number, before summary)
+  // For LOADED and EMPTY: require sealLockEntered (unless FLATBED/RABON which don't require seal/lock)
   const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') &&
     containerNumberEntered &&
-    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
+    (sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
     tractorNumberEntered &&
     !operatorStepCompleted
 

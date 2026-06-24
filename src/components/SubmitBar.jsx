@@ -32,17 +32,61 @@ export default function SubmitBar({ onSuccess }) {
   // Operator signature is captured in modal when clicking "Generate PDF"
   if (!validation.guardSigned) issues.push(t('guardMustSign'))
 
-  // Step 1: Click "Generate PDF" -> Show signature modal
+  // Step 1: Click "Generate PDF" -> Show signature modal only if operator not already signed
   const handleGenerateClick = () => {
     if (!canSubmit) return
-    setHasOperatorSigned(false) // Reset signature state when opening modal
-    setShowSignatureModal(true)
+    // If operator already signed in SignatureSection, skip modal and generate directly
+    if (operatorSignature?.signature) {
+      handleGeneratePDF()
+    } else {
+      setHasOperatorSigned(false) // Reset signature state when opening modal
+      setShowSignatureModal(true)
+    }
   }
 
   // Handle operator signature change
   const handleSignatureChange = () => {
     const hasSignature = sigRef.current && !sigRef.current.isEmpty()
     setHasOperatorSigned(hasSignature)
+  }
+
+  // Generate PDF using existing operator signature from context
+  const handleGeneratePDF = async () => {
+    setGenerating(true)
+
+    try {
+      // 1. Generate PDF with signatures from context
+      const pdfResult = await generateInspectionPDF({
+        unitInfo: ctx.unitInfo,
+        points: ctx.points,
+        sealPhoto: ctx.sealPhoto,
+        guardSignature: ctx.guardSignature,
+        supervisorSignature: ctx.supervisorSignature,
+        operatorSignature: ctx.operatorSignature,
+        language,
+        yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
+      })
+      const pdfBase64 = pdfResult.doc.output('datauristring')
+      const pdfFilename = pdfResult.filename
+
+      // 2. Upload to backend (with compressed images)
+      const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
+      const uploadResult = await createInspection(payload)
+
+      // 3. Show PDF in modal viewer
+      const pdfBlob = pdfResult.doc.output('blob')
+      const pdfBlobUrl = URL.createObjectURL(pdfBlob)
+      setPdfUrl(pdfBlobUrl)
+      setPdfFilename(pdfFilename)
+      setShowPdfViewer(true)
+
+      // Reset generating state
+      setGenerating(false)
+    } catch (err) {
+      console.error('Error generating PDF:', err)
+      alert(language === 'es' ? 'Error al generar PDF' : 'Error generating PDF')
+      setGenerating(false)
+    }
   }
 
   // Step 2: Operator signs -> Generate PDF (signature is required)
