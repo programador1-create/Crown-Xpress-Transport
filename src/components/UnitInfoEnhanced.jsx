@@ -301,7 +301,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // Notify parent when flow is complete (all steps done)
   useEffect(() => {
     // FLATBED and RABON don't require seal/lock, but do require trailer number
-    const sealLockRequired = inspectionType === 'LOADED' && trailerType !== 'FLATBED' && trailerType !== 'RABON'
+    const sealLockRequired = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType !== 'FLATBED' && trailerType !== 'RABON'
 
     // Auto-mark sealLockEntered as true for types that don't require seal/lock
     if (!sealLockRequired && !sealLockEntered) {
