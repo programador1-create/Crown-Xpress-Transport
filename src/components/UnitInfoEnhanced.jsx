@@ -108,7 +108,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [containerNumberEntered, setContainerNumberEntered] = useState(!!unitInfo?.trailerNumber)
   const [sealLockEntered, setSealLockEntered] = useState(false)
   const [tractorNumberEntered, setTractorNumberEntered] = useState(!!unitInfo?.tractorNumber)
-  const [operatorSelected, setOperatorSelected] = useState(!!unitInfo?.driverName)
+  const [operatorStepCompleted, setOperatorStepCompleted] = useState(!!unitInfo?.driverName)
   // Keypad states
   const [keypadOpen, setKeypadOpen] = useState(false)
   const [keypadField, setKeypadField] = useState(null) // 'trailerNumber', 'chassisNumber', 'sealNumber', 'lockNumber'
@@ -334,7 +334,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         setOperatorFound(result.operator)
         updateUnitInfo('driverName', result.operator.fullName)
         updateUnitInfo('employeeNumber', result.operator.employeeNumber)
-        setOperatorSelected(true)
+        setOperatorStepCompleted(true)
       }
     } catch (err) {
       console.error('Search operator error:', err)
@@ -372,7 +372,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('employeeNumber', operator.employeeNumber)
     setShowNameResults(false)
     setOperatorError(null)
-    setOperatorSelected(true)
+    setOperatorStepCompleted(true)
   }
 
   // Handle manual entry
@@ -382,7 +382,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       updateUnitInfo('employeeNumber', 'MANUAL')
       setOperatorFound({ fullName: manualOperatorName.toUpperCase(), employeeNumber: 'MANUAL' })
       setOperatorError(null)
-      setOperatorSelected(true)
+      setOperatorStepCompleted(true)
     }
   }
 
@@ -420,7 +420,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       fullName: movementData.operator || 'Desconocido',
       employeeNumber: movementData.driverCode || 'TPR'
     })
-    setOperatorSelected(true)
+    setOperatorStepCompleted(true)
     
     if (isBotada) {
       // BOTADO: truckid es el tractor, eqpcode es '** Botada **'
@@ -600,7 +600,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     setNameSearchResults([])
     updateUnitInfo('driverName', '')
     updateUnitInfo('employeeNumber', '')
-    setOperatorSelected(false)
+    setOperatorStepCompleted(false)
   }
 
   const update = (field, value) => {
@@ -1547,13 +1547,251 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     )
   }
 
+  // Step: Operator search (after tractor number, before summary)
+  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') &&
+    containerNumberEntered &&
+    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
+    tractorNumberEntered &&
+    !operatorStepCompleted
+
+  if (shouldShowOperatorStep) {
+    return (
+      <section className="card animate-slide-up">
+        <div className="card-header flex items-center gap-3">
+          <User className="w-5 h-5 text-crown-gold" />
+          <h2 className="font-bold tracking-wide uppercase text-sm">
+            {language === 'es' ? 'BÚSQUEDA DE OPERADOR' : 'OPERATOR SEARCH'}
+          </h2>
+          <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold ${
+            inspectionType === 'LOADED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+            {getBadgeText()}
+          </span>
+        </div>
+        <div className="card-body">
+          <div className="border-2 border-slate-200 rounded-lg p-4 bg-slate-50">
+            <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center justify-between uppercase">
+              <span className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {language === 'es' ? 'BÚSQUEDA DE OPERADOR' : 'OPERATOR SEARCH'} <span className="text-rose-500">*</span>
+              </span>
+              {operatorFound && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+            </label>
+
+            {/* Search Mode Tabs */}
+            <div className="flex gap-2 mb-4 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleModeChange('number')}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  searchMode === 'number' ? 'bg-crown-navy text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                }`}
+              >
+                {language === 'es' ? 'NÚMERO' : 'NUMBER'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange('name')}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  searchMode === 'name' ? 'bg-crown-navy text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                }`}
+              >
+                {language === 'es' ? 'NOMBRE' : 'NAME'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange('list')}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  searchMode === 'list' ? 'bg-crown-navy text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                }`}
+              >
+                {language === 'es' ? 'LISTA' : 'LIST'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange('manual')}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  searchMode === 'manual' ? 'bg-crown-navy text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                }`}
+              >
+                {language === 'es' ? 'MANUAL' : 'MANUAL'}
+              </button>
+            </div>
+
+            {/* Search by Number */}
+            {searchMode === 'number' && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={employeeNumber}
+                  onChange={e => {
+                    setEmployeeNumber(e.target.value.toUpperCase())
+                    setOperatorFound(null)
+                    setOperatorError(null)
+                  }}
+                  onKeyDown={e => e.key === 'Enter' && handleSearchOperator()}
+                  className={`flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 uppercase transition-colors ${
+                    operatorFound ? 'border-emerald-400 bg-emerald-50' :
+                    operatorError ? 'border-rose-400 bg-rose-50' :
+                    'border-white focus:border-crown-navy'
+                  }`}
+                  placeholder={language === 'es' ? 'EJ: EMP001' : 'E.G.: EMP001'}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearchOperator}
+                  disabled={operatorSearching || !employeeNumber.trim()}
+                  className="w-full py-2 bg-crown-navy text-white rounded-lg font-medium hover:bg-crown-navy/90 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {operatorSearching ? (language === 'es' ? 'Buscando...' : 'Searching...') : (language === 'es' ? 'Buscar' : 'Search')}
+                </button>
+                {operatorError && (
+                  <p className="text-xs text-rose-600">{operatorError}</p>
+                )}
+              </div>
+            )}
+
+            {/* Search by Name */}
+            {searchMode === 'name' && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={operatorName}
+                  onChange={e => {
+                    setOperatorName(e.target.value.toUpperCase())
+                    setOperatorFound(null)
+                    setOperatorError(null)
+                  }}
+                  onKeyDown={e => e.key === 'Enter' && handleSearchByName()}
+                  className="flex-1 px-3 py-2 border-2 border-white rounded-lg focus:outline-none focus:ring-2 focus:border-crown-navy uppercase"
+                  placeholder={language === 'es' ? 'Nombre del operador' : 'Operator name'}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearchByName}
+                  disabled={operatorSearching || !operatorName.trim()}
+                  className="w-full py-2 bg-crown-navy text-white rounded-lg font-medium hover:bg-crown-navy/90 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {operatorSearching ? (language === 'es' ? 'Buscando...' : 'Searching...') : (language === 'es' ? 'Buscar' : 'Search')}
+                </button>
+                {nameSearchResults.length > 0 && (
+                  <div className="mt-2 border border-slate-200 rounded-lg max-h-40 overflow-y-auto">
+                    {nameSearchResults.map(op => (
+                      <button
+                        key={op.id}
+                        type="button"
+                        onClick={() => handleSelectOperator(op)}
+                        className="w-full px-3 py-2 text-left hover:bg-slate-100 border-b border-slate-100 last:border-b-0"
+                      >
+                        <div className="font-medium text-slate-800">{op.fullName}</div>
+                        <div className="text-xs text-slate-500">{op.employeeNumber}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* List Mode */}
+            {searchMode === 'list' && (
+              <div className="space-y-3">
+                {operatorsLoading ? (
+                  <div className="text-center py-4">
+                    <span className="text-sm text-slate-500">
+                      {language === 'es' ? 'Cargando...' : 'Loading...'}
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={operatorFound?.id || ''}
+                    onChange={e => {
+                      const selected = operatorsList.find(op => op.id === parseInt(e.target.value))
+                      if (selected) handleSelectOperator(selected)
+                    }}
+                    className="w-full px-3 py-2 border-2 border-white rounded-lg focus:outline-none focus:ring-2 focus:border-crown-navy uppercase"
+                  >
+                    <option value="">{language === 'es' ? 'Seleccionar operador...' : 'Select operator...'}</option>
+                    {operatorsList.map(op => (
+                      <option key={op.id} value={op.id}>{op.fullName} ({op.employeeNumber})</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* Manual Entry */}
+            {searchMode === 'manual' && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={manualOperatorName}
+                  onChange={e => setManualOperatorName(e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 border-2 border-white rounded-lg focus:outline-none focus:ring-2 focus:border-crown-navy uppercase"
+                  placeholder={language === 'es' ? 'Nombre completo' : 'Full name'}
+                />
+                <button
+                  type="button"
+                  onClick={handleManualEntry}
+                  disabled={!manualOperatorName.trim()}
+                  className="w-full py-2 bg-crown-navy text-white rounded-lg font-medium hover:bg-crown-navy/90 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {language === 'es' ? 'Confirmar' : 'Confirm'}
+                </button>
+              </div>
+            )}
+
+            {/* Selected Operator Display */}
+            {operatorFound && (
+              <div className="mt-4 p-3 bg-emerald-50 border-2 border-emerald-400 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold text-emerald-800 uppercase">
+                      ✓ {operatorFound.fullName}
+                    </div>
+                    <div className="text-xs text-emerald-600 mt-0.5">
+                      {language === 'es' ? 'No. Empleado:' : 'Employee #:'} {operatorFound.employeeNumber}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange(searchMode)}
+                    className="text-xs text-emerald-700 hover:text-emerald-900 underline"
+                  >
+                    {language === 'es' ? 'Cambiar' : 'Change'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Continue button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (operatorFound) {
+                setOperatorStepCompleted(true)
+              } else {
+                alert(language === 'es' ? 'Seleccione un operador' : 'Select an operator')
+              }
+            }}
+            disabled={!operatorFound}
+            className="mt-4 w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-lg"
+          >
+            {language === 'es' ? 'CONTINUAR' : 'CONTINUE'}
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   // If all steps completed, show minimal info card (inspection points will be shown by parent)
   // For BOBTAIL: skip container/seal/tractor checks - go directly to operator search
   const isBobtailReady = inspectionType === 'BOBTAIL'
   const isOtherReady = containerNumberEntered &&
     (inspectionType !== 'LOADED' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
-    tractorNumberEntered
-  
+    tractorNumberEntered &&
+    operatorStepCompleted
+
   if (!isBobtailReady && !isOtherReady) {
     // This shouldn't happen, but just in case
     return null
