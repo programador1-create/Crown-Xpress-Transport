@@ -66,6 +66,13 @@ export default function SubmitBar({ onSuccess }) {
     // Small delay to ensure state is updated
     setTimeout(async () => {
       try {
+        // Create operator signature object with captured signature
+        const capturedOperatorSignature = {
+          name: unitInfo.driverName?.toUpperCase() || '',
+          signature: signatureData,
+          signedAt: new Date().toISOString()
+        }
+
         // 1. Generate PDF with the new signature
         const pdfResult = await generateInspectionPDF({
           unitInfo: ctx.unitInfo,
@@ -73,19 +80,15 @@ export default function SubmitBar({ onSuccess }) {
           sealPhoto: ctx.sealPhoto,
           guardSignature: ctx.guardSignature,
           supervisorSignature: ctx.supervisorSignature,
-          operatorSignature: {
-            name: unitInfo.driverName?.toUpperCase() || '',
-            signature: signatureData,
-            signedAt: new Date().toISOString()
-          },
+          operatorSignature: capturedOperatorSignature,
           language,
           yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
         })
         const pdfBase64 = pdfResult.doc.output('datauristring')
         const pdfFilename = pdfResult.filename
 
-        // 2. Upload to backend (with compressed images)
-        const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
+        // 2. Upload to backend (with compressed images) - pass captured operator signature
+        const payload = await buildPayload({ ...ctx, operatorSignature: capturedOperatorSignature }, pdfBase64, pdfFilename)
         const uploadResult = await createInspection(payload)
 
         // 3. Show PDF in modal viewer
