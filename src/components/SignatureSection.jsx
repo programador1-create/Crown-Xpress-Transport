@@ -92,7 +92,7 @@ export default function SignatureSection() {
             <p className="text-xs text-slate-500 mb-1">
               {language === 'es' ? 'Firmando como:' : 'Signing as:'}
             </p>
-            <p className="font-semibold text-crown-navy">{user?.full_name || '—'}</p>
+            <p className="font-semibold text-crown-navy">{user?.full_name?.toUpperCase() || '—'}</p>
           </div>
           
           {guardSignature.signature ? (
@@ -222,6 +222,13 @@ export default function SignatureSection() {
             </div>
           ) : supervisorSignature?.signature ? (
             <div className="space-y-3">
+              {/* Show supervisor name */}
+              <div className="bg-slate-50 rounded-lg px-3 py-2 mb-3">
+                <p className="text-xs text-slate-500 mb-1">
+                  {language === 'es' ? 'Supervisor:' : 'Supervisor:'}
+                </p>
+                <p className="font-semibold text-crown-navy">{supervisorSignature?.name?.toUpperCase() || '—'}</p>
+              </div>
               <div className="border border-slate-200 rounded p-2 bg-white">
                 <img
                   src={supervisorSignature.signature}
@@ -230,7 +237,6 @@ export default function SignatureSection() {
                 />
               </div>
               <div className="text-sm text-slate-600">
-                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {supervisorSignature?.name || '—'}</p>
                 <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {supervisorSignature?.signedAt ? new Date(supervisorSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
               </div>
               <button
@@ -246,7 +252,7 @@ export default function SignatureSection() {
               <input
                 type="text"
                 value={supervisorSignature?.name || ''}
-                onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value.toUpperCase() }))}
                 placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
               />
