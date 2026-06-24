@@ -38,7 +38,8 @@ export default function UserManagement() {
     location_id: null,
     location_name: '',
     yard_assignments: [],
-    profile_photo: null
+    profile_photo: null,
+    showPasswordReset: false
   })
   const [successModal, setSuccessModal] = useState({ show: false, message: '', isEdit: false })
   const [confirmModal, setConfirmModal] = useState({ show: false, type: '', data: null })
@@ -131,8 +132,6 @@ export default function UserManagement() {
       const method = editingId ? 'PUT' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
 
-      console.log('Submitting user data:', body)
-      console.log('Yard assignments being sent:', body.yard_assignments)
 
       const res = await fetch(`${API_BASE}/employees`, {
         method,
@@ -169,9 +168,10 @@ export default function UserManagement() {
       role: emp.role,
       location_id: emp.location_id || null,
       location_name: emp.location_name || '',
-      yard_assignments: emp.yard_assignments?.map(ya => ya.yard_id) || [],
+      yard_assignments: emp.yard_assignments?.map(ya => Number(ya.yard_id)).filter(id => !isNaN(id)) || [],
       current_password: emp.password_hash || '',
       active: emp.active !== false,
+      showPasswordReset: false
     })
     setEditingId(emp.id)
     setShowForm(true)
@@ -549,21 +549,54 @@ export default function UserManagement() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {editingId 
-                    ? (language === 'es' ? 'Nueva Contraseña' : 'New Password')
-                    : (language === 'es' ? 'Contraseña' : 'Password')} {editingId ? '' : '*'}
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-                  required={!editingId}
-                  placeholder={editingId ? (language === 'es' ? 'Dejar vacío para no cambiar' : 'Leave empty to keep current') : ''}
-                />
-              </div>
+              {/* Password field - show button for reset when editing */}
+              {editingId ? (
+                <div>
+                  {!formData.showPasswordReset ? (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, showPasswordReset: true, password: '' }))}
+                      className="w-full px-4 py-2 border border-crown-navy text-crown-navy rounded-lg hover:bg-crown-navy/10 flex items-center justify-center gap-2 font-medium"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      {language === 'es' ? 'Restablecer Contraseña' : 'Reset Password'}
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        {language === 'es' ? 'Nueva Contraseña' : 'New Password'}
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                        placeholder={language === 'es' ? 'Escribe la nueva contraseña' : 'Enter new password'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, showPasswordReset: false, password: '' }))}
+                        className="text-xs text-slate-500 hover:text-slate-700"
+                      >
+                        {language === 'es' ? 'Cancelar' : 'Cancel'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {language === 'es' ? 'Contraseña' : 'Password'} *
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   {language === 'es' ? 'Rol' : 'Role'} *
@@ -592,11 +625,11 @@ export default function UserManagement() {
                       <label key={yard.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                         <input
                           type="checkbox"
-                          checked={formData.yard_assignments?.includes(yard.id)}
+                          checked={formData.yard_assignments?.includes(Number(yard.id))}
                           onChange={(e) => {
                             const newAssignments = e.target.checked
-                              ? [...(formData.yard_assignments || []), yard.id]
-                              : formData.yard_assignments?.filter(id => id !== yard.id) || []
+                              ? [...(formData.yard_assignments || []), Number(yard.id)]
+                              : formData.yard_assignments?.filter(id => id !== Number(yard.id)) || []
                             setFormData(prev => ({ ...prev, yard_assignments: newAssignments }))
                           }}
                           className="rounded border-slate-300 text-crown-navy focus:ring-crown-navy/20"

@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       // If id is provided, get single employee with yard assignments
       if (req.query.id) {
         const [employee] = await sql`
-          SELECT e.id, e.username, e.password_hash, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo
+          SELECT e.id, e.username, e.password_hash, e.password, e.full_name, e.role, e.location_id, e.location_name, e.active, e.created_at, e.profile_photo
           FROM employees e
           WHERE e.id = ${parseInt(req.query.id)}
         `
