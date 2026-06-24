@@ -125,7 +125,7 @@ export default async function handler(req, res) {
           ${counts?.good || 0},
           ${counts?.bad || 0},
           ${counts?.pending || 0},
-          ${auditorSignature ? 'completed' : 'pending'},
+          ${supervisorSignature ? 'completed' : 'pending'},
           ${unitInfo?.inspectionType || 'LOADED'},
           ${unitInfo?.workOrder || null},
           ${unitInfo?.trailerType || null}
