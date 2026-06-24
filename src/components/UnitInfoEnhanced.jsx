@@ -289,6 +289,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('employeeNumber', '')
     setOperatorFound(null)
     setOperatorStepCompleted(false)
+    console.log('DEBUG: On mount, setting sealLockEntered to false')
+    setSealLockEntered(false)
   }, [user, updateUnitInfo])
 
   // Load all operators when list mode is selected
@@ -1463,6 +1465,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               const hasSealValue = hasSeal && unitInfo.sealNumber && unitInfo.sealNumber.trim()
               const hasLockValue = hasLock && unitInfo.lockNumber && unitInfo.lockNumber.trim()
               if (hasSealValue || hasLockValue) {
+                console.log('DEBUG: Setting sealLockEntered to true from CONTINUE button')
                 setSealLockEntered(true)
                 if (onSealChange) onSealChange(hasSeal)
                 if (onLockChange) onLockChange(hasLock)
