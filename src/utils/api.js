@@ -176,16 +176,16 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     }
   }
 
-  // Compress signatures (300px, 95% quality for guard/supervisor, 80% for operator)
+  // Compress signatures (600px, 95% quality for guard/supervisor, 80% for operator)
   // Keep as PNG to preserve transparency, don't convert to JPEG
   const compressedGuardSig = guardSignature?.signature
-    ? await compressImage(guardSignature.signature, 300, 0.95, 'image/png')
+    ? await compressImage(guardSignature.signature, 600, 0.95, 'image/png')
     : null
   const compressedSupervisorSig = supervisorSig?.signature
-    ? await compressImage(supervisorSig.signature, 300, 0.95, 'image/png')
+    ? await compressImage(supervisorSig.signature, 600, 0.95, 'image/png')
     : null
   const compressedOperatorSig = operatorSignature?.signature
-    ? await compressImage(operatorSignature.signature, 300, 0.8, 'image/png')
+    ? await compressImage(operatorSignature.signature, 600, 0.8, 'image/png')
     : null
 
   // Don't send the full PDF - it's too large. Backend can regenerate if needed.
