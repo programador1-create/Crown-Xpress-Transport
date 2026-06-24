@@ -90,7 +90,7 @@ export default function SignatureSection() {
           {/* Show logged in user name */}
           <div className="bg-slate-50 rounded-lg px-3 py-2 mb-3">
             <p className="text-xs text-slate-500 mb-1">
-              {language === 'es' ? 'Firmando como:' : 'Signing as:'}
+              {language === 'es' ? 'Guardia:' : 'Guard:'}
             </p>
             <p className="font-semibold text-crown-navy">{user?.full_name?.toUpperCase() || '—'}</p>
           </div>
@@ -105,7 +105,6 @@ export default function SignatureSection() {
                 />
               </div>
               <div className="text-sm text-slate-600">
-                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {guardSignature?.name || '—'}</p>
                 <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {guardSignature?.signedAt ? new Date(guardSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
               </div>
               <button
@@ -161,7 +160,6 @@ export default function SignatureSection() {
                 />
               </div>
               <div className="text-sm text-slate-600">
-                <p><strong>{language === 'es' ? 'Nombre:' : 'Name:'}</strong> {operatorSignature?.name || '—'}</p>
                 <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {operatorSignature?.signedAt ? new Date(operatorSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
               </div>
               <button
