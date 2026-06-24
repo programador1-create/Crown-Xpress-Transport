@@ -15,6 +15,29 @@ export default async function handler(req, res) {
   try {
     const sql = getSql()
 
+    // PDF download endpoint
+    if (req.method === 'GET' && req.query.pdf === 'true') {
+      const [inspection] = await sql`
+        SELECT pdf_filename, pdf_data
+        FROM inspections
+        WHERE id = ${parseInt(id)}
+      `
+
+      if (!inspection) {
+        return res.status(404).json({ error: 'Inspection not found' })
+      }
+
+      if (!inspection.pdf_data) {
+        return res.status(404).json({ error: 'PDF not available' })
+      }
+
+      const pdfBuffer = inspection.pdf_data
+
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+      return res.send(pdfBuffer)
+    }
+
     if (req.method === 'GET') {
       // Get inspection by ID or UUID
       const isUuid = id.includes('-')

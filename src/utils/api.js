@@ -53,17 +53,17 @@ export async function getInspection(id) {
 
 /** Download PDF binary */
 export async function downloadPdf(id) {
-  const res = await fetch(`${API_BASE}/inspections/${id}/pdf`)
+  const res = await fetch(`${API_BASE}/inspections/${id}?pdf=true`)
   if (!res.ok) throw new Error('Failed to download PDF')
   const blob = await res.blob()
   return blob
 }
 
 /** Add supervisor signature later (optional) */
-export async function signSupervisor(id, { name, signedAt }) {
-  const res = await fetchJson(`${API_BASE}/inspections/${id}/sign-supervisor`, {
+export async function signSupervisor(id, { name, signature, signedAt }) {
+  const res = await fetchJson(`${API_BASE}/inspections/${id}`, {
     method: 'POST',
-    body: JSON.stringify({ name, signedAt }),
+    body: JSON.stringify({ name, signature, signedAt }),
   })
   return res // { success, id, supervisor_name, supervisor_signed_at, status }
 }
