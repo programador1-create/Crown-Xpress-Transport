@@ -303,8 +303,11 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     // FLATBED and RABON don't require seal/lock, but do require trailer number
     const sealLockRequired = inspectionType === 'LOADED' && trailerType !== 'FLATBED' && trailerType !== 'RABON'
 
+    console.log('DEBUG sealLock:', { inspectionType, trailerType, sealLockRequired, sealLockEntered })
+
     // Auto-mark sealLockEntered as true for types that don't require seal/lock
     if (!sealLockRequired && !sealLockEntered) {
+      console.log('DEBUG: Auto-marking sealLockEntered to true')
       setSealLockEntered(true)
     }
 
