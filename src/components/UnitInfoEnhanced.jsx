@@ -108,7 +108,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [containerNumberEntered, setContainerNumberEntered] = useState(!!unitInfo?.trailerNumber)
   const [sealLockEntered, setSealLockEntered] = useState(false)
   const [tractorNumberEntered, setTractorNumberEntered] = useState(!!unitInfo?.tractorNumber)
-  const [operatorStepCompleted, setOperatorStepCompleted] = useState(!!unitInfo?.driverName)
+  const [operatorStepCompleted, setOperatorStepCompleted] = useState(false) // Always start as false
   // Keypad states
   const [keypadOpen, setKeypadOpen] = useState(false)
   const [keypadField, setKeypadField] = useState(null) // 'trailerNumber', 'chassisNumber', 'sealNumber', 'lockNumber'
@@ -134,6 +134,14 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     setEquipmentOwner(unitInfo?.equipmentOwner || null)
     setCrownFleet(unitInfo?.crownFleet || null)
     setCustomerPrefix(unitInfo?.customerPrefix || null)
+
+    // Clear operator when inspection type changes to ensure correct flow order
+    if (unitInfo?.inspectionType) {
+      updateUnitInfo('driverName', '')
+      updateUnitInfo('employeeNumber', '')
+      setOperatorFound(null)
+      setOperatorStepCompleted(false)
+    }
   }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize, unitInfo?.equipmentOwner, unitInfo?.crownFleet, unitInfo?.customerPrefix])
 
   // Handle inspection type selection

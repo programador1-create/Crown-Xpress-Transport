@@ -176,12 +176,12 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     }
   }
 
-  // Compress signatures (300px, 80% quality for better visibility)
+  // Compress signatures (300px, 95% quality for guard/supervisor, 80% for operator)
   const compressedGuardSig = guardSignature?.signature
-    ? await compressImage(guardSignature.signature, 300, 0.8)
+    ? await compressImage(guardSignature.signature, 300, 0.95)
     : null
   const compressedSupervisorSig = supervisorSig?.signature
-    ? await compressImage(supervisorSig.signature, 300, 0.8)
+    ? await compressImage(supervisorSig.signature, 300, 0.95)
     : null
   const compressedOperatorSig = operatorSignature?.signature
     ? await compressImage(operatorSignature.signature, 300, 0.8)
