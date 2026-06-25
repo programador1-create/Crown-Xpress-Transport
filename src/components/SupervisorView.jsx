@@ -126,6 +126,7 @@ export default function SupervisorView() {
       URL.revokeObjectURL(url)
     } catch (e) {
       console.error('PDF download error:', e)
+      alert(`Error al descargar PDF: ${e.message}`)
 
       // If PDF doesn't exist in backend, try to generate it on the fly
       try {
@@ -205,6 +206,7 @@ export default function SupervisorView() {
       window.open(url, '_blank')
     } catch (e) {
       console.error('PDF view error:', e)
+      alert(`Error al ver PDF: ${e.message}`)
 
       // If PDF doesn't exist in backend, try to generate it on the fly
       try {
