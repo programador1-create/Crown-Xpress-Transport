@@ -203,8 +203,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     ? await compressImage(operatorSignature.signature, 600, 0.8, 'image/png')
     : null
 
-  // Don't send the full PDF - it's too large. Backend can regenerate if needed.
-  // Just send a flag that PDF was generated
+  // Send the full PDF to backend for storage
   return {
     unitInfo,
     points: pointsPayload,
@@ -213,7 +212,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     operatorSignature: { ...operatorSignature, signature: compressedOperatorSig },
     sealPhoto: compressedSealPhoto,
     language: 'es',
-    pdfGenerated: true,  // Flag instead of full PDF
+    pdfBase64,
     pdfFilename,
     counts: {
       good: goodCount || 0,

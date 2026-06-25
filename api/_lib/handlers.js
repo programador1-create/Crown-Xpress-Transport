@@ -8,6 +8,8 @@ export async function createInspection(req, res) {
       unitInfo = {},
       points = {},
       guardSignature = {},
+      supervisorSignature = {},
+      operatorSignature = {},
       auditorSignature = {},
       language = 'es',
       pdfBase64,
@@ -46,7 +48,9 @@ export async function createInspection(req, res) {
       INSERT INTO inspections (
         trailer_number, seal_number, lock_number, driver_name, odometer, location,
         inspection_date, high_security_seal, seal_affixed, language,
-        operator_name, guard_name, guard_signed_at,
+        operator_name, operator_signature, operator_signed_at,
+        guard_name, guard_signature, guard_signed_at,
+        supervisor_name, supervisor_signature, supervisor_signed_at,
         auditor_name, auditor_signed_at,
         status, total_good, total_bad, total_pending,
         pdf_filename, pdf_data, pdf_size_bytes,
@@ -62,9 +66,15 @@ export async function createInspection(req, res) {
         ${ui.highSecuritySeal === 'yes' || ui.high_security_seal === true},
         ${ui.sealAffixed === 'yes' || ui.seal_affixed === true},
         ${language},
-        ${driver_name},
+        ${operatorSignature?.name || null},
+        ${operatorSignature?.signature || null},
+        ${operatorSignature?.signedAt ? new Date(operatorSignature.signedAt) : null},
         ${guard_name_field},
+        ${guardSignature.signature || null},
         ${guardSignature.signedAt ? new Date(guardSignature.signedAt) : new Date()},
+        ${supervisorSignature?.name || null},
+        ${supervisorSignature?.signature || null},
+        ${supervisorSignature?.signedAt ? new Date(supervisorSignature.signedAt) : null},
         ${auditorSignature.name || null},
         ${auditorSignature.signedAt ? new Date(auditorSignature.signedAt) : null},
         ${auditorSignature.signature ? 'audited' : 'completed'},
@@ -109,6 +119,22 @@ export async function createInspection(req, res) {
       details: { signedAt: guardSignature.signedAt },
       ip, ua,
     })
+    if (operatorSignature?.signature && operatorSignature?.name) {
+      await logAudit({
+        inspectionId: inspection.id, userName: operatorSignature.name,
+        role: 'operator', action: 'signed_operator',
+        details: { signedAt: operatorSignature.signedAt },
+        ip, ua,
+      })
+    }
+    if (supervisorSignature?.signature && supervisorSignature?.name) {
+      await logAudit({
+        inspectionId: inspection.id, userName: supervisorSignature.name,
+        role: 'supervisor', action: 'signed_supervisor',
+        details: { signedAt: supervisorSignature.signedAt },
+        ip, ua,
+      })
+    }
     if (auditorSignature.signature && auditorSignature.name) {
       await logAudit({
         inspectionId: inspection.id, userName: auditorSignature.name,
