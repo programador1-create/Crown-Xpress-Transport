@@ -214,6 +214,7 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     : null
 
   // Send the full PDF to backend for storage
+  console.log('buildPayload - PDF length:', pdfBase64.length, 'First 100 chars:', pdfBase64.substring(0, 100))
   return {
     unitInfo,
     points: pointsPayload,
