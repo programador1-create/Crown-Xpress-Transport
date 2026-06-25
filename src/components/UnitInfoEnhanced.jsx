@@ -440,6 +440,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     }
 
     // Guardar nomeclatura completa del equipo
+    console.log('NBCW equipment selected:', { eqpCode, prefix: eqpCode.match(/^([A-Z]+)-/)?.[1], trailerNumber: eqpCode.match(/[A-Z]+-?(\d+)/i)?.[1] })
     updateUnitInfo('equipmentNomenclature', eqpCode.trim())
 
     // Extraer número de equipo de la nomeclatura

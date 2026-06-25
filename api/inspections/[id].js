@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         WHERE id = ${inspectionId}
       `
 
-      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data))
+      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data), 'pdf_data type:', typeof inspection?.pdf_data, 'isBuffer:', Buffer.isBuffer(inspection?.pdf_data), 'length:', inspection?.pdf_data?.length)
 
       if (!inspection) {
         return res.status(404).json({ error: 'Inspection not found' })
