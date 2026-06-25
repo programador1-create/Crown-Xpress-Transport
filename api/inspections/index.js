@@ -30,7 +30,7 @@ export default async function handler(req, res) {
             high_security_seal, seal_affixed,
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
-            good_count, bad_count, pending_count,
+            total_good, total_bad, total_pending,
             status, language, created_at, original_inspection_id, wono, inspection_type, trailer_type
           FROM inspections
           WHERE location = ${yardCode}
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
             high_security_seal, seal_affixed,
             guard_name, guard_signed_at,
             auditor_name, auditor_signed_at,
-            good_count, bad_count, pending_count,
+            total_good, total_bad, total_pending,
             status, language, created_at, original_inspection_id, wono, inspection_type, trailer_type
           FROM inspections
           ORDER BY created_at DESC
