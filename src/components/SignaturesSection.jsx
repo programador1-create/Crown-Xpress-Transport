@@ -104,7 +104,13 @@ export default function SignaturesSection() {
               <input
                 type="checkbox"
                 checked={enableSupervisor}
-                onChange={(e) => setEnableSupervisor(e.target.checked)}
+                onChange={(e) => {
+                  setEnableSupervisor(e.target.checked)
+                  // When disabled, clear supervisor signature
+                  if (!e.target.checked) {
+                    setSupervisorSignature({ name: '', signature: null, signedAt: null })
+                  }
+                }}
                 className="w-5 h-5 rounded border-slate-300 text-crown-gold focus:ring-crown-gold cursor-pointer"
               />
               <div className="flex items-center gap-2">
