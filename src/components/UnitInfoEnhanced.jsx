@@ -535,10 +535,14 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           } else {
             setEquipmentOwner('CUSTOMER')
             updateUnitInfo('equipmentOwner', 'CUSTOMER')
-            const prefix = isoPrefixes.find(p => eqpUpper.startsWith(p))
-            if (prefix) {
-              setCustomerPrefix(prefix)
-              updateUnitInfo('customerPrefix', prefix)
+            // No sobrescribir customerPrefix si ya fue extraído del eqpCode al inicio
+            // Solo establecer si no está ya establecido
+            if (!customerPrefix) {
+              const prefix = isoPrefixes.find(p => eqpUpper.startsWith(p))
+              if (prefix) {
+                setCustomerPrefix(prefix)
+                updateUnitInfo('customerPrefix', prefix)
+              }
             }
           }
         
