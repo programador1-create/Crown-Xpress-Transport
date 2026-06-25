@@ -45,9 +45,10 @@ export default function SignaturesSection() {
         const sups = await getSupervisorsByYard(yardCode)
         setSupervisors(sups)
         
-        // If only one supervisor and no name selected, auto-select
-        // Only set name, not signature - signature must be manually added
-        if (sups.length === 1 && !supervisorSignature?.name) {
+        // If only one supervisor, enable supervisor and auto-select name
+        // Only if user hasn't explicitly disabled supervisor signature
+        if (sups.length === 1 && !supervisorSignature?.name && !supervisorSignature?.signature) {
+          setEnableSupervisor(true)
           setSupervisorSignature(prev => ({ ...prev, name: sups[0].full_name.toUpperCase(), signature: null, signedAt: null }))
         }
       } catch (err) {
