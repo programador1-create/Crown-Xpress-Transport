@@ -484,7 +484,7 @@ export default function SupervisorView() {
                         }`} />
                         <div className="text-left min-w-0">
                           <div className="font-semibold text-sm text-slate-800 truncate">
-                            {insp.inspection_type === 'BOBTAIL' ? (insp.tractor_number || '—') : (insp.trailer_number || '—')} · {insp.driver_name}
+                            {insp.inspection_type === 'BOBTAIL' ? (insp.tractor_number || '—') : (insp.trailer_number || '—')}
                           </div>
                           <div className="text-xs text-slate-500 truncate">
                             {new Date(insp.created_at).toLocaleString()} · {insp.guard_name}

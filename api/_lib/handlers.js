@@ -77,7 +77,7 @@ export async function createInspection(req, res) {
         ${supervisorSignature?.signedAt ? new Date(supervisorSignature.signedAt) : null},
         ${auditorSignature.name || null},
         ${auditorSignature.signedAt ? new Date(auditorSignature.signedAt) : null},
-        ${auditorSignature.signature ? 'audited' : 'completed'},
+        ${auditorSignature.signature ? 'audited' : (supervisorSignature?.signature ? 'completed' : 'pending')},
         ${counts.good || 0},
         ${counts.bad || 0},
         ${counts.pending || 0},
