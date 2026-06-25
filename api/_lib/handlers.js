@@ -54,7 +54,8 @@ export async function createInspection(req, res) {
         auditor_name, auditor_signed_at,
         status, total_good, total_bad, total_pending,
         pdf_filename, pdf_data, pdf_size_bytes,
-        created_ip, created_user_agent
+        created_ip, created_user_agent,
+        equipment_nomenclature, tractor_number, container_number
       ) VALUES (
         ${trailer_number},
         ${seal_number},
@@ -85,7 +86,10 @@ export async function createInspection(req, res) {
         ${pdfBuffer},
         ${pdfBuffer.length},
         ${ip},
-        ${ua}
+        ${ua},
+        ${ui.equipmentNomenclature || ui.equipment_nomenclature || null},
+        ${ui.tractorNumber || ui.tractor_number || null},
+        ${ui.containerNumber || ui.container_number || null}
       )
       RETURNING id, inspection_uuid, created_at
     `
