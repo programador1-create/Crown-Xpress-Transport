@@ -155,7 +155,8 @@ export default function SignaturesSection() {
                   value={supervisorSignature?.name || ''}
                   onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value.toUpperCase() }))}
                   placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 bg-slate-50"
+                  readOnly={true}
                 />
               )}
               <SignatureBox
@@ -176,7 +177,7 @@ export default function SignaturesSection() {
                 accent="gold"
                 optional
                 optionalLabel={t('supervisorOptional').toUpperCase()}
-                nameReadOnly={supervisors.length > 1}
+                nameReadOnly={supervisors.length === 1}
               />
             </div>
           )}
