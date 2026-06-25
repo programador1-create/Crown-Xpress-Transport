@@ -438,13 +438,23 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         updateUnitInfo('customerPrefix', prefixMatch[1])
       }
     }
-    
+
     // Guardar nomeclatura completa del equipo
     updateUnitInfo('equipmentNomenclature', eqpCode.trim())
-    
+
     // Extraer número de equipo de la nomeclatura
     const nomenclatureMatch = eqpCode.match(/[A-Z]+-?(\d+)/i)
     updateUnitInfo('equipmentNumber', nomenclatureMatch ? nomenclatureMatch[1] : '')
+
+    // Si el número de contenedor/caja viene de NBCW, marcar como ingresado
+    if (eqpCode && !isBotada) {
+      const containerNumMatch = eqpCode.match(/[A-Z]+-?(\d+)/i)
+      const containerNumber = containerNumMatch ? containerNumMatch[1] : ''
+      if (containerNumber) {
+        updateUnitInfo('trailerNumber', containerNumber)
+        setContainerNumberEntered(true)
+      }
+    }
     
     // Establecer el operador automáticamente desde NBCW para TODOS los tipos - saltar modal de búsqueda
     setOperatorFound({
@@ -596,6 +606,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
             else if (eqpUpper.startsWith('RBX')) fleet = 'RBX'
             else if (eqpUpper.startsWith('ABBA')) fleet = 'ABBA'
             else if (eqpUpper.startsWith('JGB')) fleet = 'JGB'
+            
+            setCrownFleet(fleet)
+            updateUnitInfo('crownFleet', fleet)
 
             setCrownFleet(fleet)
             updateUnitInfo('crownFleet', fleet)
