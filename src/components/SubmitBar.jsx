@@ -53,6 +53,7 @@ export default function SubmitBar({ onSuccess }) {
   // Generate PDF using existing operator signature from context
   const handleGeneratePDF = async () => {
     setGenerating(true)
+    console.log('Starting PDF generation...')
 
     try {
       // 1. Generate PDF with signatures from context
