@@ -71,6 +71,12 @@ export default function SubmitBar({ onSuccess }) {
 
       // 2. Upload to backend (with compressed images)
       const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
+      console.log('Submit payload:', {
+        supervisorSignature: payload.supervisorSignature,
+        status: payload.supervisorSignature?.signature ? 'completed' : 'pending',
+        equipmentNomenclature: payload.unitInfo?.equipmentNomenclature,
+        trailerNumber: payload.unitInfo?.trailerNumber
+      })
       const uploadResult = await createInspection(payload)
 
       // 3. Show PDF in modal viewer
