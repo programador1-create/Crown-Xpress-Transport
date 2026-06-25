@@ -78,6 +78,7 @@ const CROWN_FLEETS_CONTAINER = {
 
 // Standard container prefixes for CUSTOMER equipment
 const CUSTOMER_CONTAINER_PREFIXES = {
+  CXT: { name: 'CXT', description: { es: 'Crown Xpress Transport', en: 'Crown Xpress Transport' } },
   EMHU: { name: 'EMHU', description: { es: 'Emhu Container', en: 'Emhu Container' } },
   UMXU: { name: 'UMXU', description: { es: 'Umxu Container', en: 'Umxu Container' } },
   MEDU: { name: 'MEDU', description: { es: 'MSC Container', en: 'MSC Container' } },
@@ -1148,7 +1149,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // If CUSTOMER selected with CONTAINER but no prefix, show prefix selector
   // Skip if prefix already set from NBCW
-  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix && !operatorFound) {
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix) {
     const typeConfig = TRAILER_TYPES[trailerType]
     
     return (

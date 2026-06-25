@@ -145,9 +145,70 @@ export default function GuardHistory() {
       URL.revokeObjectURL(url)
     } catch (e) {
       console.error('PDF download error:', e)
-      alert(language === 'es'
-        ? 'Error descargando PDF. Esta inspección puede no tener PDF guardado.'
-        : 'Error downloading PDF. This inspection may not have a saved PDF.')
+
+      // If PDF doesn't exist in backend, try to generate it on the fly
+      try {
+        const inspectionData = await getInspection(id)
+        const insp = inspectionData.inspection
+
+        // Map snake_case DB fields to camelCase expected by generateInspectionPDF
+        const unitInfo = {
+          trailerNumber: insp.trailer_number,
+          tractorNumber: insp.tractor_number,
+          containerNumber: insp.container_number,
+          equipmentNomenclature: insp.equipment_nomenclature,
+          sealNumber: insp.seal_number,
+          lockNumber: insp.lock_number,
+          driverName: insp.driver_name,
+          odometer: insp.odometer,
+          location: insp.location,
+          inspectionDate: insp.inspection_date,
+          highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
+          sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
+          inspectionType: insp.inspection_type || 'LOADED',
+          trailerType: insp.trailer_type,
+          workOrder: insp.wono
+        }
+
+        // Convert points array to object keyed by point_id
+        const pointsObj = {}
+        for (const p of (inspectionData.points || [])) {
+          pointsObj[p.point_id] = {
+            status: p.status,
+            issueId: p.issue_id,
+            issueCustomText: p.issue_text,
+            photo: p.photo
+          }
+        }
+
+        // Generate PDF on the fly
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points: pointsObj,
+          sealPhoto: insp.seal_photo,
+          guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
+          supervisorSignature: insp.supervisor_name ? { name: insp.supervisor_name, signature: insp.supervisor_signature, signedAt: insp.supervisor_signed_at } : null,
+          operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature } : null,
+          language: insp.language || 'es',
+          yardCode: insp.location || ''
+        })
+
+        // Download the generated PDF
+        const pdfBlob = pdfResult.doc.output('blob')
+        const url = URL.createObjectURL(pdfBlob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename || `inspection-${id}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+      } catch (genError) {
+        console.error('PDF generation error:', genError)
+        alert(language === 'es'
+          ? 'Error generando PDF. Por favor intente verlo en lugar de descargarlo.'
+          : 'Error generating PDF. Please try viewing it instead of downloading.')
+      }
     }
   }
 

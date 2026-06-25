@@ -48,72 +48,8 @@ export default async function handler(req, res) {
         return res.send(pdfBuffer)
       }
 
-      // PDF not stored - try to generate on the fly
-      try {
-        // Get points
-        const points = await sql`
-          SELECT point_id, status, issue_id, issue_text, photo
-          FROM inspection_points
-          WHERE inspection_id = ${inspectionId}
-          ORDER BY point_id
-        `
-
-        // Generate PDF using the same logic as frontend
-        const { generateInspectionPDF } = await import('../../src/utils/pdfGenerator.js')
-
-        // Map snake_case DB fields to camelCase expected by generateInspectionPDF
-        const unitInfo = {
-          trailerNumber: inspection.trailer_number,
-          tractorNumber: inspection.tractor_number,
-          containerNumber: inspection.container_number,
-          equipmentNomenclature: inspection.equipment_nomenclature,
-          sealNumber: inspection.seal_number,
-          lockNumber: inspection.lock_number,
-          driverName: inspection.driver_name,
-          odometer: inspection.odometer,
-          location: inspection.location,
-          inspectionDate: inspection.inspection_date,
-          highSecuritySeal: inspection.high_security_seal === 'yes' ? 'yes' : 'no',
-          sealAffixed: inspection.seal_affixed === 'yes' ? 'yes' : 'no',
-          inspectionType: inspection.inspection_type || 'LOADED',
-          trailerType: inspection.trailer_type,
-          workOrder: inspection.wono
-        }
-
-        // Convert points array to object keyed by point_id
-        const pointsObj = {}
-        for (const p of points) {
-          pointsObj[p.point_id] = {
-            status: p.status,
-            issueId: p.issue_id,
-            issueCustomText: p.issue_text,
-            photo: p.photo
-          }
-        }
-
-        // Get seal photo if available
-        const sealPhoto = inspection.seal_photo || null
-
-        // Generate PDF
-        const pdfResult = await generateInspectionPDF({
-          unitInfo,
-          points: pointsObj,
-          sealPhoto,
-          guardSignature: inspection.guard_name ? { name: inspection.guard_name, signature: inspection.guard_signature, signedAt: inspection.guard_signed_at } : null,
-          supervisorSignature: inspection.supervisor_name ? { name: inspection.supervisor_name, signature: inspection.supervisor_signature, signedAt: inspection.supervisor_signed_at } : null,
-          operatorSignature: inspection.operator_name ? { name: inspection.operator_name, signature: inspection.operator_signature } : null,
-          language: inspection.language || 'es',
-          yardCode: inspection.location || ''
-        })
-
-        const pdfBuffer = pdfResult.doc.output('arraybuffer')
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
-        return res.send(Buffer.from(pdfBuffer))
-      } catch (genError) {
-        console.error('PDF generation error:', genError)
-        return res.status(500).json({ error: 'Failed to generate PDF', details: genError.message })
-      }
+      // PDF not stored - let frontend generate it
+      return res.status(404).json({ error: 'PDF not available in database - frontend will generate it' })
     }
 
     if (req.method === 'GET') {
