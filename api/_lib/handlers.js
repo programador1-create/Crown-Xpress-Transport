@@ -2,8 +2,10 @@ import { getSql, logAudit, getClientIp, readJsonBody } from './db.js'
 
 /** POST /api/inspections — create new inspection */
 export async function createInspection(req, res) {
+  console.log('=== createInspection called ===')
   try {
     const body = await readJsonBody(req)
+    console.log('Request body keys:', Object.keys(body))
     const {
       unitInfo = {},
       points = {},
