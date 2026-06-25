@@ -277,12 +277,15 @@ export default function SupervisorView() {
   }
 
   const handleSignatureSubmit = async (signatureImage) => {
+    console.log('handleSignatureSubmit called', { signingInspection: !!signingInspection, signatureImage: !!signatureImage })
     if (!signingInspection || !signatureImage) return
 
     try {
+      console.log('Getting inspection data for ID:', signingInspection.id)
       // Get inspection data to regenerate PDF
       const inspectionData = await getInspection(signingInspection.id)
       const insp = inspectionData.inspection
+      console.log('Inspection data received:', { guard_name: insp.guard_name, supervisor_name: insp.supervisor_name })
 
       // Map snake_case DB fields to camelCase expected by generateInspectionPDF
       const unitInfo = {
