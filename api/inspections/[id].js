@@ -18,18 +18,18 @@ export default async function handler(req, res) {
     // PDF download endpoint
     if (req.method === 'GET' && req.query.pdf === 'true') {
       console.log('PDF download request for ID:', id, 'Type:', typeof id)
-      
+
       // Clean ID - remove .pdf extension if present
       const cleanId = String(id).replace(/\.pdf$/, '')
       const inspectionId = parseInt(cleanId)
-      
+
       if (isNaN(inspectionId)) {
         console.error('Invalid inspection ID:', id, 'Cleaned:', cleanId)
         return res.status(400).json({ error: 'Invalid inspection ID' })
       }
 
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language
+        SELECT pdf_filename, pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language, tractor_number, container_number, equipment_nomenclature, odometer, high_security_seal, seal_affixed, wono
         FROM inspections
         WHERE id = ${inspectionId}
       `
@@ -48,8 +48,72 @@ export default async function handler(req, res) {
         return res.send(pdfBuffer)
       }
 
-      // PDF not stored - return error message
-      return res.status(404).json({ error: 'PDF not available - this inspection was created before PDF storage was implemented. Please create a new inspection.' })
+      // PDF not stored - try to generate on the fly
+      try {
+        // Get points
+        const points = await sql`
+          SELECT point_id, status, issue_id, issue_text, photo
+          FROM inspection_points
+          WHERE inspection_id = ${inspectionId}
+          ORDER BY point_id
+        `
+
+        // Generate PDF using the same logic as frontend
+        const { generateInspectionPDF } = await import('../../src/utils/pdfGenerator.js')
+
+        // Map snake_case DB fields to camelCase expected by generateInspectionPDF
+        const unitInfo = {
+          trailerNumber: inspection.trailer_number,
+          tractorNumber: inspection.tractor_number,
+          containerNumber: inspection.container_number,
+          equipmentNomenclature: inspection.equipment_nomenclature,
+          sealNumber: inspection.seal_number,
+          lockNumber: inspection.lock_number,
+          driverName: inspection.driver_name,
+          odometer: inspection.odometer,
+          location: inspection.location,
+          inspectionDate: inspection.inspection_date,
+          highSecuritySeal: inspection.high_security_seal === 'yes' ? 'yes' : 'no',
+          sealAffixed: inspection.seal_affixed === 'yes' ? 'yes' : 'no',
+          inspectionType: inspection.inspection_type || 'LOADED',
+          trailerType: inspection.trailer_type,
+          workOrder: inspection.wono
+        }
+
+        // Convert points array to object keyed by point_id
+        const pointsObj = {}
+        for (const p of points) {
+          pointsObj[p.point_id] = {
+            status: p.status,
+            issueId: p.issue_id,
+            issueCustomText: p.issue_text,
+            photo: p.photo
+          }
+        }
+
+        // Get seal photo if available
+        const sealPhoto = inspection.seal_photo || null
+
+        // Generate PDF
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points: pointsObj,
+          sealPhoto,
+          guardSignature: inspection.guard_name ? { name: inspection.guard_name, signature: inspection.guard_signature, signedAt: inspection.guard_signed_at } : null,
+          supervisorSignature: inspection.supervisor_name ? { name: inspection.supervisor_name, signature: inspection.supervisor_signature, signedAt: inspection.supervisor_signed_at } : null,
+          operatorSignature: inspection.operator_name ? { name: inspection.operator_name, signature: inspection.operator_signature } : null,
+          language: inspection.language || 'es',
+          yardCode: inspection.location || ''
+        })
+
+        const pdfBuffer = pdfResult.doc.output('arraybuffer')
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+        return res.send(Buffer.from(pdfBuffer))
+      } catch (genError) {
+        console.error('PDF generation error:', genError)
+        return res.status(500).json({ error: 'Failed to generate PDF', details: genError.message })
+      }
     }
 
     if (req.method === 'GET') {
