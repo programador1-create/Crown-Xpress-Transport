@@ -10,7 +10,8 @@
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "sync:nbcw": "node scripts/sync-nbcw-to-neon.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
