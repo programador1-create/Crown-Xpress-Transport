@@ -39,6 +39,8 @@ export function InspectionProvider({ children }) {
     highSecuritySeal: 'yes',
     sealAffixed: 'yes',
     inspectionType: null,
+    customerPrefix: '',
+    equipmentNomenclature: '',
   })
 
   // 20 inspection points state
@@ -94,6 +96,8 @@ export function InspectionProvider({ children }) {
       highSecuritySeal: 'yes',
       sealAffixed: 'yes',
       inspectionType: null,
+      customerPrefix: '',
+      equipmentNomenclature: '',
     })
     setPoints(initialPoints())
     setSealPhoto(null)

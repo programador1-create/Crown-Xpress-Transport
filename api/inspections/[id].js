@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       }
 
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language, tractor_number, container_number, equipment_nomenclature, odometer, high_security_seal, seal_affixed, wono
+        SELECT pdf_filename, pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language, tractor_number, container_number, equipment_nomenclature, customer_prefix, odometer, high_security_seal, seal_affixed, wono
         FROM inspections
         WHERE id = ${inspectionId}
       `
@@ -41,11 +41,12 @@ export default async function handler(req, res) {
       }
 
       if (inspection.pdf_data) {
-        // Return stored PDF
-        const pdfBuffer = inspection.pdf_data
+        // Return stored PDF as binary buffer
+        const pdfBuffer = Buffer.isBuffer(inspection.pdf_data) ? inspection.pdf_data : Buffer.from(inspection.pdf_data)
         res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
-        return res.send(pdfBuffer)
+        res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+        res.setHeader('Content-Length', pdfBuffer.length)
+        return res.status(200).end(pdfBuffer)
       }
 
       // PDF not stored - let frontend generate it

@@ -110,6 +110,7 @@ export default function SupervisorView() {
           tractorNumber: insp.tractor_number,
           containerNumber: insp.container_number,
           equipmentNomenclature: insp.equipment_nomenclature,
+          customerPrefix: insp.customer_prefix,
           sealNumber: insp.seal_number,
           lockNumber: insp.lock_number,
           driverName: insp.driver_name,
@@ -188,6 +189,7 @@ export default function SupervisorView() {
           tractorNumber: insp.tractor_number,
           containerNumber: insp.container_number,
           equipmentNomenclature: insp.equipment_nomenclature,
+          customerPrefix: insp.customer_prefix,
           sealNumber: insp.seal_number,
           lockNumber: insp.lock_number,
           driverName: insp.driver_name,
@@ -484,7 +486,9 @@ export default function SupervisorView() {
                         }`} />
                         <div className="text-left min-w-0">
                           <div className="font-semibold text-sm text-slate-800 truncate">
-                            {insp.equipment_nomenclature || (insp.inspection_type === 'BOBTAIL' ? (insp.tractor_number || '—') : (insp.trailer_number || '—'))}
+                            {(insp.customer_prefix && insp.equipment_nomenclature
+                              ? `${insp.customer_prefix}-${insp.equipment_nomenclature}`
+                              : insp.equipment_nomenclature) || (insp.inspection_type === 'BOBTAIL' ? (insp.tractor_number || '—') : (insp.trailer_number || '—'))}
                           </div>
                           <div className="text-xs text-slate-500 truncate">
                             {new Date(insp.created_at).toLocaleString()} · {insp.guard_name}
@@ -550,6 +554,14 @@ export default function SupervisorView() {
                         </div>
                         {/* Additional Details */}
                         <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                          <div>
+                            <span className="text-slate-500">{language === 'es' ? 'Equipo:' : 'Equipment:'}</span>
+                            <span className="font-semibold text-slate-700 ml-1">
+                              {(insp.customer_prefix && insp.equipment_nomenclature
+                                ? `${insp.customer_prefix}-${insp.equipment_nomenclature}`
+                                : insp.equipment_nomenclature) || insp.trailer_number || insp.tractor_number || '—'}
+                            </span>
+                          </div>
                           <div>
                             <span className="text-slate-500">{language === 'es' ? 'Sello:' : 'Seal:'}</span>
                             <span className="font-semibold text-slate-700 ml-1">{insp.seal_number || '—'}</span>

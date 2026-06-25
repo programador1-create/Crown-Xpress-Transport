@@ -157,6 +157,7 @@ export default function GuardHistory() {
           tractorNumber: insp.tractor_number,
           containerNumber: insp.container_number,
           equipmentNomenclature: insp.equipment_nomenclature,
+          customerPrefix: insp.customer_prefix,
           sealNumber: insp.seal_number,
           lockNumber: insp.lock_number,
           driverName: insp.driver_name,
@@ -260,6 +261,7 @@ export default function GuardHistory() {
           tractorNumber: insp.tractor_number,
           containerNumber: insp.container_number,
           equipmentNomenclature: insp.equipment_nomenclature,
+          customerPrefix: insp.customer_prefix,
           sealNumber: insp.seal_number,
           lockNumber: insp.lock_number,
           driverName: insp.driver_name,
@@ -558,7 +560,9 @@ export default function GuardHistory() {
                       {expanded[group.original.id] ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                       <div className="min-w-0">
                         <div className="font-semibold text-slate-800 truncate">
-                          {group.original.equipment_nomenclature || group.original.trailer_number || group.original.tractor_number || `#${group.original.id}`} · {group.original.guard_name || group.original.driver_name}
+                          {(group.original.customer_prefix && group.original.equipment_nomenclature
+                            ? `${group.original.customer_prefix}-${group.original.equipment_nomenclature}`
+                            : group.original.equipment_nomenclature) || group.original.trailer_number || group.original.tractor_number || `#${group.original.id}`} · {group.original.guard_name || group.original.driver_name}
                         </div>
                         <div className="text-xs text-slate-500 truncate">
                           {new Date(group.original.created_at).toLocaleString()} · {group.original.location}
@@ -607,6 +611,14 @@ export default function GuardHistory() {
                       </div>
                       {/* Additional Details */}
                       <div className="px-4 py-3 grid grid-cols-2 gap-2 text-xs border-b">
+                        <div>
+                          <span className="text-slate-500">{language === 'es' ? 'Equipo:' : 'Equipment:'}</span>
+                          <span className="font-semibold text-slate-700 ml-1">
+                            {(group.original.customer_prefix && group.original.equipment_nomenclature
+                              ? `${group.original.customer_prefix}-${group.original.equipment_nomenclature}`
+                              : group.original.equipment_nomenclature) || group.original.trailer_number || group.original.tractor_number || '—'}
+                          </span>
+                        </div>
                         <div>
                           <span className="text-slate-500">{language === 'es' ? 'Tractor/Camión:' : 'Tractor/Truck:'}</span>
                           <span className="font-semibold text-slate-700 ml-1">{group.original.tractor_number || '—'}</span>
