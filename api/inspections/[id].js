@@ -122,6 +122,14 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { name, signature, signedAt, pdfBase64, pdfFilename } = req.body
 
+      console.log('POST /api/inspections/[id] - Supervisor signature request')
+      console.log('Name:', name)
+      console.log('Has signature:', !!signature)
+      console.log('Signature length:', signature?.length || 0)
+      console.log('SignedAt:', signedAt)
+      console.log('Has pdfBase64:', !!pdfBase64)
+      console.log('pdfBase64 length:', pdfBase64?.length || 0)
+
       if (!name || !signedAt) {
         return res.status(400).json({ error: 'Name and signedAt are required' })
       }
@@ -136,6 +144,7 @@ export default async function handler(req, res) {
       if (pdfBase64) {
         const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf;base64,/, '')
         pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+        console.log('PDF buffer length:', pdfBuffer.length)
         pdfUpdate = `, pdf_filename = ${pdfFilename || 'inspection.pdf'}, pdf_data = ${pdfBuffer}, pdf_size_bytes = ${pdfBuffer.length}`
       }
 
@@ -151,6 +160,12 @@ export default async function handler(req, res) {
         WHERE id = ${inspectionId}
         RETURNING *
       `
+
+      console.log('Update result:', result.length > 0 ? 'Success' : 'Failed')
+      if (result.length > 0) {
+        console.log('Updated supervisor_name:', result[0].supervisor_name)
+        console.log('Updated supervisor_signature length:', result[0].supervisor_signature?.length || 0)
+      }
 
       if (result.length === 0) {
         return res.status(404).json({ error: 'Inspection not found' })
