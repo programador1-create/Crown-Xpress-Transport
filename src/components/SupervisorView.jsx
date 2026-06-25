@@ -278,23 +278,74 @@ export default function SupervisorView() {
 
   const handleSignatureSubmit = async (signatureImage) => {
     if (!signingInspection || !signatureImage) return
-    
+
     try {
-      // Sign supervisor without PDF regeneration for now
+      // Get inspection data to regenerate PDF
+      const inspectionData = await getInspection(signingInspection.id)
+      const insp = inspectionData.inspection
+
+      // Map snake_case DB fields to camelCase expected by generateInspectionPDF
+      const unitInfo = {
+        trailerNumber: insp.trailer_number,
+        tractorNumber: insp.tractor_number,
+        containerNumber: insp.container_number,
+        equipmentNomenclature: insp.equipment_nomenclature,
+        customerPrefix: insp.customer_prefix,
+        sealNumber: insp.seal_number,
+        lockNumber: insp.lock_number,
+        driverName: insp.driver_name,
+        inspectionDate: insp.inspection_date,
+        inspectionType: insp.inspection_type,
+        trailerType: insp.trailer_type,
+        odometer: insp.odometer,
+        highSecuritySeal: insp.high_security_seal,
+        sealAffixed: insp.seal_affixed,
+        wono: insp.wono
+      }
+
+      // Map points
+      const pointsObj = {}
+      for (const p of (inspectionData.points || [])) {
+        pointsObj[p.point_id] = {
+          status: p.status,
+          issueId: p.issue_id,
+          issueCustomText: p.issue_text,
+          photo: p.photo
+        }
+      }
+
+      // Generate PDF with new supervisor signature
+      const pdfResult = await generateInspectionPDF({
+        unitInfo,
+        points: pointsObj,
+        sealPhoto: insp.seal_photo,
+        guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
+        supervisorSignature: { name: user?.full_name || 'Supervisor', signature: signatureImage, signedAt: new Date().toISOString() },
+        operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature } : null,
+        language: insp.language || 'es',
+        yardCode: insp.location || ''
+      })
+
+      const pdfBase64 = pdfResult.doc.output('datauristring')
+      const pdfFilename = pdfResult.filename
+
+      // Sign supervisor with PDF regeneration
       await signSupervisor(signingInspection.id, {
         name: user?.full_name || 'Supervisor',
         signature: signatureImage,
-        signedAt: new Date().toISOString()
+        signedAt: new Date().toISOString(),
+        pdfBase64,
+        pdfFilename
       })
-      
+
       // Refresh inspections list
       const res = await listInspections({ limit: 500 })
       setInspections(res.data || [])
-      
+
       setShowSignatureModal(false)
       setSigningInspection(null)
       setSignatureData(null)
-      
+
       alert(language === 'es' ? 'Inspección firmada exitosamente' : 'Inspection signed successfully')
     } catch (err) {
       alert(language === 'es' ? `Error firmando inspección: ${err.message}` : `Error signing inspection: ${err.message}`)
