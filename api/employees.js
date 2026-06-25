@@ -124,13 +124,21 @@ export default async function handler(req, res) {
         ORDER BY role, full_name
       `
 
+      // Get yard assignments for all employees (must be before role filter)
+      const allAssignments = await sql`
+        SELECT ya.employee_id, y.code as yard_code, y.name as yard_name, y.type as yard_type
+        FROM yard_assignments ya
+        JOIN yards y ON ya.yard_id = y.id
+        WHERE ya.is_active = true
+      `
+
       // Filter by role if specified
       if (req.query.role) {
         const filtered = employees.filter(e => e.role === req.query.role)
         // Get yard assignments for filtered employees
         const filteredIds = filtered.map(e => e.id)
         const filteredAssignments = allAssignments.filter(a => filteredIds.includes(a.employee_id))
-        
+
         // Group assignments by employee
         const assignmentsByEmployee = {}
         filteredAssignments.forEach(a => {
@@ -143,23 +151,15 @@ export default async function handler(req, res) {
             yard_type: a.yard_type
           })
         })
-        
+
         // Add yard assignments to filtered employees
         filtered.forEach(emp => {
           emp.yard_assignments = assignmentsByEmployee[emp.id] || []
           emp.location_code = emp.yard_assignments.length > 0 ? emp.yard_assignments.map(y => y.yard_code).join(',') : null
         })
-        
+
         return res.status(200).json({ data: filtered })
       }
-
-      // Get yard assignments for all employees
-      const allAssignments = await sql`
-        SELECT ya.employee_id, y.code as yard_code, y.name as yard_name, y.type as yard_type
-        FROM yard_assignments ya
-        JOIN yards y ON ya.yard_id = y.id
-        WHERE ya.is_active = true
-      `
 
       // Group assignments by employee
       const assignmentsByEmployee = {}
