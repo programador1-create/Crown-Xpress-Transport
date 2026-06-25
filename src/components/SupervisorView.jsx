@@ -506,7 +506,7 @@ export default function SupervisorView() {
                            insp.status === 'pending' ? (language === 'es' ? 'Pendiente' : 'Pending') :
                            insp.status}
                         </span>
-                        {(!insp.supervisor_signature && insp.status !== 'completed') && (
+                        {!insp.supervisor_signature && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleSignSupervisor(insp) }}
                             className="p-1 rounded hover:bg-emerald-200"
