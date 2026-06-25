@@ -132,7 +132,7 @@ export default function GuardHistory() {
   const handleDownload = async (id, filename) => {
     try {
       const blob = await downloadPdf(id)
-      if (blob.size === 0) {
+      if (!blob || blob.size === 0) {
         throw new Error('PDF vacío')
       }
       const url = URL.createObjectURL(blob)
@@ -145,15 +145,13 @@ export default function GuardHistory() {
       URL.revokeObjectURL(url)
     } catch (e) {
       console.error('PDF download error:', e)
-      alert(language === 'es' 
-        ? 'Error descargando PDF. Esta inspección puede no tener PDF guardado.' 
+      alert(language === 'es'
+        ? 'Error descargando PDF. Esta inspección puede no tener PDF guardado.'
         : 'Error downloading PDF. This inspection may not have a saved PDF.')
     }
   }
 
   const handleViewPdf = async (id, filename) => {
-    console.log('handleViewPdf called with ID:', id, 'filename:', filename)
-    
     // For iPad/iOS: Open a blank window FIRST (must be in direct click handler)
     // Then load the PDF into it after async operations
     const newWindow = window.open('about:blank', '_blank')
@@ -179,10 +177,8 @@ export default function GuardHistory() {
     `)
 
     try {
-      console.log('Attempting to download PDF from backend for ID:', id)
       // First try to download PDF from backend
       const blob = await downloadPdf(id)
-      console.log('PDF download result, blob size:', blob.size)
       if (blob.size === 0) {
         throw new Error('PDF vacío')
       }
@@ -193,12 +189,9 @@ export default function GuardHistory() {
 
       // If PDF doesn't exist in backend, try to generate it on the fly
       try {
-        console.log('Attempting to generate PDF on-the-fly for ID:', id)
         // Get inspection data
         const inspectionData = await getInspection(id)
-        console.log('Inspection data received:', inspectionData)
         const insp = inspectionData.inspection
-        console.log('Inspection object:', insp)
 
         // Map snake_case DB fields to camelCase expected by generateInspectionPDF
         const unitInfo = {
@@ -218,7 +211,6 @@ export default function GuardHistory() {
           trailerType: insp.trailer_type,
           workOrder: insp.wono
         }
-        console.log('UnitInfo mapped:', unitInfo)
 
         // Convert points array to object keyed by point_id with camelCase
         const pointsObj = {}
@@ -230,7 +222,6 @@ export default function GuardHistory() {
             photo: p.photo
           }
         }
-        console.log('Points object created with', Object.keys(pointsObj).length, 'points')
 
         // Generate PDF on the fly
         const pdfResult = await generateInspectionPDF({
@@ -243,7 +234,6 @@ export default function GuardHistory() {
           language: insp.language || 'es',
           yardCode: insp.location || ''
         })
-        console.log('PDF generated successfully')
 
         // Open PDF in the already-opened window
         const pdfBlob = pdfResult.doc.output('blob')
@@ -582,18 +572,14 @@ export default function GuardHistory() {
                         </div>
                       </div>
                       {/* Stats */}
-                      <div className="px-4 py-3 grid grid-cols-3 gap-2 text-center border-b">
+                      <div className="px-4 py-3 grid grid-cols-2 gap-2 text-center border-b">
                         <div className="bg-emerald-50 rounded-lg py-2">
-                          <div className="text-lg font-bold text-emerald-600">{group.original.good_count || 0}</div>
+                          <div className="text-lg font-bold text-emerald-600">{group.original.total_good || 0}</div>
                           <div className="text-xs text-emerald-700">{language === 'es' ? 'Buenos' : 'Good'}</div>
                         </div>
                         <div className="bg-rose-50 rounded-lg py-2">
-                          <div className="text-lg font-bold text-rose-600">{group.original.bad_count || 0}</div>
+                          <div className="text-lg font-bold text-rose-600">{group.original.total_bad || 0}</div>
                           <div className="text-xs text-rose-700">{language === 'es' ? 'Malos' : 'Bad'}</div>
-                        </div>
-                        <div className="bg-slate-100 rounded-lg py-2">
-                          <div className="text-lg font-bold text-slate-600">{group.original.pending_count || 0}</div>
-                          <div className="text-xs text-slate-700">{language === 'es' ? 'Pendientes' : 'Pending'}</div>
                         </div>
                       </div>
 

@@ -429,6 +429,14 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('departureTime', movementData.departureTime || '')
     updateUnitInfo('inspectionDate', movementData.date || '')
     updateUnitInfo('inspectionReason', movementData.inspectionReason || '')
+
+    // Extraer prefijo del equipo (ej: PCIU-184812-5 -> PCIU)
+    if (eqpCode) {
+      const prefixMatch = eqpCode.match(/^([A-Z]+)-/)
+      if (prefixMatch) {
+        updateUnitInfo('customerPrefix', prefixMatch[1])
+      }
+    }
     
     // Guardar nomeclatura completa del equipo
     updateUnitInfo('equipmentNomenclature', eqpCode.trim())
@@ -1139,7 +1147,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   }
 
   // If CUSTOMER selected with CONTAINER but no prefix, show prefix selector
-  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix) {
+  // Skip if prefix already set from NBCW
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix && !operatorFound) {
     const typeConfig = TRAILER_TYPES[trailerType]
     
     return (
