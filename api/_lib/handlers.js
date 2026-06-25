@@ -80,7 +80,7 @@ export async function createInspection(req, res) {
         ${auditorSignature.signature ? 'audited' : (supervisorSignature?.signature ? 'completed' : 'pending')},
         ${counts.good || 0},
         ${counts.bad || 0},
-        ${counts.pending || 0},
+        0,
         ${pdfFilename || 'inspection.pdf'},
         ${pdfBuffer},
         ${pdfBuffer.length},
