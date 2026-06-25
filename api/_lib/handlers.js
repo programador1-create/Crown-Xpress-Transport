@@ -45,6 +45,8 @@ export async function createInspection(req, res) {
       trailerNumber: trailer_number,
       tractorNumber: ui.tractorNumber || ui.tractor_number
     })
+    console.log('Counts received:', counts)
+    console.log('PDF buffer length before insert:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
     const seal_number = ui.seal_number || ui.sealNumber || null
     const lock_number = ui.lock_number || ui.lockNumber || null
     const driver_name = ui.driver_name || ui.driverName || null
