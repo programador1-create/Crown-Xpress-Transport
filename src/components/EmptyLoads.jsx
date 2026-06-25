@@ -112,7 +112,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       )
     }
 
-    // Filtrar por fecha
+    // Filtrar por fecha (date viene en formato YYYY-MM-DD)
     if (selectedDate) {
       filtered = filtered.filter(m => m.date === selectedDate)
     }
@@ -381,7 +381,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          <span>{formatDate(movement.date)}</span>
+                          <span>{formatDate(movement.fecha_raw || movement.date)}</span>
                         </div>
                         {movement.arrival_time && (
                           <div className="flex items-center gap-1">
@@ -489,7 +489,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <DetailRow label={language === 'es' ? 'Orden de Trabajo' : 'Work Order'} value={selectedMovement.work_order} />
                   <DetailRow label={language === 'es' ? 'BL/Guía' : 'BL No.'} value={selectedMovement.bill_of_lading} />
-                  <DetailRow label={language === 'es' ? 'Fecha' : 'Date'} value={selectedMovement.date} />
+                  <DetailRow label={language === 'es' ? 'Fecha' : 'Date'} value={selectedMovement.fecha_raw || selectedMovement.date} />
                   <DetailRow label={language === 'es' ? 'Tipo Movimiento' : 'Movement Type'} value={selectedMovement.movement_type} />
                   <DetailRow label={language === 'es' ? 'Estado' : 'Status'} value={selectedMovement.status} />
                   <DetailRow label={language === 'es' ? 'Operador' : 'Operator'} value={selectedMovement.operator} />

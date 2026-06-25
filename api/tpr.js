@@ -13,49 +13,99 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const sql = getSql()
+
   try {
     const { type, date, yardCode } = req.query
+    const effectiveType = type || 'pending'
 
-    // SQL Proxy URL — set SQLPROXY_URL in Vercel env vars pointing to the Cloudflare tunnel
-    const proxyUrl = process.env.SQLPROXY_URL
-    if (!proxyUrl) {
-      return res.status(500).json({
-        error: 'SQLPROXY_URL not configured',
-        details: 'Set SQLPROXY_URL in Vercel to the Cloudflare tunnel URL (e.g. https://xxxx.trycloudflare.com)'
-      })
+    // ============================================================
+    // 1. Consultar movimientos desde la tabla tpr en Neon
+    // ============================================================
+    const conditions = []
+    const params = []
+    let paramIdx = 1
+
+    function addCondition(sqlFragment) {
+      conditions.push(sqlFragment)
     }
 
-    // Build query params for the local proxy
-    const params = new URLSearchParams({ type: type || 'pending' })
-    if (yardCode) params.append('yardCode', yardCode)
-    if (date) params.append('date', date)
-
-    // Call the local SQL proxy through the Cloudflare tunnel
-    // cf-bypass-tunnel-reminder bypasses the Cloudflare quick-tunnel warning page
-    const proxyRes = await fetch(`${proxyUrl}/tpr?${params}`, {
-      headers: {
-        'Accept': 'application/json',
-        'cf-bypass-tunnel-reminder': 'x'
-      },
-      signal: AbortSignal.timeout(25000)
-    })
-
-    if (!proxyRes.ok) {
-      const err = await proxyRes.text()
-      return res.status(502).json({
-        error: 'SQL proxy returned an error',
-        details: err
-      })
+    // Filtro por tipo de movimiento
+    if (effectiveType === 'pending') {
+      addCondition(`TRIM(status) = 'OPEN'`)
+    } else if (effectiveType === 'empty') {
+      addCondition(`(TRIM(equipment_type) = 'E' OR equipment_code ILIKE '%Botada%')`)
+    } else if (effectiveType === 'loaded') {
+      addCondition(`TRIM(equipment_type) = 'L'`)
+    } else if (effectiveType === 'bobtail') {
+      addCondition(`(equipment_code ILIKE '%Botada%' OR TRIM(table_code) = 'BOTADA')`)
     }
 
-    const proxyData = await proxyRes.json()
-    const allMovements = proxyData.data || []
+    // Filtro por yarda (soporta multiples codigos separados por coma)
+    if (yardCode) {
+      const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
+      if (yardCodes.length > 0) {
+        const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
+        params.push(...yardCodes)
+        addCondition(`TRIM(from_code) IN (${placeholders})`)
+      }
+    }
 
-    // Cross-filter: get already-inspected numbers from local Neon PostgreSQL
+    // Filtro por fecha exacta
+    if (date) {
+      params.push(date)
+      addCondition(`date = $${paramIdx++}`)
+    }
+
+    // Solo sincronizar registros recientes (ultimos 30 dias)
+    addCondition(`date >= CURRENT_DATE - INTERVAL '30 days'`)
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT
+        driver_code,
+        work_order,
+        bill_of_lading,
+        fecha_raw,
+        TO_CHAR(date, 'YYYY-MM-DD') AS date,
+        from_code,
+        from_city,
+        from_state,
+        to_code,
+        to_city,
+        to_state,
+        movement_type,
+        status,
+        equipment_type,
+        equipment_code,
+        deldate_raw,
+        TO_CHAR(delivery_date, 'YYYY-MM-DD') AS delivery_date,
+        customer,
+        arrival_time,
+        departure_time,
+        operator,
+        truck_id,
+        seal,
+        instructions_1,
+        instructions_2,
+        amount,
+        table_code,
+        trx_code,
+        synced_at
+      FROM tpr
+      ${whereClause}
+      ORDER BY date DESC, arrival_time DESC
+    `
+
+    const allMovements = await sql(query, params)
+
+    // ============================================================
+    // 2. Cross-filter: marcar los ya inspeccionados
+    // ============================================================
     let inspectedSet = new Set()
     try {
-      const localSql = getSql()
-      const inspected = await localSql`
+      const inspected = await sql`
         SELECT DISTINCT
           UPPER(TRIM(trailer_number))  AS trailer_number,
           UPPER(TRIM(seal_number))     AS seal_number,
@@ -80,10 +130,9 @@ export default async function handler(req, res) {
       const blno  = m.bill_of_lading?.toString().trim().toUpperCase()
       const seal  = m.seal?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
-      // truck_id can be tractor (BOBTAIL) or general identifier — check all sets
-      const already = !!(blno  && blno  && inspectedSet.has(blno))  ||
-                      !!(seal  && seal  && inspectedSet.has(seal))   ||
-                      !!(truck && truck && inspectedSet.has(truck))
+      const already = !!(blno && inspectedSet.has(blno)) ||
+                      !!(seal && inspectedSet.has(seal)) ||
+                      !!(truck && inspectedSet.has(truck))
       return { ...m, already_inspected: already }
     })
 

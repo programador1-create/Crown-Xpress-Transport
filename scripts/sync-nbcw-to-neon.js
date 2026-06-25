@@ -85,13 +85,6 @@ async function syncTprToNeon() {
     sqlPool = await sql.connect(SQLSERVER_CONFIG)
     console.log('Conectado a SQL Server NBCW')
 
-    // Verificar servidor y base de datos actual
-    const serverInfo = await sqlPool.request().query(`SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name`)
-    console.log(`Servidor: ${serverInfo.recordset[0].server_name}, Base de datos: ${serverInfo.recordset[0].database_name}`)
-
-    const countResult = await sqlPool.request().query(`SELECT COUNT(*) AS total FROM tpr`)
-    console.log(`Total registros en tpr: ${countResult.recordset[0].total}`)
-
     // 2. Leer todos los datos de tpr
     // El filtro de fecha se hace en Node.js porque SQL Server es version antigua (sin TRY_CONVERT)
     const result = await sqlPool.request().query(`
