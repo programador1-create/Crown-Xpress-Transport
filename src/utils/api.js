@@ -66,21 +66,15 @@ export async function downloadPdf(id) {
   const res = await fetch(`${API_BASE}/inspections/${id}?pdf=true`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    const error = `Failed to download PDF: ${res.status} ${text}`
-    alert(error)
-    throw new Error(error)
+    throw new Error(`Failed to download PDF: ${res.status} ${text}`)
   }
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/pdf')) {
-    const error = `Unexpected content type: ${contentType}`
-    alert(error)
-    throw new Error(error)
+    throw new Error(`Unexpected content type: ${contentType}`)
   }
   const blob = await res.blob()
   if (!blob || blob.size === 0) {
-    const error = 'PDF empty'
-    alert(error)
-    throw new Error(error)
+    throw new Error('PDF empty')
   }
   return blob
 }
@@ -220,7 +214,6 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     : null
 
   // Send the full PDF to backend for storage
-  console.log('buildPayload - PDF length:', pdfBase64.length, 'First 100 chars:', pdfBase64.substring(0, 100))
   return {
     unitInfo,
     points: pointsPayload,

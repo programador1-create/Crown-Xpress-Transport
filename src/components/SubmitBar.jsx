@@ -52,9 +52,7 @@ export default function SubmitBar({ onSuccess }) {
 
   // Generate PDF using existing operator signature from context
   const handleGeneratePDF = async () => {
-    console.log('=== handleGeneratePDF called ===')
     setGenerating(true)
-    console.log('Starting PDF generation...')
 
     try {
       // 1. Generate PDF with signatures from context
@@ -70,8 +68,6 @@ export default function SubmitBar({ onSuccess }) {
       })
       const pdfBase64 = pdfResult.doc.output('datauristring')
       const pdfFilename = pdfResult.filename
-      console.log('PDF generated - length:', pdfBase64.length, 'First 100 chars:', pdfBase64.substring(0, 100))
-      alert(`PDF generado: ${pdfBase64.length} bytes`)
 
       // 2. Upload to backend (with compressed images)
       const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
@@ -142,7 +138,6 @@ export default function SubmitBar({ onSuccess }) {
         })
         const pdfBase64 = pdfResult.doc.output('datauristring')
         const pdfFilename = pdfResult.filename
-        alert(`PDF generado (handleSignAndGenerate): ${pdfBase64.length} bytes`)
 
         // 2. Upload to backend (with compressed images) - pass captured operator signature
         const payload = await buildPayload({ ...ctx, operatorSignature: capturedOperatorSignature }, pdfBase64, pdfFilename)

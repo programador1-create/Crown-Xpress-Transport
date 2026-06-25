@@ -277,7 +277,6 @@ export default function GuardHistory() {
       newWindow.location.href = url
     } catch (e) {
       console.error('PDF view error:', e)
-      alert(`Error al cargar PDF: ${e.message}`)
 
       // If PDF doesn't exist in backend, try to generate it on the fly
       try {
