@@ -34,7 +34,8 @@ export default async function handler(req, res) {
         WHERE id = ${inspectionId}
       `
 
-      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data), 'pdf_data type:', typeof inspection?.pdf_data, 'isBuffer:', Buffer.isBuffer(inspection?.pdf_data), 'length:', inspection?.pdf_data?.length)
+      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data))
+      console.log('PDF data type:', typeof inspection?.pdf_data, 'Length:', inspection?.pdf_data?.length || 0)
 
       if (!inspection) {
         return res.status(404).json({ error: 'Inspection not found' })
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
       if (inspection.pdf_data) {
         // Return stored PDF as binary buffer
         const pdfBuffer = Buffer.isBuffer(inspection.pdf_data) ? inspection.pdf_data : Buffer.from(inspection.pdf_data)
+        console.log('PDF buffer length:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
         res.setHeader('Content-Type', 'application/pdf')
         res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
         res.setHeader('Content-Length', pdfBuffer.length)

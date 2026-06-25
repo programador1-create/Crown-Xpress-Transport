@@ -440,7 +440,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     }
 
     // Guardar nomeclatura completa del equipo
-    console.log('NBCW equipment selected:', { eqpCode, prefix: eqpCode.match(/^([A-Z]+)-/)?.[1], trailerNumber: eqpCode.match(/[A-Z]+-?(\d+)/i)?.[1] })
     updateUnitInfo('equipmentNomenclature', eqpCode.trim())
 
     // Extraer número de equipo de la nomeclatura
@@ -499,7 +498,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         // CXC = Crown Container
         const isCxcContainer = eqpUpper.startsWith('CXC')
         // Known ISO prefixes
-        const isoPrefixes = ['CSNU', 'TGBU', 'GCXU', 'EMHU', 'UMXU', 'MEDU', 'MSCU', 'MAEU', 'CMAU', 'HLXU', 'OOLU', 'TCNU', 'TRLU']
+        const isoPrefixes = ['CSNU', 'TGBU', 'GCXU', 'EMHU', 'UMXU', 'MEDU', 'MSCU', 'MAEU', 'CMAU', 'HLXU', 'OOLU', 'TCNU', 'TRLU', 'FFAU']
         const hasIsoPrefix = isoPrefixes.some(p => eqpUpper.startsWith(p))
         
         // Caja patterns: CXT, ABBA, RBX, JGB, D#####
@@ -526,7 +525,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           const containerNumber = containerNumMatch ? containerNumMatch[1] : ''
           updateUnitInfo('trailerNumber', containerNumber)
           setContainerNumberEntered(!!containerNumber)
-          
+
+          // Guardar nomenclatura completa del contenedor
+          updateUnitInfo('equipmentNomenclature', eqpCode.trim())
+
           // Contenedores ISO
           if (isCxcContainer) {
             setEquipmentOwner('CROWN')
@@ -536,15 +538,10 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           } else {
             setEquipmentOwner('CUSTOMER')
             updateUnitInfo('equipmentOwner', 'CUSTOMER')
-            // No sobrescribir customerPrefix si ya fue extraído del eqpCode al inicio
-            // Solo establecer si no está ya establecido
-            if (!customerPrefix) {
-              const prefix = isoPrefixes.find(p => eqpUpper.startsWith(p))
-              if (prefix) {
-                setCustomerPrefix(prefix)
-                updateUnitInfo('customerPrefix', prefix)
-              }
-            }
+            // Extraer prefijo del contenedor ISO (primeros 4 caracteres)
+            const prefix = eqpUpper.substring(0, 4)
+            setCustomerPrefix(prefix)
+            updateUnitInfo('customerPrefix', prefix)
           }
         
         // === RABON ===
