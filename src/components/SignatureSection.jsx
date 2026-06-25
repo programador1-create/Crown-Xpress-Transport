@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
-import { PenTool, User, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { PenTool, User, ShieldCheck, CheckCircle, AlertTriangle, ChevronDown } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
 import { getApplicablePoints } from '../data/inspectionPoints'
+import { getSupervisorsByYard } from '../utils/api'
 import SignatureCanvas from './SignatureCanvas'
 
 export default function SignatureSection() {
@@ -14,6 +15,8 @@ export default function SignatureSection() {
   const [showSupervisorSignature, setShowSupervisorSignature] = useState(false)
   const [showOperatorSignature, setShowOperatorSignature] = useState(false)
   const [enableSupervisor, setEnableSupervisor] = useState(false)
+  const [supervisors, setSupervisors] = useState([])
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false)
   
   // Check if all points are completed
   const applicablePoints = useMemo(() => {
@@ -22,6 +25,31 @@ export default function SignatureSection() {
   
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
+
+  // Load supervisors for current yard
+  useEffect(() => {
+    const loadSupervisors = async () => {
+      const yardCode = unitInfo?.location || user?.location_name
+      if (!yardCode) return
+      
+      setLoadingSupervisors(true)
+      try {
+        const sups = await getSupervisorsByYard(yardCode)
+        setSupervisors(sups)
+        
+        // If only one supervisor and no name selected, auto-select
+        if (sups.length === 1 && !supervisorSignature?.name) {
+          setSupervisorSignature(prev => ({ ...prev, name: sups[0].full_name.toUpperCase() }))
+        }
+      } catch (err) {
+        console.error('Error loading supervisors:', err)
+      } finally {
+        setLoadingSupervisors(false)
+      }
+    }
+    
+    loadSupervisors()
+  }, [unitInfo?.location, user?.location_name])
 
   const handleGuardSignatureSave = (signature) => {
     setGuardSignature({
@@ -247,13 +275,31 @@ export default function SignatureSection() {
             </div>
           ) : (
             <div className="space-y-3">
-              <input
-                type="text"
-                value={supervisorSignature?.name || ''}
-                onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value.toUpperCase() }))}
-                placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-              />
+              {supervisors.length > 1 ? (
+                <div className="relative">
+                  <select
+                    value={supervisorSignature?.name || ''}
+                    onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value.toUpperCase() }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20 appearance-none bg-white"
+                  >
+                    <option value="">{language === 'es' ? 'Seleccionar supervisor...' : 'Select supervisor...'}</option>
+                    {supervisors.map(s => (
+                      <option key={s.id} value={s.full_name.toUpperCase()}>
+                        {s.full_name.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={supervisorSignature?.name || ''}
+                  onChange={(e) => setSupervisorSignature(prev => ({ ...prev, name: e.target.value.toUpperCase() }))}
+                  placeholder={language === 'es' ? 'Nombre del supervisor' : 'Supervisor name'}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
+                />
+              )}
               <div className="text-center py-2">
                 <p className="text-sm text-slate-600 mb-3">
                   {language === 'es' ? 'Se requiere firma del supervisor' : 'Supervisor signature required'}

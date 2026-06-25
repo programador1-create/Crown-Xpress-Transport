@@ -3,6 +3,16 @@ import { getApplicablePoints } from '../data/inspectionPoints'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
+/** Get supervisors by yard code */
+export async function getSupervisorsByYard(yardCode) {
+  const res = await fetchJson(`${API_BASE}/employees?role=supervisor`)
+  const supervisors = res.data || []
+  // Filter supervisors assigned to this yard
+  return supervisors.filter(s => 
+    s.yard_assignments?.some(ya => ya.yard_code === yardCode)
+  )
+}
+
 /** Helper to handle fetch errors */
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, {
@@ -60,10 +70,15 @@ export async function downloadPdf(id) {
 }
 
 /** Add supervisor signature later (optional) */
-export async function signSupervisor(id, { name, signature, signedAt }) {
+export async function signSupervisor(id, { name, signature, signedAt, pdfBase64, pdfFilename }) {
+  const body = { name, signature, signedAt }
+  if (pdfBase64) {
+    body.pdfBase64 = pdfBase64
+    body.pdfFilename = pdfFilename
+  }
   const res = await fetchJson(`${API_BASE}/inspections/${id}`, {
     method: 'POST',
-    body: JSON.stringify({ name, signature, signedAt }),
+    body: JSON.stringify(body),
   })
   return res // { success, id, supervisor_name, supervisor_signed_at, status }
 }
