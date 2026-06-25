@@ -185,12 +185,34 @@ export async function listInspections(req, res) {
     const url = new URL(req.url, 'http://x')
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
     const offset = parseInt(url.searchParams.get('offset') || '0', 10)
+    const yardCode = url.searchParams.get('yardCode') || ''
 
-    const rows = await sql`
-      SELECT * FROM inspections
-      ORDER BY created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
+    let rows
+    if (yardCode) {
+      // Filter by yard code(s) - handle multiple yards separated by comma
+      const yardCodes = yardCode.split(',').map(c => c.trim()).filter(Boolean)
+      if (yardCodes.length === 1) {
+        rows = await sql`
+          SELECT * FROM inspections
+          WHERE location = ${yardCodes[0]}
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      } else {
+        rows = await sql`
+          SELECT * FROM inspections
+          WHERE location = ANY(${yardCodes})
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `
+      }
+    } else {
+      rows = await sql`
+        SELECT * FROM inspections
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    }
     return res.status(200).json({ data: rows, limit, offset })
   } catch (err) {
     console.error('listInspections error:', err)

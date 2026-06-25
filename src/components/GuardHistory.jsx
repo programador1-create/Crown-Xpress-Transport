@@ -92,7 +92,10 @@ export default function GuardHistory() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listInspections({ limit: 200, yardCode: user?.location_name || '' })
+      // Use yard_assignments from user to filter inspections
+      const userYards = user?.yard_assignments || []
+      const yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''
+      const res = await listInspections({ limit: 200, yardCode: yardCodes })
       // Only show inspections from current guard/supervisor - more flexible matching
       const userName = user?.full_name?.toLowerCase().trim()
       const mine = Array.isArray(res.data) ? res.data.filter(i => {
