@@ -46,12 +46,29 @@ export default async function handler(req, res) {
         // Return stored PDF as binary buffer
         let pdfData = inspection.pdf_data
         console.log('pdfData before processing - type:', typeof pdfData, 'isBuffer:', Buffer.isBuffer(pdfData))
-        // Remove data:application/pdf;base64, prefix if present
-        if (typeof pdfData === 'string') {
-          console.log('Removing data URI prefix from string PDF')
-          pdfData = pdfData.replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+        console.log('pdfData length:', pdfData?.length || 0)
+
+        let pdfBuffer
+        if (Buffer.isBuffer(pdfData)) {
+          pdfBuffer = pdfData
+        } else if (typeof pdfData === 'string') {
+          // Try to detect if it's base64 or hex
+          if (pdfData.startsWith('data:application/pdf')) {
+            console.log('Removing data URI prefix from string PDF')
+            pdfData = pdfData.replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+            pdfBuffer = Buffer.from(pdfData, 'base64')
+          } else if (pdfData.match(/^[0-9a-fA-F]+$/)) {
+            console.log('Decoding as hex string')
+            pdfBuffer = Buffer.from(pdfData, 'hex')
+          } else {
+            console.log('Decoding as base64 string')
+            pdfBuffer = Buffer.from(pdfData, 'base64')
+          }
+        } else {
+          console.log('Unknown type, trying to convert to buffer')
+          pdfBuffer = Buffer.from(pdfData)
         }
-        const pdfBuffer = Buffer.isBuffer(pdfData) ? pdfData : Buffer.from(pdfData, 'base64')
+
         console.log('PDF buffer length:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
         res.setHeader('Content-Type', 'application/pdf')
         res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
