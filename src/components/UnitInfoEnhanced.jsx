@@ -1572,11 +1572,13 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // Step: Operator search (after tractor number, before summary)
   // For LOADED: require sealLockEntered (unless FLATBED/RABON which don't require seal/lock)
   // For EMPTY: no seal/lock required
+  // Skip if operator already set from NBCW
   const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY') &&
     containerNumberEntered &&
     (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
     tractorNumberEntered &&
-    !operatorStepCompleted
+    !operatorStepCompleted &&
+    !operatorFound
 
   if (shouldShowOperatorStep) {
     return (
@@ -1905,41 +1907,57 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
               <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center justify-between uppercase">
                 <span className="flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  {language === 'es' ? 'BÚSQUEDA DE OPERADOR' : 'OPERATOR SEARCH'} <span className="text-rose-500">*</span>
+                  {language === 'es' ? 'OPERADOR' : 'OPERATOR'} <span className="text-rose-500">*</span>
                 </span>
                 {operatorFound && <CheckCircle className="w-5 h-5 text-emerald-500" />}
               </label>
 
-              {/* Search Mode Tabs */}
-              <div className="flex gap-2 mb-4 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('number')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    searchMode === 'number' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {language === 'es' ? 'Por Número' : 'By Number'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('name')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    searchMode === 'name' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {language === 'es' ? 'Por Nombre' : 'By Name'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('list')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    searchMode === 'list' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {language === 'es' ? 'Lista' : 'List'}
-                </button>
-                <button
+              {/* If operator already set from NBCW, show as readonly */}
+              {operatorFound ? (
+                <div className="p-3 bg-emerald-50 border-2 border-emerald-400 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-emerald-800 uppercase">
+                        ✓ {operatorFound.fullName}
+                      </div>
+                      <div className="text-xs text-emerald-600 mt-0.5">
+                        {language === 'es' ? 'No. Empleado:' : 'Employee #:'} {operatorFound.employeeNumber}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Search Mode Tabs */}
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleModeChange('number')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        searchMode === 'number' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {language === 'es' ? 'Por Número' : 'By Number'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModeChange('name')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        searchMode === 'name' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {language === 'es' ? 'Por Nombre' : 'By Name'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModeChange('list')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        searchMode === 'list' ? 'bg-crown-navy text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {language === 'es' ? 'Lista' : 'List'}
+                    </button>
+                    <button
                   type="button"
                   onClick={() => handleModeChange('manual')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
@@ -2100,28 +2118,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                   </p>
                 </div>
               )}
-
-              {/* Selected Operator Display */}
-              {operatorFound && (
-                <div className="mt-4 p-3 bg-emerald-50 border-2 border-emerald-400 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-bold text-emerald-800 uppercase">
-                        ✓ {operatorFound.fullName}
-                      </div>
-                      <div className="text-xs text-emerald-600 mt-0.5">
-                        {language === 'es' ? 'No. Empleado:' : 'Employee #:'} {operatorFound.employeeNumber}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleModeChange(searchMode)}
-                      className="text-xs text-emerald-700 hover:text-emerald-900 underline"
-                    >
-                      {language === 'es' ? 'Cambiar' : 'Change'}
-                    </button>
-                  </div>
-                </div>
+              </>
               )}
             </div>
           </div>
