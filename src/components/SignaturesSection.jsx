@@ -69,12 +69,6 @@ export default function SignaturesSection() {
         <h2 className="font-bold tracking-wide uppercase text-sm">{t('signaturesTitle')}</h2>
       </div>
       <div className="card-body space-y-4">
-        <p className="text-xs text-slate-400 text-center italic">
-          {language === 'es' 
-            ? 'La firma del operador se capturará al generar el PDF (requerida)' 
-            : 'Operator signature will be captured when generating PDF (required)'}
-        </p>
-        
         {/* Guard Signature */}
         <SignatureBox
           label={
