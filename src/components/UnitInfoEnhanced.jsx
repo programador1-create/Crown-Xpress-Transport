@@ -1165,8 +1165,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   }
 
   // If CUSTOMER selected with CONTAINER but no prefix, show prefix selector
-  // Skip if prefix already set from NBCW
-  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix) {
+  // Skip if prefix already set from NBCW or if operatorFound (indicates NBCW data)
+  if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && trailerType === 'CONTAINER' && trailerSize && equipmentOwner === 'CUSTOMER' && !customerPrefix && !operatorFound) {
     const typeConfig = TRAILER_TYPES[trailerType]
     
     return (
