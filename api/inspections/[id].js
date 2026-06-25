@@ -43,7 +43,12 @@ export default async function handler(req, res) {
 
       if (inspection.pdf_data) {
         // Return stored PDF as binary buffer
-        const pdfBuffer = Buffer.isBuffer(inspection.pdf_data) ? inspection.pdf_data : Buffer.from(inspection.pdf_data)
+        let pdfData = inspection.pdf_data
+        // Remove data:application/pdf;base64, prefix if present
+        if (typeof pdfData === 'string') {
+          pdfData = pdfData.replace(/^data:application\/pdf;base64,/, '')
+        }
+        const pdfBuffer = Buffer.isBuffer(pdfData) ? pdfData : Buffer.from(pdfData, 'base64')
         console.log('PDF buffer length:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
         res.setHeader('Content-Type', 'application/pdf')
         res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
