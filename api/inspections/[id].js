@@ -36,6 +36,7 @@ export default async function handler(req, res) {
 
       console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data))
       console.log('PDF data type:', typeof inspection?.pdf_data, 'Length:', inspection?.pdf_data?.length || 0)
+      console.log('PDF data is Buffer:', Buffer.isBuffer(inspection?.pdf_data))
 
       if (!inspection) {
         return res.status(404).json({ error: 'Inspection not found' })
@@ -44,9 +45,11 @@ export default async function handler(req, res) {
       if (inspection.pdf_data) {
         // Return stored PDF as binary buffer
         let pdfData = inspection.pdf_data
+        console.log('pdfData before processing - type:', typeof pdfData, 'isBuffer:', Buffer.isBuffer(pdfData))
         // Remove data:application/pdf;base64, prefix if present
         if (typeof pdfData === 'string') {
-          pdfData = pdfData.replace(/^data:application\/pdf;base64,/, '')
+          console.log('Removing data URI prefix from string PDF')
+          pdfData = pdfData.replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
         }
         const pdfBuffer = Buffer.isBuffer(pdfData) ? pdfData : Buffer.from(pdfData, 'base64')
         console.log('PDF buffer length:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
