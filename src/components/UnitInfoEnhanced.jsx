@@ -181,6 +181,36 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       if (onContainerChange) onContainerChange(false)
       if (onSealChange) onSealChange(false)
       if (onLockChange) onLockChange(false)
+    } else if (type === 'FLATBED') {
+      // Flatbed: No container, no seal, no lock
+      setHasContainer(false)
+      setHasSeal(false)
+      setHasLock(false)
+      updateUnitInfo('containerNumber', '')
+      updateUnitInfo('sealNumber', '')
+      updateUnitInfo('lockNumber', '')
+      updateUnitInfo('trailerType', 'FLATBED')
+      updateUnitInfo('trailerSize', 'N/A')
+      setTrailerType('FLATBED')
+      setTrailerSize('N/A')
+      if (onContainerChange) onContainerChange(false)
+      if (onSealChange) onSealChange(false)
+      if (onLockChange) onLockChange(false)
+    } else if (type === 'RABON') {
+      // Rabon: No container, no seal, no lock
+      setHasContainer(false)
+      setHasSeal(false)
+      setHasLock(false)
+      updateUnitInfo('containerNumber', '')
+      updateUnitInfo('sealNumber', '')
+      updateUnitInfo('lockNumber', '')
+      updateUnitInfo('trailerType', 'RABON')
+      updateUnitInfo('trailerSize', 'N/A')
+      setTrailerType('RABON')
+      setTrailerSize('N/A')
+      if (onContainerChange) onContainerChange(false)
+      if (onSealChange) onSealChange(false)
+      if (onLockChange) onLockChange(false)
     } else if (type === 'EMPTY') {
       // Empty: Has container option, no seal, no lock
       setHasContainer(false)
