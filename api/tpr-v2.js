@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     } else if (type === 'empty') {
       addCondition(`(TRIM(equipment_type) = 'E' OR equipment_code LIKE '%Botada%')`)
     } else if (type === 'loaded') {
-      addCondition(`TRIM(equipment_type) = 'L'`)
+      addCondition(`(TRIM(equipment_type) = 'L' OR TRIM(equipment_type) = '' OR equipment_type IS NULL)`)
     } else if (type === 'bobtail') {
       addCondition(`(equipment_code LIKE '%Botada%' OR TRIM(table_code) = 'BOTADA')`)
     }

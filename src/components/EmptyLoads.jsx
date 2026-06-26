@@ -41,7 +41,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       if (refreshUser) refreshedUser = await refreshUser() || user
       const yardCodes = refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
       const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
-      const res = await getTprMovements({ type: 'pending', yardCode })
+      const res = await getTprMovements({ type: 'loaded', yardCode })
       if (res.success) {
         setMovements(res.data || [])
         setPendingCount(res.pending_count ?? (res.data || []).filter(m => !m.already_inspected).length)
