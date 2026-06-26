@@ -422,6 +422,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     // Determinar automáticamente tipo de inspección y pre-llenar datos
     handleInspectionTypeChange(tprType)
 
+    // Para BOBTAIL, establecer trailerType explícitamente
+    if (isBotada) {
+      setTrailerType('BOBTAIL')
+      updateUnitInfo('trailerType', 'BOBTAIL')
+    }
+
     // Datos básicos del operador - Usar código de conductor de NBCW como driver_name para TODOS los tipos
     updateUnitInfo('driverName', movementData.driverCode || movementData.operator || '')
     updateUnitInfo('employeeNumber', movementData.driverCode || '')
