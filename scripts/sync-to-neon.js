@@ -66,10 +66,6 @@ await neonClient.query(`
 `)
 console.log('Tabla tpr creada con schema correcto')
 
-// Limpiar tabla existente
-await neonClient.query('DELETE FROM tpr')
-console.log('Tabla tpr limpiada')
-
 // Insertar datos en lotes
 const batchSize = 100
 let inserted = 0
@@ -81,7 +77,7 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
   let paramIndex = 1
 
   for (const row of batch) {
-    const placeholders = Array.from({ length: 28 }, (_, j) => `$${paramIndex + j}`).join(', ')
+    const placeholders = Array.from({ length: 26 }, (_, j) => `$${paramIndex + j}`).join(', ')
     values.push(`(${placeholders}, NOW())`)
 
     params.push(
@@ -112,7 +108,7 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
       row.table_code || null,
       row.trx_code || null
     )
-    paramIndex += 28
+    paramIndex += 26
   }
 
   const columns = [

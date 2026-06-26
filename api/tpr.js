@@ -34,11 +34,11 @@ export default async function handler(req, res) {
     if (effectiveType === 'pending') {
       addCondition(`TRIM(status) = 'OPEN'`)
     } else if (effectiveType === 'empty') {
-      addCondition(`(TRIM(equipment_type) = 'E' OR equipment_code ILIKE '%Botada%')`)
+      addCondition(`(TRIM(el) = 'E' OR eqpcode ILIKE '%Botada%')`)
     } else if (effectiveType === 'loaded') {
-      addCondition(`TRIM(equipment_type) = 'L'`)
+      addCondition(`TRIM(el) = 'L'`)
     } else if (effectiveType === 'bobtail') {
-      addCondition(`(equipment_code ILIKE '%Botada%' OR TRIM(table_code) = 'BOTADA')`)
+      addCondition(`(eqpcode ILIKE '%Botada%' OR TRIM(tablecode) = 'BOTADA')`)
     }
 
     // Filtro por yarda (soporta multiples codigos separados por coma)
@@ -47,55 +47,55 @@ export default async function handler(req, res) {
       if (yardCodes.length > 0) {
         const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
         params.push(...yardCodes)
-        addCondition(`TRIM(from_code) IN (${placeholders})`)
+        addCondition(`TRIM(fromd) IN (${placeholders})`)
       }
     }
 
     // Filtro por fecha exacta
     if (date) {
       params.push(date)
-      addCondition(`date = $${paramIdx++}`)
+      addCondition(`fecha = $${paramIdx++}`)
     }
 
     // Solo sincronizar registros recientes (ultimos 30 dias)
-    addCondition(`date >= CURRENT_DATE - INTERVAL '30 days'`)
+    addCondition(`fecha >= CURRENT_DATE - INTERVAL '30 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     const query = `
       SELECT
-        driver_code,
-        work_order,
-        bill_of_lading,
-        fecha_raw,
-        TO_CHAR(date, 'YYYY-MM-DD') AS date,
-        from_code,
-        from_city,
-        from_state,
-        to_code,
-        to_city,
-        to_state,
-        movement_type,
+        drvcode AS driver_code,
+        wono AS work_order,
+        blno AS bill_of_lading,
+        fecha AS fecha_raw,
+        fecha AS date,
+        fromd AS from_code,
+        fromcity AS from_city,
+        fromedo AS from_state,
+        tod AS to_code,
+        tocity AS to_city,
+        toedo AS to_state,
+        tipmov AS movement_type,
         status,
-        equipment_type,
-        equipment_code,
-        deldate_raw,
-        TO_CHAR(delivery_date, 'YYYY-MM-DD') AS delivery_date,
-        customer,
-        arrival_time,
-        departure_time,
-        operator,
-        truck_id,
+        el AS equipment_type,
+        eqpcode AS equipment_code,
+        deldate AS deldate_raw,
+        deldate AS delivery_date,
+        cstmer AS customer,
+        timearrv AS arrival_time,
+        timedepar AS departure_time,
+        oper AS operator,
+        truckid AS truck_id,
         seal,
-        instructions_1,
-        instructions_2,
+        instruc1 AS instructions_1,
+        instruc2 AS instructions_2,
         amount,
-        table_code,
-        trx_code,
+        tablecode AS table_code,
+        trxcode AS trx_code,
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY date DESC, arrival_time DESC
+      ORDER BY fecha DESC, timearrv DESC
     `
 
     const allMovements = await sql.query(query, params)
