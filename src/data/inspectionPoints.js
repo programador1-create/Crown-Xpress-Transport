@@ -53,12 +53,12 @@ export const INSPECTION_TYPES = {
     es: 'RABÓN',
     en: 'RABON',
     description: {
-      es: 'Camión rígido - Tractor con chasis integrado',
-      en: 'Rigid truck - Tractor with integrated chassis'
+      es: 'Camión rígido - Tractor y chasis integrados',
+      en: 'Rigid truck - Tractor and chassis integrated'
     },
     requiresSealOrLock: false,
     hasContainer: false,
-    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18] // Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma (14) + Piso Plat. (17) + Patín (18). Similar a FLATBED pero para camión rígido
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18] // Similar a FLATBED: Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma/Caja (14) + Piso (17) + Patín (18)
   }
 }
 
