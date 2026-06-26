@@ -36,15 +36,12 @@ export default async function handler(req, res) {
     } else if (effectiveType === 'empty') {
       addCondition(`(TRIM(el) = 'E' OR eqpcode ILIKE '%Botada%')`)
     } else if (effectiveType === 'loaded') {
-      // Temporariamente deshabilitado para depurar
-      // addCondition(`TRIM(el) = 'L'`)
+      addCondition(`TRIM(el) = 'L'`)
     } else if (effectiveType === 'bobtail') {
       addCondition(`(eqpcode ILIKE '%Botada%' OR TRIM(tablecode) = 'BOTADA')`)
     }
 
     // Filtro por yarda (soporta multiples codigos separados por coma)
-    // Temporariamente deshabilitado para depurar
-    /*
     if (yardCode) {
       const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
       if (yardCodes.length > 0) {
@@ -53,17 +50,15 @@ export default async function handler(req, res) {
         addCondition(`TRIM(fromd) IN (${placeholders})`)
       }
     }
-    */
 
     // Filtro por fecha exacta
     if (date) {
       params.push(date)
-      addCondition(`fecha_raw = $${paramIdx++}`)
+      addCondition(`fecha = $${paramIdx++}`)
     }
 
     // Solo sincronizar registros recientes (ultimos 3 dias)
-    // Temporariamente deshabilitado para depurar
-    // addCondition(`TO_DATE(fecha_raw, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
+    addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -72,8 +67,8 @@ export default async function handler(req, res) {
         drvcode AS driver_code,
         wono AS work_order,
         blno AS bill_of_lading,
-        fecha_raw,
-        fecha_raw AS date,
+        fecha AS fecha_raw,
+        fecha AS date,
         fromd AS from_code,
         fromcity AS from_city,
         fromedo AS from_state,
@@ -100,7 +95,7 @@ export default async function handler(req, res) {
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY fecha_raw DESC, timearrv DESC
+      ORDER BY fecha DESC, timearrv DESC
     `
 
     const allMovements = await sql.query(query, params)
