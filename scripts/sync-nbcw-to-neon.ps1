@@ -100,19 +100,11 @@ try {
     $JsonData = @()
     
     foreach ($Row in $FilteredRows) {
-        # Convertir fecha al formato YYYY-MM-DD
-        $FechaFormatted = $null
-        if ($Row.fecha_raw -match '^\d{2}/\d{2}/\d{4}$') {
-            $FechaFormatted = ([DateTime]::ParseExact($Row.fecha_raw, "MM/dd/yyyy", [System.Globalization.CultureInfo]::InvariantCulture)).ToString("yyyy-MM-dd")
-        } elseif ($Row.fecha_raw -match '^\d{4}-\d{2}-\d{2}$') {
-            $FechaFormatted = $Row.fecha_raw
-        }
-
         $JsonData += [PSCustomObject]@{
             driver_code = $Row.driver_code
             work_order = $Row.work_order
             bill_of_lading = $Row.bill_of_lading
-            fecha_raw = $FechaFormatted
+            fecha_raw = $Row.fecha_raw
             from_code = $Row.from_code
             from_city = $Row.from_city
             from_state = $Row.from_state

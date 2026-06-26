@@ -10,8 +10,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '.env') })
 
-// Setup logging to file
-const logFile = join(__dirname, 'sync.log')
+// Setup logging to file with timestamp to avoid lock conflicts
+const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0]
+const logFile = join(__dirname, `sync-${timestamp}.log`)
 let logStream = null
 
 try {

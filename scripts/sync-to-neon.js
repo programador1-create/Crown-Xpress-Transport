@@ -36,7 +36,7 @@ await neonClient.query(`
     drvcode VARCHAR(50),
     wono VARCHAR(50),
     blno VARCHAR(50),
-    fecha_raw VARCHAR(12),
+    fecha VARCHAR(12),
     fromd VARCHAR(50),
     fromcity VARCHAR(100),
     fromedo VARCHAR(50),
@@ -112,7 +112,7 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
   }
 
   const columns = [
-    'drvcode', 'wono', 'blno', 'fecha_raw', 'fromd', 'fromcity', 'fromedo',
+    'drvcode', 'wono', 'blno', 'fecha', 'fromd', 'fromcity', 'fromedo',
     'tod', 'tocity', 'toedo', 'tipmov', 'status', 'el', 'eqpcode',
     'deldate', 'cstmer', 'timearrv', 'timedepar', 'oper', 'truckid', 'seal',
     'instruc1', 'instruc2', 'amount', 'tablecode', 'trxcode', 'synced_at'

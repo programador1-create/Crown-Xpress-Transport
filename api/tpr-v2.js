@@ -94,11 +94,11 @@ export default async function handler(req, res) {
     if (type === 'pending') {
       addCondition(`TRIM(status) = 'OPEN'`)
     } else if (type === 'empty') {
-      addCondition(`(TRIM(equipment_type) = 'E' OR equipment_code LIKE '%Botada%')`)
+      addCondition(`(TRIM(el) = 'E' OR eqpcode LIKE '%Botada%')`)
     } else if (type === 'loaded') {
-      addCondition(`(TRIM(equipment_type) = 'L' OR TRIM(equipment_type) = '' OR equipment_type IS NULL)`)
+      addCondition(`TRIM(el) = 'L'`)
     } else if (type === 'bobtail') {
-      addCondition(`(equipment_code LIKE '%Botada%' OR TRIM(table_code) = 'BOTADA')`)
+      addCondition(`(eqpcode LIKE '%Botada%' OR TRIM(tablecode) = 'BOTADA')`)
     }
 
     // Filtro por yarda (soporta múltiples códigos separados por coma)
@@ -108,31 +108,31 @@ export default async function handler(req, res) {
       if (yardCodes.length > 0) {
         const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
         params.push(...yardCodes)
-        addCondition(`TRIM(from_code) IN (${placeholders})`)
-        console.log('TPR V2 - Yard filter condition:', `TRIM(from_code) IN (${placeholders})`)
+        addCondition(`TRIM(fromd) IN (${placeholders})`)
+        console.log('TPR V2 - Yard filter condition:', `TRIM(fromd) IN (${placeholders})`)
       }
     }
 
     // Filtro por fecha exacta
     if (date) {
       params.push(date)
-      addCondition(`date = $${paramIdx++}`)
+      addCondition(`fecha = $${paramIdx++}`)
     }
 
     // Filtro por rango de fechas
     if (fromDate) {
       params.push(fromDate)
-      addCondition(`date >= $${paramIdx++}`)
+      addCondition(`fecha >= $${paramIdx++}`)
     }
     if (toDate) {
       params.push(toDate)
-      addCondition(`date <= $${paramIdx++}`)
+      addCondition(`fecha <= $${paramIdx++}`)
     }
 
     // Filtro por tipo de equipo
     if (equipmentType) {
       params.push(equipmentType.toUpperCase())
-      addCondition(`TRIM(equipment_type) = $${paramIdx++}`)
+      addCondition(`TRIM(el) = $${paramIdx++}`)
     }
 
     // Filtro de busqueda general
@@ -140,21 +140,21 @@ export default async function handler(req, res) {
       const searchTerm = `%${search.toLowerCase()}%`
       params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
       addCondition(`(
-        LOWER(TRIM(driver_code)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(work_order)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(truck_id)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(from_city)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(to_city)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(customer)) LIKE $${paramIdx++}
-        OR LOWER(TRIM(equipment_code)) LIKE $${paramIdx++}
+        LOWER(TRIM(drvcode)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(wono)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(truckid)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(fromcity)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(tocity)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(cstmer)) LIKE $${paramIdx++}
+        OR LOWER(TRIM(eqpcode)) LIKE $${paramIdx++}
       )`)
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // Validar ordenamiento
-    const validSortColumns = ['date', 'arrival_time', 'work_order', 'driver_code', 'from_city', 'to_city']
-    const safeSortBy = validSortColumns.includes(sortBy) ? sortBy : 'date'
+    const validSortColumns = ['fecha', 'timearrv', 'wono', 'drvcode', 'fromcity', 'tocity']
+    const safeSortBy = validSortColumns.includes(sortBy) ? sortBy : 'fecha'
     const safeSortOrder = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC'
 
     // ============================================================
@@ -163,36 +163,36 @@ export default async function handler(req, res) {
 
     const query = `
       SELECT
-        driver_code,
-        work_order,
-        bill_of_lading,
-        date,
-        from_code,
-        from_city,
-        from_state,
-        to_code,
-        to_city,
-        to_state,
-        movement_type,
+        drvcode as driver_code,
+        wono as work_order,
+        blno as bill_of_lading,
+        fecha as date,
+        fromd as from_code,
+        fromcity as from_city,
+        fromedo as from_state,
+        tod as to_code,
+        tocity as to_city,
+        toedo as to_state,
+        tipmov as movement_type,
         status,
-        equipment_type,
-        equipment_code,
-        delivery_date,
-        customer,
-        arrival_time,
-        departure_time,
-        operator,
-        truck_id,
+        el as equipment_type,
+        eqpcode as equipment_code,
+        deldate as delivery_date,
+        cstmer as customer,
+        timearrv as arrival_time,
+        timedepar as departure_time,
+        oper as operator,
+        truckid as truck_id,
         seal,
-        instructions_1,
-        instructions_2,
+        instruc1 as instructions_1,
+        instruc2 as instructions_2,
         amount,
-        table_code,
-        trx_code,
+        tablecode as table_code,
+        trxcode as trx_code,
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY ${safeSortBy} ${safeSortOrder}, arrival_time DESC
+      ORDER BY ${safeSortBy} ${safeSortOrder}, timearrv DESC
       LIMIT ${PAGE_SIZE}
       OFFSET ${offset}
     `
