@@ -54,11 +54,11 @@ export default async function handler(req, res) {
     // Filtro por fecha exacta
     if (date) {
       params.push(date)
-      addCondition(`fecha = $${paramIdx++}`)
+      addCondition(`fecha_raw = $${paramIdx++}`)
     }
 
-    // Solo sincronizar registros recientes (ultimos 30 dias)
-    addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '30 days'`)
+    // Solo sincronizar registros recientes (ultimos 3 dias)
+    addCondition(`TO_DATE(fecha_raw, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -67,8 +67,8 @@ export default async function handler(req, res) {
         drvcode AS driver_code,
         wono AS work_order,
         blno AS bill_of_lading,
-        fecha AS fecha_raw,
-        fecha AS date,
+        fecha_raw,
+        fecha_raw AS date,
         fromd AS from_code,
         fromcity AS from_city,
         fromedo AS from_state,
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY fecha DESC, timearrv DESC
+      ORDER BY fecha_raw DESC, timearrv DESC
     `
 
     const allMovements = await sql.query(query, params)
