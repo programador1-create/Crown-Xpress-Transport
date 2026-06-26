@@ -117,23 +117,22 @@ const pointPositionsBobtail = [
 // Layout: Similar to FLATBED but with integrated tractor and chassis
 const pointPositionsRabon = [
   // TRACTOR POINTS (1-10)
-  { id: 1, x: 20, y: 50, label: 'Defensa' },              // Bumper - front of rigid truck
-  { id: 2, x: 35, y: 55, label: 'Llantas' },             // Tires - front axle
-  { id: 3, x: 40, y: 55, label: 'Piso' },                // Floor - cab area
-  { id: 4, x: 45, y: 55, label: 'Tanques Diesel' },      // Fuel tanks - side of chassis
-  { id: 5, x: 35, y: 15, label: 'Cabina' },               // Cab - top area
-  { id: 6, x: 50, y: 55, label: 'Tanques Aire' },        // Air tanks - chassis section
-  { id: 7, x: 15, y: 85, label: 'Chasis' },              // Chassis - integrated connection
-  { id: 8, x: 48, y: 15, label: 'Ejes Trans.' },         // Drive shafts - rear of cab
-  { id: 9, x: 15, y: 15, label: 'Escape' },              // Exhaust - side of cab
-  { id: 10, x: 15, y: 35, label: 'Motor' },              // Engine - cab area
+  { id: 1, x: 9, y: 27, label: 'Defensa' },              // Bumper - front of rigid truck
+  { id: 2, x: 8, y: 48, label: 'Llantas' },             // Tires - front axle
+  { id: 3, x: 10, y: 86, label: 'Piso' },                // Floor - cab area
+  { id: 4, x: 27.5, y: 52, label: 'Tanques Diesel' },      // Fuel tanks - side of chassis
+  { id: 5, x: 10, y: 66, label: 'Cabina' },               // Cab - top area
+  { id: 6, x: 20, y: 54, label: 'Tanques Aire' },        // Air tanks - chassis section
+  { id: 7, x: 43.5, y: 51, label: 'Chasis' },              // Chassis - integrated connection
+  { id: 8, x: 37.2, y: 60, label: 'Ejes Trans.' },         // Drive shafts - rear of cab
+  { id: 9, x: 15, y: 9.8, label: 'Escape' },              // Exhaust - side of cab
+  { id: 10, x: 55, y: 29, label: 'Motor' },              // Engine - cab area
 
   // RABON POINTS (11, 12, 14, 17, 18) - Similar to FLATBED
-  { id: 11, x: 55, y: 85, label: 'Chasis' },             // Chassis section
-  { id: 12, x: 25, y: 85, label: 'Parte Trasera' },      // Rear of rigid truck
-  { id: 14, x: 60, y: 55, label: 'Caja/Plataforma' },    // Box/platform surface
+  { id: 11, x: 71, y: 23, label: 'Chasis' },             // Chassis section
+  { id: 12, x: 98, y: 13, label: 'Parte Trasera' },      // Rear of rigid truck
+  { id: 14, x: 94, y: 8.9, label: 'Caja/Plataforma' },    // Box/platform surface
   { id: 17, x: 85, y: 30, label: 'Piso' },                // Floor of box/platform
-  { id: 18, x: 52, y: 85, label: 'Patín' },              // Landing gear/support
 ]
 
 export default function TruckDiagramVisual({ onPointClick, compact = false }) {

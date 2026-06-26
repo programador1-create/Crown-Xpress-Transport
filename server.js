@@ -11,7 +11,8 @@ import tprV2Handler from './api/tpr-v2.js'
 import verifyImageHandler from './api/verify-image.js'
 import inspectionIdHandler from './api/inspections/[id].js'
 
-dotenv.config()
+dotenv.config({ path: '.env' })
+dotenv.config({ path: '.env.local' })
 const app = express()
 const PORT = process.env.API_PORT || 3001
 
