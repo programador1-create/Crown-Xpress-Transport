@@ -148,6 +148,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // Handle inspection type selection
   const handleInspectionTypeChange = (type) => {
+    console.log('handleInspectionTypeChange called with type:', type)
     setInspectionType(type)
     updateUnitInfo('inspectionType', type)
 
@@ -176,6 +177,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       updateUnitInfo('lockNumber', '')
       updateUnitInfo('trailerType', 'BOBTAIL')
       setTrailerType('BOBTAIL')
+      console.log('Set BOBTAIL trailerType')
     } else if (type === 'EMPTY') {
       // Empty: Has container option, no seal, no lock
       setHasContainer(false)
@@ -810,6 +812,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   }
 
   // If LOADED or EMPTY selected but no trailer type, show trailer type selector
+  console.log('DEBUG: inspectionType=', inspectionType, 'trailerType=', trailerType)
   if ((inspectionType === 'LOADED' || inspectionType === 'EMPTY') && !trailerType) {
     return (
       <section className="card animate-slide-up">
