@@ -10,9 +10,16 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '.env') })
 
-// Setup logging to file
+// Setup logging to file with error handling
 const logFile = join(__dirname, 'sync.log')
-const logStream = createWriteStream(logFile, { flags: 'a' })
+let logStream = null
+
+try {
+  logStream = createWriteStream(logFile, { flags: 'a' })
+} catch (err) {
+  console.error('Error opening log file:', err.message)
+  // Continue without file logging if file is locked
+}
 
 // Override console.log and console.error to write to file
 const originalLog = console.log
@@ -22,14 +29,26 @@ console.log = (...args) => {
   const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
   const timestamp = new Date().toISOString()
   originalLog(`[${timestamp}] ${message}`)
-  logStream.write(`[${timestamp}] ${message}\n`)
+  if (logStream) {
+    try {
+      logStream.write(`[${timestamp}] ${message}\n`)
+    } catch (writeErr) {
+      // Ignore write errors (file might be locked)
+    }
+  }
 }
 
 console.error = (...args) => {
   const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
   const timestamp = new Date().toISOString()
   originalError(`[${timestamp}] ERROR: ${message}`)
-  logStream.write(`[${timestamp}] ERROR: ${message}\n`)
+  if (logStream) {
+    try {
+      logStream.write(`[${timestamp}] ERROR: ${message}\n`)
+    } catch (writeErr) {
+      // Ignore write errors (file might be locked)
+    }
+  }
 }
 
 // ============================================================
@@ -311,7 +330,9 @@ async function syncTprToNeon() {
     if (sqlPool) {
       await sqlPool.close().catch(() => {})
     }
-    logStream.end()
+    if (logStream) {
+      logStream.end()
+    }
   }
 }
 
