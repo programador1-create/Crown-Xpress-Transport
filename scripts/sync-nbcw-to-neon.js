@@ -10,12 +10,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '.env') })
 
-// Setup logging to file with error handling
+// Setup logging to file
 const logFile = join(__dirname, 'sync.log')
 let logStream = null
 
 try {
   logStream = createWriteStream(logFile, { flags: 'a' })
+  console.log(`Logging to: ${logFile}`)
 } catch (err) {
   console.error('Error opening log file:', err.message)
   // Continue without file logging if file is locked
@@ -59,7 +60,6 @@ console.error = (...args) => {
 
 const SQLSERVER_CONFIG = {
   server: process.env.SQLSERVER_HOST,
-  port: parseInt(process.env.SQLSERVER_PORT) || 1433,
   database: process.env.SQLSERVER_DATABASE || 'GPSActivity',
   user: process.env.SQLSERVER_USER,
   password: process.env.SQLSERVER_PASSWORD,
@@ -69,8 +69,8 @@ const SQLSERVER_CONFIG = {
     trustServerCertificate: true,
     enableArithAbort: true
   },
-  connectionTimeout: 15000,
-  requestTimeout: 30000
+  connectionTimeout: 30000,
+  requestTimeout: 60000
 }
 
 const NEON_URL = process.env.DATABASE_URL
@@ -124,6 +124,12 @@ async function syncTprToNeon() {
 
   try {
     // 1. Conectar a SQL Server
+    console.log('Intentando conectar a SQL Server:', {
+      server: SQLSERVER_CONFIG.server,
+      database: SQLSERVER_CONFIG.database,
+      user: SQLSERVER_CONFIG.user,
+      instanceName: SQLSERVER_CONFIG.options.instanceName
+    })
     sqlPool = await sql.connect(SQLSERVER_CONFIG)
     console.log('Conectado a SQL Server NBCW')
 

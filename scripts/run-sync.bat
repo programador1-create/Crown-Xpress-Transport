@@ -1,4 +1,8 @@
 @echo off
 cd /d "C:\Users\Eduardo Aispuro\CascadeProjects\Crown-Xpress-Transport"
-node scripts\sync-nbcw-to-neon.js >> scripts\sync.log 2>&1
-echo [%DATE% %TIME%] Script ejecutado >> scripts\sync.log
+powershell -ExecutionPolicy Bypass -File scripts\sync-nbcw-to-neon.ps1
+if %ERRORLEVEL% NEQ 0 (
+    echo Error en sincronizacion
+    exit /b %ERRORLEVEL%
+)
+echo Sincronizacion completada exitosamente
