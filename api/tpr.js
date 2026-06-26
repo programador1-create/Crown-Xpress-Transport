@@ -58,14 +58,15 @@ export default async function handler(req, res) {
     }
 
     // Solo sincronizar registros recientes (ultimos 30 dias)
-    addCondition(`(
-      CASE 
-        WHEN fecha ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(fecha, 'YYYY-MM-DD')
-        WHEN fecha ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(fecha, 'MM/DD/YYYY')
-        WHEN fecha ~ '^\d{2}-\d{2}-\d{4}$' THEN TO_DATE(fecha, 'MM-DD-YYYY')
-        ELSE NULL
-      END >= CURRENT_DATE - INTERVAL '30 days'
-    ) OR fecha IS NULL`)
+    // Deshabilitado para depurar formato de fecha
+    // addCondition(`(
+    //   CASE 
+    //     WHEN fecha ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(fecha, 'YYYY-MM-DD')
+    //     WHEN fecha ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(fecha, 'MM/DD/YYYY')
+    //     WHEN fecha ~ '^\d{2}-\d{2}-\d{4}$' THEN TO_DATE(fecha, 'MM-DD-YYYY')
+    //     ELSE NULL
+    //   END >= CURRENT_DATE - INTERVAL '30 days'
+    // ) OR fecha IS NULL`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -106,6 +107,11 @@ export default async function handler(req, res) {
     `
 
     const allMovements = await sql.query(query, params)
+
+    // Debug: log sample fecha values
+    if (allMovements.length > 0) {
+      console.log('Sample fecha values:', allMovements.slice(0, 3).map(m => m.fecha))
+    }
 
     // ============================================================
     // 2. Cross-filter: marcar los ya inspeccionados
