@@ -57,9 +57,8 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Solo sincronizar registros recientes (ultimos 30 dias)
-    // Temporariamente deshabilitado hasta verificar formato de fecha
-    // addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '30 days'`)
+    // Solo sincronizar registros recientes (ultimos 3 dias)
+    addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
