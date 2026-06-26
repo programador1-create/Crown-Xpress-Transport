@@ -58,7 +58,8 @@ export default async function handler(req, res) {
     }
 
     // Solo sincronizar registros recientes (ultimos 3 dias)
-    addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
+    // Temporariamente deshabilitado para verificar si hay datos
+    // addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
