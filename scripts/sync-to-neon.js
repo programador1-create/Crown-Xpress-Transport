@@ -25,43 +25,46 @@ const neonClient = new Client(process.env.DATABASE_URL)
 await neonClient.connect()
 console.log('Conectado a Neon')
 
-// Crear tabla si no existe
+// Dropear tabla existente para recrear con schema correcto
+await neonClient.query('DROP TABLE IF EXISTS tpr')
+console.log('Tabla tpr eliminada')
+
+// Crear tabla con schema correcto
 await neonClient.query(`
-  CREATE TABLE IF NOT EXISTS tpr (
+  CREATE TABLE tpr (
     id SERIAL PRIMARY KEY,
-    driver_code VARCHAR(50),
-    work_order VARCHAR(50),
-    bill_of_lading VARCHAR(50),
-    fecha_raw VARCHAR(12),
-    date DATE,
-    from_code VARCHAR(50),
-    from_city VARCHAR(100),
-    from_state VARCHAR(50),
-    to_code VARCHAR(50),
-    to_city VARCHAR(100),
-    to_state VARCHAR(50),
-    movement_type VARCHAR(50),
+    drvcode VARCHAR(50),
+    wono VARCHAR(50),
+    blno VARCHAR(50),
+    fecha VARCHAR(12),
+    fromd VARCHAR(50),
+    fromcity VARCHAR(100),
+    fromedo VARCHAR(50),
+    tod VARCHAR(50),
+    tocity VARCHAR(100),
+    toedo VARCHAR(50),
+    tipmov VARCHAR(50),
     status VARCHAR(50),
-    equipment_type VARCHAR(50),
-    equipment_code VARCHAR(100),
-    deldate_raw VARCHAR(12),
-    delivery_date DATE,
-    customer VARCHAR(100),
-    arrival_time VARCHAR(20),
-    departure_time VARCHAR(20),
-    operator VARCHAR(50),
-    truck_id VARCHAR(50),
+    el VARCHAR(50),
+    eqpcode VARCHAR(100),
+    deldate VARCHAR(12),
+    cstmer VARCHAR(100),
+    timearrv VARCHAR(20),
+    timedepar VARCHAR(20),
+    oper VARCHAR(50),
+    truckid VARCHAR(50),
     seal VARCHAR(50),
-    instructions_1 TEXT,
-    instructions_2 TEXT,
+    instruc1 TEXT,
+    instruc2 TEXT,
     amount VARCHAR(10),
-    table_code VARCHAR(50),
-    trx_code VARCHAR(50),
+    tablecode VARCHAR(50),
+    trxcode VARCHAR(50),
     synced_at TIMESTAMP DEFAULT NOW(),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
   )
 `)
+console.log('Tabla tpr creada con schema correcto')
 
 // Limpiar tabla existente
 await neonClient.query('DELETE FROM tpr')
@@ -86,7 +89,6 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
       row.work_order || null,
       row.bill_of_lading || null,
       row.fecha_raw || null,
-      null, // date (calculated from fecha_raw if needed)
       row.from_code || null,
       row.from_city || null,
       row.from_state || null,
@@ -98,7 +100,6 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
       row.equipment_type || null,
       row.equipment_code || null,
       row.deldate_raw || null,
-      null, // delivery_date (calculated from deldate_raw if needed)
       row.customer || null,
       row.arrival_time || null,
       row.departure_time || null,
@@ -115,10 +116,10 @@ for (let i = 0; i < jsonData.length; i += batchSize) {
   }
 
   const columns = [
-    'driver_code', 'work_order', 'bill_of_lading', 'fecha_raw', 'date', 'from_code', 'from_city', 'from_state',
-    'to_code', 'to_city', 'to_state', 'movement_type', 'status', 'equipment_type', 'equipment_code',
-    'deldate_raw', 'delivery_date', 'customer', 'arrival_time', 'departure_time', 'operator', 'truck_id', 'seal',
-    'instructions_1', 'instructions_2', 'amount', 'table_code', 'trx_code', 'synced_at'
+    'drvcode', 'wono', 'blno', 'fecha', 'fromd', 'fromcity', 'fromedo',
+    'tod', 'tocity', 'toedo', 'tipmov', 'status', 'el', 'eqpcode',
+    'deldate', 'cstmer', 'timearrv', 'timedepar', 'oper', 'truckid', 'seal',
+    'instruc1', 'instruc2', 'amount', 'tablecode', 'trxcode', 'synced_at'
   ].join(', ')
 
   const query = `INSERT INTO tpr (${columns}) VALUES ${values.join(', ')}`
