@@ -153,7 +153,7 @@ export default function SupervisorView() {
           highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
-          trailerType: insp.trailer_type,
+          trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
           workOrder: insp.wono
         }
 
@@ -232,7 +232,7 @@ export default function SupervisorView() {
           highSecuritySeal: insp.high_security_seal === 'yes' ? 'yes' : 'no',
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
-          trailerType: insp.trailer_type,
+          trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
           workOrder: insp.wono
         }
 
@@ -300,7 +300,7 @@ export default function SupervisorView() {
         driverName: insp.driver_name,
         inspectionDate: insp.inspection_date,
         inspectionType: insp.inspection_type,
-        trailerType: insp.trailer_type,
+        trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
         odometer: insp.odometer,
         highSecuritySeal: insp.high_security_seal,
         sealAffixed: insp.seal_affixed,
