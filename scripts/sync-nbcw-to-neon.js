@@ -11,7 +11,7 @@ dotenv.config({ path: join(__dirname, '.env') })
 
 // ============================================================
 // Script de sincronizacion NBCW (SQL Server) -> Neon (PostgreSQL)
-// Corre este script cada 5 minutos con cron en una PC/Raspberry Pi
+// Corre este script cada 1 minuto con cron en una PC/Raspberry Pi
 // ubicada en la red donde esta SQL Server de NBCW.
 // ============================================================
 

@@ -32,7 +32,7 @@ cd scripts
 node sync-nbcw-to-neon.js
 ```
 
-## Programar con cron (cada 5 minutos)
+## Programar con cron (cada 1 minuto)
 
 En Linux/Raspberry Pi:
 
@@ -43,7 +43,7 @@ crontab -e
 Agregar esta linea:
 
 ```cron
-*/5 * * * * cd /ruta/al/proyecto && npm run sync:nbcw >> /ruta/al/proyecto/scripts/sync.log 2>&1
+* * * * * cd /ruta/al/proyecto && npm run sync:nbcw >> /ruta/al/proyecto/scripts/sync.log 2>&1
 ```
 
 ## Requisitos
