@@ -58,15 +58,8 @@ export default async function handler(req, res) {
     }
 
     // Solo sincronizar registros recientes (ultimos 30 dias)
-    // Deshabilitado para depurar formato de fecha
-    // addCondition(`(
-    //   CASE 
-    //     WHEN fecha ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(fecha, 'YYYY-MM-DD')
-    //     WHEN fecha ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(fecha, 'MM/DD/YYYY')
-    //     WHEN fecha ~ '^\d{2}-\d{2}-\d{4}$' THEN TO_DATE(fecha, 'MM-DD-YYYY')
-    //     ELSE NULL
-    //   END >= CURRENT_DATE - INTERVAL '30 days'
-    // ) OR fecha IS NULL`)
+    // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '30 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
