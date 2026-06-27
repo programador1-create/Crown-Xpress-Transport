@@ -320,10 +320,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       setSealLockEntered(true)
     }
 
-    const isFlowComplete = (inspectionType === 'BOBTAIL') ||
+    const isFlowComplete = (inspectionType === 'BOBTAIL' && tractorNumberEntered) ||
       (containerNumberEntered &&
-       (inspectionType === 'EMPTY' || sealLockEntered || !sealLockRequired) &&
-       tractorNumberEntered)
+       (inspectionType === 'EMPTY' || sealLockEntered || !sealLockRequired))
 
     if (onFlowComplete) {
       onFlowComplete(isFlowComplete)
@@ -1535,10 +1534,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // Step: Enter tractor number (after seal/lock for LOADED, after container for EMPTY)
   // For FLATBED and RABON: skip seal/lock step entirely
-  const shouldShowTractorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED') &&
-    containerNumberEntered &&
-    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
-    !tractorNumberEntered
+  const shouldShowTractorStep = inspectionType === 'BOBTAIL' && !tractorNumberEntered
 
   if (shouldShowTractorStep) {
     return (
@@ -1611,11 +1607,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // Step: Operator search (after tractor number, before summary)
   // For LOADED: require sealLockEntered (unless FLATBED/RABON which don't require seal/lock)
   // For EMPTY: no seal/lock required
+  // For BOBTAIL: require tractorNumberEntered
   // Skip if operator already set from NBCW
-  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED') &&
+  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED' || inspectionType === 'BOBTAIL') &&
     containerNumberEntered &&
     (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
-    tractorNumberEntered &&
+    (inspectionType !== 'BOBTAIL' || tractorNumberEntered) &&
     !operatorStepCompleted &&
     !operatorFound
 
@@ -1854,7 +1851,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const isBobtailReady = inspectionType === 'BOBTAIL'
   const isOtherReady = containerNumberEntered &&
     (inspectionType !== 'LOADED' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
-    tractorNumberEntered &&
     operatorStepCompleted
 
   if (!isBobtailReady && !isOtherReady) {
