@@ -1608,8 +1608,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   // For LOADED: require sealLockEntered (unless FLATBED/RABON which don't require seal/lock)
   // For EMPTY: no seal/lock required
   // For BOBTAIL: require tractorNumberEntered
+  // For RABON: similar to FLATBED - no seal/lock required
   // Skip if operator already set from NBCW
-  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED' || inspectionType === 'BOBTAIL') &&
+  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED' || inspectionType === 'BOBTAIL' || inspectionType === 'RABON') &&
     containerNumberEntered &&
     (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
     (inspectionType !== 'BOBTAIL' || tractorNumberEntered) &&
@@ -1848,6 +1849,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // If all steps completed, show minimal info card (inspection points will be shown by parent)
   // For BOBTAIL: skip container/seal/tractor checks - go directly to operator search
+  // For RABON: similar to FLATBED - no seal/lock required
   const isBobtailReady = inspectionType === 'BOBTAIL'
   const isOtherReady = containerNumberEntered &&
     (inspectionType !== 'LOADED' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
