@@ -58,12 +58,19 @@ export const INSPECTION_TYPES = {
     },
     requiresSealOrLock: false,
     hasContainer: false,
-    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18] // Similar a FLATBED: Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma/Caja (14) + Piso (17) + Patín (18)
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17] // Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma/Caja (14) + Piso (17). Excluye: 13, 15, 16 (paredes laterales, frente), 18 (patín), 19-20 (refrigeración, limpieza)
   }
 }
 
 // Helper to get applicable points for an inspection type
-export const getApplicablePoints = (inspectionType) => {
+export const getApplicablePoints = (inspectionType, trailerType) => {
+  // For RABON and FLATBED, use trailerType instead of inspectionType
+  if (trailerType === 'RABON') {
+    return inspectionPoints.filter(p => INSPECTION_TYPES.RABON.applicablePoints.includes(p.id))
+  }
+  if (trailerType === 'FLATBED') {
+    return inspectionPoints.filter(p => INSPECTION_TYPES.FLATBED.applicablePoints.includes(p.id))
+  }
   const type = INSPECTION_TYPES[inspectionType?.toUpperCase()] || INSPECTION_TYPES.LOADED
   return inspectionPoints.filter(p => type.applicablePoints.includes(p.id))
 }

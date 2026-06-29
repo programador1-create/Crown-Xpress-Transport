@@ -12,17 +12,19 @@ export default function SealPhoto() {
   const [cameraOpen, setCameraOpen] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
 
-  // Calculate applicable points based on inspection type
+  // Calculate applicable points based on inspection type and trailer type
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    return getApplicablePoints(unitInfo?.inspectionType, unitInfo?.trailerType)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
   
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
 
   // Hide seal photo for EMPTY, BOBTAIL, and FLATBED inspections
+  // RABON requires seal photo when LOADED
   const inspectionType = unitInfo?.inspectionType
-  if (inspectionType === 'EMPTY' || inspectionType === 'BOBTAIL' || inspectionType === 'FLATBED') {
+  const trailerType = unitInfo?.trailerType
+  if (inspectionType === 'EMPTY' || inspectionType === 'BOBTAIL' || trailerType === 'FLATBED') {
     return null
   }
   

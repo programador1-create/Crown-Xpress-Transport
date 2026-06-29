@@ -22,10 +22,10 @@ export default function GuidedInspection() {
   const [unitInfoFlowComplete, setUnitInfoFlowComplete] = useState(false)
   const [showEmptyLoads, setShowEmptyLoads] = useState(false)
 
-  // Get applicable points based on inspection type
+  // Get applicable points based on inspection type and trailer type
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    return getApplicablePoints(unitInfo?.inspectionType, unitInfo?.trailerType)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
 
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
