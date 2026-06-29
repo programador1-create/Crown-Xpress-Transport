@@ -22,7 +22,7 @@ export const INSPECTION_TYPES = {
     },
     requiresSealOrLock: false,
     hasContainer: true,
-    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19] // Excluye: 15 (pared frontal), 17 (piso interior), 20 (limpieza)
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] // Todos los 20 puntos
   },
   BOBTAIL: {
     id: 'bobtail',
