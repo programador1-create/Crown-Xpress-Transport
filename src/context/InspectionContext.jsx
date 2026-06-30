@@ -108,10 +108,10 @@ export function InspectionProvider({ children }) {
     setOperatorStepCompleted(false)
   }, [])
 
-  // Applicable points based on inspection type and trailer type
+  // Applicable points based on inspection type
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType, unitInfo?.trailerType)
-  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
+    return getApplicablePoints(unitInfo?.inspectionType)
+  }, [unitInfo?.inspectionType])
 
   const applicablePointIds = useMemo(() => {
     return applicablePoints.map(p => p.id)

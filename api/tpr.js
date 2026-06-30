@@ -58,9 +58,9 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Solo sincronizar registros recientes (solo hoy)
+    // Solo sincronizar registros recientes (ultimos 2 dias)
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') = CURRENT_DATE`)
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 

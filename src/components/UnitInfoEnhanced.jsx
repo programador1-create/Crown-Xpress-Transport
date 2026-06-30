@@ -1395,9 +1395,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     )
   }
 
-  // Step: Enter seal/lock for LOADED inspections (after container number) - NOT for FLATBED
-  // FLATBED (plataforma) does not require seal or lock, but RABON does when LOADED
-  if (inspectionType === 'LOADED' && containerNumberEntered && !sealLockEntered && trailerType !== 'FLATBED') {
+  // Step: Enter seal/lock for LOADED inspections (after container number) - NOT for FLATBED or RABON
+  // FLATBED (plataforma) and RABON do not require seal or lock
+  if (inspectionType === 'LOADED' && containerNumberEntered && !sealLockEntered && trailerType !== 'FLATBED' && trailerType !== 'RABON') {
     return (
       <section className="card animate-slide-up">
         <div className="card-header flex items-center gap-3">
@@ -1605,14 +1605,13 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   }
 
   // Step: Operator search (after tractor number, before summary)
-  // For LOADED: require sealLockEntered (unless FLATBED which doesn't require seal/lock)
+  // For LOADED: require sealLockEntered (unless FLATBED/RABON which don't require seal/lock)
   // For EMPTY: no seal/lock required
   // For BOBTAIL: require tractorNumberEntered
-  // For RABON: requires sealLockEntered when LOADED
   // Skip if operator already set from NBCW
-  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED' || inspectionType === 'BOBTAIL' || inspectionType === 'RABON') &&
+  const shouldShowOperatorStep = (inspectionType === 'LOADED' || inspectionType === 'EMPTY' || inspectionType === 'FLATBED' || inspectionType === 'BOBTAIL') &&
     containerNumberEntered &&
-    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED') &&
+    (inspectionType === 'EMPTY' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&
     (inspectionType !== 'BOBTAIL' || tractorNumberEntered) &&
     !operatorStepCompleted &&
     !operatorFound
@@ -1849,7 +1848,6 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
   // If all steps completed, show minimal info card (inspection points will be shown by parent)
   // For BOBTAIL: skip container/seal/tractor checks - go directly to operator search
-  // For RABON: similar to FLATBED - no seal/lock required
   const isBobtailReady = inspectionType === 'BOBTAIL'
   const isOtherReady = containerNumberEntered &&
     (inspectionType !== 'LOADED' || sealLockEntered || trailerType === 'FLATBED' || trailerType === 'RABON') &&

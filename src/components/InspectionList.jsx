@@ -11,10 +11,10 @@ export default function InspectionList() {
   const [showOnlyProblems, setShowOnlyProblems] = useState(false)
   const [showConfirmAllOk, setShowConfirmAllOk] = useState(false)
   
-  // Get applicable points based on inspection type and trailer type
+  // Get applicable points based on inspection type
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType, unitInfo?.trailerType)
-  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
+    return getApplicablePoints(unitInfo?.inspectionType)
+  }, [unitInfo?.inspectionType])
   
   const pendingCount = applicablePoints.length - completedCount
 

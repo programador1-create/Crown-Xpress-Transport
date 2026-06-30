@@ -9,11 +9,6 @@
   body {
     @apply font-sans bg-gradient-to-br from-white via-slate-50 to-stone-100 text-slate-900 min-h-screen;
   }
-
-  /* Daylight Mode - Dark background with fluorescent green accents */
-  body.daylight-mode {
-    @apply font-sans bg-gradient-to-br from-gray-900 via-slate-900 to-black text-emerald-100 min-h-screen;
-  }
   
   /* Force uppercase on all inputs and text (except login) */
   body:not(.login-page) input:not([type="password"]):not([type="email"]),
@@ -40,17 +35,6 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-crown-navy/50;
   }
-
-  /* Daylight Mode Scrollbar */
-  body.daylight-mode ::-webkit-scrollbar-track {
-    @apply bg-gray-800;
-  }
-  body.daylight-mode ::-webkit-scrollbar-thumb {
-    @apply bg-emerald-500/50 rounded-full;
-  }
-  body.daylight-mode ::-webkit-scrollbar-thumb:hover {
-    @apply bg-emerald-400/70;
-  }
 }
 
 @layer components {
@@ -76,26 +60,6 @@
     @apply btn text-slate-600 hover:bg-slate-100;
   }
 
-  /* Daylight Mode Buttons */
-  body.daylight-mode .btn-primary {
-    @apply btn bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg hover:shadow-emerald-500/50 active:scale-95 border-2 border-emerald-400;
-  }
-  body.daylight-mode .btn-gold {
-    @apply btn bg-lime-500 text-black hover:bg-lime-400 shadow-lg hover:shadow-lime-400/50 active:scale-95 border-2 border-lime-300;
-  }
-  body.daylight-mode .btn-secondary {
-    @apply btn bg-gray-800 text-emerald-100 border-4 border-emerald-500/50 hover:border-emerald-400 hover:bg-emerald-500/10 shadow-md;
-  }
-  body.daylight-mode .btn-success {
-    @apply btn bg-green-500 text-black hover:bg-green-400 shadow-lg hover:shadow-green-400/50 border-2 border-green-300;
-  }
-  body.daylight-mode .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-500 shadow-lg hover:shadow-red-500/50 border-2 border-red-400;
-  }
-  body.daylight-mode .btn-ghost {
-    @apply btn text-emerald-100 hover:bg-emerald-500/20;
-  }
-
   .card {
     @apply bg-white rounded-2xl shadow-xl border-2 border-slate-200 overflow-hidden;
   }
@@ -106,30 +70,11 @@
     @apply p-8;
   }
 
-  /* Daylight Mode Cards */
-  body.daylight-mode .card {
-    @apply bg-gray-800/90 rounded-2xl shadow-xl border-2 border-emerald-500/50 overflow-hidden;
-  }
-  body.daylight-mode .card-header {
-    @apply px-8 py-5 border-b-2 border-emerald-500/50 bg-gradient-to-r from-emerald-600 to-green-600 text-white;
-  }
-  body.daylight-mode .card-body {
-    @apply p-8;
-  }
-
   .input {
     @apply w-full px-5 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-900 text-lg font-semibold transition-all duration-200 focus:border-crown-navy focus:ring-4 focus:ring-crown-navy/20 focus:outline-none placeholder:text-slate-500;
   }
   .label {
     @apply block text-base font-bold text-slate-800 mb-2;
-  }
-
-  /* Daylight Mode Inputs */
-  body.daylight-mode .input {
-    @apply w-full px-5 py-3 rounded-xl border-2 border-emerald-500/50 bg-gray-900 text-emerald-100 text-lg font-semibold transition-all duration-200 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/30 focus:outline-none placeholder:text-emerald-100/50;
-  }
-  body.daylight-mode .label {
-    @apply block text-base font-bold text-emerald-100 mb-2;
   }
 
   .badge {
@@ -138,216 +83,6 @@
   .badge-good { @apply badge bg-emerald-200 text-emerald-800 border border-emerald-300; }
   .badge-bad { @apply badge bg-rose-200 text-rose-800 border border-rose-300; }
   .badge-pending { @apply badge bg-slate-200 text-slate-700 border border-slate-300; }
-
-  /* Daylight Mode Badges */
-  body.daylight-mode .badge-good { @apply badge bg-emerald-500/30 text-emerald-100 border border-emerald-400; }
-  body.daylight-mode .badge-bad { @apply badge bg-red-500/30 text-red-100 border border-red-400; }
-  body.daylight-mode .badge-pending { @apply badge bg-gray-700 text-emerald-100 border border-emerald-500/50; }
-
-  /* Daylight Mode Text Colors */
-  body.daylight-mode {
-    --text-primary: #10b981;
-    --text-secondary: #6ee7b7;
-    --bg-primary: #111827;
-    --bg-secondary: #1f2937;
-    --border-color: #10b981;
-  }
-
-  /* Daylight Mode Links */
-  body.daylight-mode a {
-    @apply text-emerald-400 hover:text-emerald-300;
-  }
-
-  /* Daylight Mode Tables */
-  body.daylight-mode table {
-    @apply text-emerald-100;
-  }
-  body.daylight-mode th {
-    @apply bg-gray-800 text-emerald-100 border-b-2 border-emerald-500/50;
-  }
-  body.daylight-mode td {
-    @apply border-b border-emerald-500/20;
-  }
-  body.daylight-mode tr:hover td {
-    @apply bg-emerald-500/10;
-  }
-
-  /* Daylight Mode Select/Textarea */
-  body.daylight-mode select,
-  body.daylight-mode textarea {
-    @apply bg-gray-900 text-emerald-100 border-emerald-500/50;
-  }
-  body.daylight-mode select:focus,
-  body.daylight-mode textarea:focus {
-    @apply border-emerald-400 ring-emerald-400/30;
-  }
-
-  /* Daylight Mode Checkbox/Radio */
-  body.daylight-mode input[type="checkbox"],
-  body.daylight-mode input[type="radio"] {
-    @apply accent-emerald-500;
-  }
-
-  /* Daylight Mode - Override hardcoded Tailwind classes */
-  body.daylight-mode .text-slate-900,
-  body.daylight-mode .text-slate-800,
-  body.daylight-mode .text-slate-700,
-  body.daylight-mode .text-slate-600 {
-    color: #10b981 !important;
-  }
-  body.daylight-mode .text-slate-500,
-  body.daylight-mode .text-slate-400 {
-    color: #6ee7b7 !important;
-  }
-
-  body.daylight-mode .bg-white {
-    background-color: #1f2937 !important;
-  }
-  body.daylight-mode .bg-slate-50,
-  body.daylight-mode .bg-slate-100 {
-    background-color: #111827 !important;
-  }
-  body.daylight-mode .bg-slate-200 {
-    background-color: #374151 !important;
-  }
-  body.daylight-mode .bg-gray-50,
-  body.daylight-mode .bg-gray-100 {
-    background-color: #111827 !important;
-  }
-  body.daylight-mode .bg-gray-200 {
-    background-color: #374151 !important;
-  }
-
-  body.daylight-mode .border-slate-200,
-  body.daylight-mode .border-slate-300 {
-    border-color: #10b981 !important;
-  }
-  body.daylight-mode .border-slate-400 {
-    border-color: #34d399 !important;
-  }
-
-  body.daylight-mode .hover\:bg-slate-50:hover {
-    background-color: #10b981 !important;
-  }
-  body.daylight-mode .hover\:bg-slate-100:hover {
-    background-color: #10b981 !important;
-  }
-  body.daylight-mode .hover\:bg-emerald-50:hover {
-    background-color: #10b981 !important;
-  }
-  body.daylight-mode .hover\:bg-rose-50:hover {
-    background-color: rgba(239, 68, 68, 0.3) !important;
-  }
-  body.daylight-mode .hover\:bg-red-50:hover {
-    background-color: rgba(239, 68, 68, 0.3) !important;
-  }
-  body.daylight-mode .hover\:bg-blue-50:hover {
-    background-color: #3b82f6 !important;
-  }
-
-  /* Daylight Mode - Group hover overrides */
-  body.daylight-mode .group-hover\:bg-red-200:hover {
-    background-color: rgba(239, 68, 68, 0.4) !important;
-  }
-  body.daylight-mode .group-hover\:bg-red-100:hover {
-    background-color: rgba(239, 68, 68, 0.3) !important;
-  }
-  body.daylight-mode .group-hover\:bg-emerald-200:hover {
-    background-color: rgba(16, 185, 129, 0.4) !important;
-  }
-  body.daylight-mode .group-hover\:bg-emerald-100:hover {
-    background-color: rgba(16, 185, 129, 0.3) !important;
-  }
-
-  /* Daylight Mode - Border hover overrides */
-  body.daylight-mode .hover\:border-red-500:hover {
-    border-color: #ef4444 !important;
-  }
-  body.daylight-mode .hover\:border-emerald-500:hover {
-    border-color: #10b981 !important;
-  }
-
-  /* Daylight Mode - Background color overrides for specific elements */
-  body.daylight-mode .bg-red-100 {
-    background-color: rgba(239, 68, 68, 0.2) !important;
-  }
-  body.daylight-mode .bg-red-200 {
-    background-color: rgba(239, 68, 68, 0.3) !important;
-  }
-  body.daylight-mode .bg-emerald-100 {
-    background-color: rgba(16, 185, 129, 0.2) !important;
-  }
-  body.daylight-mode .bg-emerald-200 {
-    background-color: rgba(16, 185, 129, 0.3) !important;
-  }
-  body.daylight-mode .bg-amber-100 {
-    background-color: rgba(245, 158, 11, 0.2) !important;
-  }
-  body.daylight-mode .bg-amber-200 {
-    background-color: rgba(245, 158, 11, 0.3) !important;
-  }
-  body.daylight-mode .bg-blue-100 {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-  }
-  body.daylight-mode .bg-blue-200 {
-    background-color: rgba(59, 130, 246, 0.3) !important;
-  }
-  body.daylight-mode .bg-slate-50 {
-    background-color: rgba(31, 41, 55, 0.5) !important;
-  }
-  body.daylight-mode .bg-slate-300 {
-    background-color: rgba(55, 65, 81, 0.5) !important;
-  }
-  body.daylight-mode .bg-slate-400 {
-    background-color: rgba(75, 85, 99, 0.5) !important;
-  }
-
-  /* Daylight Mode - Input text color override */
-  body.daylight-mode input[type="text"],
-  body.daylight-mode input[type="number"],
-  body.daylight-mode input[type="tel"] {
-    color: #10b981 !important;
-    background-color: #111827 !important;
-  }
-  body.daylight-mode input::placeholder {
-    color: #6ee7b7 !important;
-  }
-  body.daylight-mode input:focus {
-    background-color: #111827 !important;
-  }
-
-  /* Daylight Mode - Extra fluorescent green for prefix buttons */
-  body.daylight-mode button:hover {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 40px rgba(16, 185, 129, 0.3) !important;
-  }
-
-  body.daylight-mode .hover\:text-slate-600:hover {
-    color: #10b981 !important;
-  }
-  body.daylight-mode .hover\:text-rose-600:hover {
-    color: #ef4444 !important;
-  }
-
-  body.daylight-mode .ring-slate-200 {
-    --tw-ring-color: #10b981 !important;
-  }
-  body.daylight-mode .focus\:ring-slate-200:focus {
-    --tw-ring-color: #10b981 !important;
-  }
-  body.daylight-mode .focus\:ring-crown-navy\/20:focus {
-    --tw-ring-color: #10b981 !important;
-  }
-
-  /* Daylight Mode - Gradient overrides */
-  body.daylight-mode .from-crown-navy-dark {
-    --tw-gradient-from: #047857 !important;
-  }
-  body.daylight-mode .to-crown-navy {
-    --tw-gradient-to: #10b981 !important;
-  }
-  body.daylight-mode .from-crown-navy {
-    --tw-gradient-from: #10b981 !important;
-  }
 }
 
 /* Print styles */

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Languages, LogOut, User, Plus, ChevronDown, RotateCcw, RefreshCw, Trash2, Sun, Moon } from 'lucide-react'
+import { useState } from 'react'
+import { Languages, LogOut, User, Plus, ChevronDown, RotateCcw, RefreshCw, Trash2 } from 'lucide-react'
 import Logo from './Logo'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
@@ -10,22 +10,6 @@ export default function Header() {
   const { resetInspection, progressPercent } = useInspection()
   const { user, logout } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
-  const [daylightMode, setDaylightMode] = useState(false)
-
-  useEffect(() => {
-    // Load daylight mode preference from localStorage
-    const saved = localStorage.getItem('daylightMode')
-    if (saved === 'true') {
-      setDaylightMode(true)
-      document.body.classList.add('daylight-mode')
-    }
-  }, [])
-
-  const toggleDaylightMode = () => {
-    setDaylightMode(!daylightMode)
-    document.body.classList.toggle('daylight-mode')
-    localStorage.setItem('daylightMode', (!daylightMode).toString())
-  }
 
   const handleNewInspection = () => {
     if (confirm(language === 'es' ? '¿Iniciar una nueva inspección? Se perderán los datos actuales.' : 'Start a new inspection? Current data will be lost.')) {
@@ -46,7 +30,7 @@ export default function Header() {
   }
 
   return (
-    <header className={`sticky top-0 z-30 backdrop-blur-md border-b shadow-sm no-print ${daylightMode ? 'bg-gray-900/90 border-emerald-500/50' : 'bg-white/90 border-slate-200'}`}>
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center flex-shrink-0">
       <img
@@ -57,15 +41,15 @@ export default function Header() {
     </div>
         
         <div className="hidden md:flex flex-col items-center px-6">
-          <div className={`text-xs font-medium uppercase tracking-wider ${daylightMode ? 'text-emerald-100' : 'text-slate-500'}`}>{t('appTitle')}</div>
-          <div className={`text-xs font-bold ${daylightMode ? 'text-lime-400' : 'text-crown-gold-dark'}`}>{t('formCode')}</div>
-          <div className={`w-48 h-1.5 rounded-full mt-1 overflow-hidden ${daylightMode ? 'bg-gray-700' : 'bg-slate-200'}`}>
-            <div
-              className={`h-full transition-all duration-500 ${daylightMode ? 'bg-gradient-to-r from-lime-400 to-emerald-500' : 'bg-gradient-to-r from-crown-gold to-crown-navy'}`}
+          <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{t('appTitle')}</div>
+          <div className="text-xs text-crown-gold-dark font-bold">{t('formCode')}</div>
+          <div className="w-48 h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-crown-gold to-crown-navy transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className={`text-[10px] mt-0.5 ${daylightMode ? 'text-emerald-100' : 'text-slate-500'}`}>{progressPercent}% {t('completed')}</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">{progressPercent}% {t('completed')}</div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -94,16 +78,6 @@ export default function Header() {
           >
             <Languages className="w-4 h-4" />
             <span className="uppercase">{language}</span>
-          </button>
-
-          {/* Daylight Mode Toggle */}
-          <button
-            onClick={toggleDaylightMode}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/10 transition-colors text-sm font-semibold text-emerald-600"
-            aria-label={daylightMode ? 'Disable Daylight Mode' : 'Enable Daylight Mode'}
-            title={daylightMode ? 'Modo Normal' : 'Modo Luz de Día'}
-          >
-            {daylightMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
 
           {/* New Inspection Menu */}
