@@ -45,15 +45,16 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         const movementsData = res.data || []
         setMovements(movementsData)
         
-        // Filter by today's date for pending count
+        // Filter by last 2 days for pending count
         const today = new Date().toISOString().split('T')[0]
-        const todayMovements = movementsData.filter(m => {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+        const pendingMovements = movementsData.filter(m => {
           if (!m.date) return false
           const movementDate = new Date(m.date).toISOString().split('T')[0]
-          return movementDate === today && !m.already_inspected
+          return (movementDate === today || movementDate === yesterday) && !m.already_inspected
         })
         
-        setPendingCount(todayMovements.length)
+        setPendingCount(pendingMovements.length)
         setLastUpdated(res.last_updated ? new Date(res.last_updated) : new Date())
         setError(null)
       } else {
@@ -117,12 +118,13 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       )
     }
 
-    // Filtrar por fecha actual (solo movimientos del día)
+    // Filtrar por fecha de los últimos 2 días
     const today = new Date().toISOString().split('T')[0]
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
     filtered = filtered.filter(m => {
       if (!m.date) return false
       const movementDate = new Date(m.date).toISOString().split('T')[0]
-      return movementDate === today
+      return movementDate === today || movementDate === yesterday
     })
 
     setFilteredMovements(filtered)
@@ -306,10 +308,26 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredMovements.map((movement, index) => (
+              {filteredMovements.map((movement, index) => {
+                // Determine row color based on date
+                const today = new Date().toISOString().split('T')[0]
+                const movementDate = movement.date ? new Date(movement.date).toISOString().split('T')[0] : null
+                const isToday = movementDate === today
+                const isOlder = movementDate && movementDate !== today
+
+                let rowClass = 'border border-slate-200 rounded-lg p-4 hover:border-crown-navy/30 hover:shadow-md transition-all'
+                if (!movement.already_inspected) {
+                  if (isToday) {
+                    rowClass = 'border border-yellow-300 bg-yellow-50 rounded-lg p-4 hover:border-yellow-400 hover:shadow-md transition-all'
+                  } else if (isOlder) {
+                    rowClass = 'border border-red-300 bg-red-50 rounded-lg p-4 hover:border-red-400 hover:shadow-md transition-all'
+                  }
+                }
+
+                return (
                 <div
                   key={index}
-                  className="border border-slate-200 rounded-lg p-4 hover:border-crown-navy/30 hover:shadow-md transition-all"
+                  className={rowClass}
                 >
                   <div className={`flex items-start justify-between ${movement.already_inspected ? 'opacity-60' : ''}`}>
                     <div className="flex-1 cursor-pointer" onClick={() => setSelectedMovement(movement)}>
@@ -438,7 +456,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

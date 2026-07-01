@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Solo sincronizar registros recientes (ultimos 2 dias)
+    // Sincronizar registros de los ultimos 2 dias para mostrar pendientes
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
     addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days'`)
 
