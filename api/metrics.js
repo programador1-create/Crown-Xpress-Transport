@@ -40,14 +40,15 @@ export default async function handler(req, res) {
     // ============================================================
     // FILTRO POR YARDA (SI SE PROPORCIONA)
     // ============================================================
+    // Temporarily disabled - need to verify correct column name
     let yardCondition = ''
-    if (yardCode) {
-      const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
-      if (yardCodes.length > 0) {
-        const escapedYardCodes = yardCodes.map(c => `'${c.replace(/'/g, "''")}'`).join(', ')
-        yardCondition = `AND location IN (${escapedYardCodes})`
-      }
-    }
+    // if (yardCode) {
+    //   const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
+    //   if (yardCodes.length > 0) {
+    //     const escapedYardCodes = yardCodes.map(c => `'${c.replace(/'/g, "''")}'`).join(', ')
+    //     yardCondition = `AND location IN (${escapedYardCodes})`
+    //   }
+    // }
 
     // ============================================================
     // 1. MÉTRICAS GENERALES
