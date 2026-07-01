@@ -63,6 +63,44 @@ export async function createInspection(req, res) {
     const location = ui.location || null
     const guard_name_field = ui.guard_name || guardSignature.name || null
 
+    // Generate PDF if not provided (before saving inspection)
+    let pdfBufferToSave = pdfBuffer
+    let pdfFilenameToSave = pdfFilename
+    let pdfSizeToSave = pdfBuffer ? pdfBuffer.length : 0
+
+    if (!pdfBase64) {
+      console.log('Generating PDF in backend...')
+      try {
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points,
+          sealPhoto,
+          guardSignature,
+          supervisorSignature,
+          operatorSignature,
+          language,
+          yardCode: unitInfo.location || '',
+        })
+
+        const pdfBase64Generated = pdfResult.doc.output('datauristring')
+        pdfFilenameToSave = pdfResult.filename
+
+        const pdfDataB64 = String(pdfBase64Generated).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+        pdfBufferToSave = Buffer.from(pdfDataB64, 'base64')
+        pdfSizeToSave = pdfBufferToSave.length
+
+        console.log('PDF generated successfully, size:', pdfSizeToSave, 'bytes')
+      } catch (pdfError) {
+        console.error('Error generating PDF in backend:', pdfError)
+        // PDF generation failed - do not save inspection
+        return res.status(500).json({
+          error: 'Failed to generate PDF. Inspection not saved.',
+          details: pdfError.message
+        })
+      }
+    }
+
+    // Only save inspection if PDF generation succeeded
     const [inspection] = await sql`
       INSERT INTO inspections (
         trailer_number, seal_number, lock_number, driver_name, odometer, location,
@@ -102,9 +140,9 @@ export async function createInspection(req, res) {
         ${counts.good || 0},
         ${counts.bad || 0},
         0,
-        ${pdfFilename || 'inspection.pdf'},
-        ${pdfBuffer},
-        ${pdfBuffer ? pdfBuffer.length : 0},
+        ${pdfFilenameToSave || 'inspection.pdf'},
+        ${pdfBufferToSave},
+        ${pdfSizeToSave},
         ${ip},
         ${ua},
         ${ui.equipmentNomenclature || ui.equipment_nomenclature || null},
@@ -170,43 +208,6 @@ export async function createInspection(req, res) {
         details: { signedAt: auditorSignature.signedAt },
         ip, ua,
       })
-    }
-
-    // Generate PDF if not provided
-    if (!pdfBase64) {
-      console.log('Generating PDF in backend...')
-      try {
-        const pdfResult = await generateInspectionPDF({
-          unitInfo,
-          points,
-          sealPhoto,
-          guardSignature,
-          supervisorSignature,
-          operatorSignature,
-          language,
-          yardCode: unitInfo.location || '',
-        })
-
-        const pdfBase64Generated = pdfResult.doc.output('datauristring')
-        const pdfFilenameGenerated = pdfResult.filename
-
-        // Update inspection with generated PDF
-        const pdfDataB64 = String(pdfBase64Generated).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
-        const pdfBufferGenerated = Buffer.from(pdfDataB64, 'base64')
-
-        await sql`
-          UPDATE inspections
-          SET pdf_filename = ${pdfFilenameGenerated},
-              pdf_data = ${pdfBufferGenerated},
-              pdf_size = ${pdfBufferGenerated.length}
-          WHERE id = ${inspection.id}
-        `
-
-        console.log('PDF generated and saved successfully')
-      } catch (pdfError) {
-        console.error('Error generating PDF in backend:', pdfError)
-        // Continue without PDF - inspection is still saved
-      }
     }
 
     return res.status(201).json({
