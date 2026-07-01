@@ -53,7 +53,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
           return movementDate === today && !m.already_inspected
         })
         
-        setPendingCount(res.pending_count ?? todayMovements.length)
+        setPendingCount(todayMovements.length)
         setLastUpdated(res.last_updated ? new Date(res.last_updated) : new Date())
         setError(null)
       } else {
