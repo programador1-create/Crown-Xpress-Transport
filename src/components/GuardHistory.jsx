@@ -35,13 +35,13 @@ const trailerTypeLabel = (code, lang) => {
 // Format equipment display combining prefix/fleet + nomenclature/number
 const formatEquipment = (insp) => {
   let prefix = insp.customer_prefix || insp.crown_fleet || ''
-  let nomenclature = insp.equipment_nomenclature || ''
+  let nomenclature = ''
 
-  // For BOBTAIL, use tractor_number (truckid) instead of trailer_number
+  // For BOBTAIL, use tractor_number (truckid) as the primary identifier
   if (insp.inspection_type === 'BOBTAIL' || insp.trailer_type === 'BOBTAIL') {
-    nomenclature = nomenclature || insp.tractor_number || ''
+    nomenclature = insp.tractor_number || insp.equipment_nomenclature || ''
   } else {
-    nomenclature = nomenclature || insp.trailer_number || insp.tractor_number || ''
+    nomenclature = insp.equipment_nomenclature || insp.trailer_number || insp.tractor_number || ''
   }
 
   // Fallback: extract prefix from nomenclature if not stored separately (e.g. "CXT-12345")
