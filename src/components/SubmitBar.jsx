@@ -60,7 +60,19 @@ export default function SubmitBar({ onSuccess }) {
     setGenerating(true)
 
     try {
-      // 1. Generate PDF with signatures from context
+      // 1. Upload to backend WITHOUT PDF (backend will generate it)
+      const payload = await buildPayload(ctx, null, null)
+      console.log('Submit payload:', {
+        supervisorSignature: payload.supervisorSignature,
+        status: payload.supervisorSignature?.signature ? 'completed' : 'pending',
+        equipmentNomenclature: payload.unitInfo?.equipmentNomenclature,
+        customerPrefix: payload.unitInfo?.customerPrefix,
+        crownFleet: payload.unitInfo?.crownFleet,
+        trailerNumber: payload.unitInfo?.trailerNumber
+      })
+      const uploadResult = await createInspection(payload)
+
+      // 2. Generate PDF locally for display only
       const pdfResult = await generateInspectionPDF({
         unitInfo: ctx.unitInfo,
         points: ctx.points,
@@ -71,20 +83,7 @@ export default function SubmitBar({ onSuccess }) {
         language,
         yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
       })
-      const pdfBase64 = pdfResult.doc.output('datauristring')
       const pdfFilename = pdfResult.filename
-
-      // 2. Upload to backend (with compressed images)
-      const payload = await buildPayload(ctx, pdfBase64, pdfFilename)
-      console.log('Submit payload:', {
-        supervisorSignature: payload.supervisorSignature,
-        status: payload.supervisorSignature?.signature ? 'completed' : 'pending',
-        equipmentNomenclature: payload.unitInfo?.equipmentNomenclature,
-        customerPrefix: payload.unitInfo?.customerPrefix,
-        crownFleet: payload.unitInfo?.crownFleet,
-        trailerNumber: payload.unitInfo?.trailerNumber
-      })
-      const uploadResult = await createInspection(payload)
 
       // 3. Show PDF in modal viewer
       const pdfBlob = pdfResult.doc.output('blob')
