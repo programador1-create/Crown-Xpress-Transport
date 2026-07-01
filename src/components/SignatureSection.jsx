@@ -20,8 +20,9 @@ export default function SignatureSection() {
   
   // Check if all points are completed
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    const typeToUse = unitInfo?.trailerType === 'RABON' ? 'RABON' : unitInfo?.inspectionType
+    return getApplicablePoints(typeToUse)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
   
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
