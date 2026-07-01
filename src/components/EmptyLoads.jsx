@@ -28,6 +28,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [hideInspected, setHideInspected] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [todayPendingCount, setTodayPendingCount] = useState(0)
+  const [olderPendingCount, setOlderPendingCount] = useState(0)
   const [countdown, setCountdown] = useState(60)
   const pollingRef = useRef(null)
   const countdownRef = useRef(null)
@@ -45,16 +47,25 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         const movementsData = res.data || []
         setMovements(movementsData)
         
-        // Filter by last 2 days for pending count
+        // Filter by last 2 days for pending count - separate today vs older
         const today = new Date().toISOString().split('T')[0]
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-        const pendingMovements = movementsData.filter(m => {
+        
+        const todayPending = movementsData.filter(m => {
           if (!m.date) return false
           const movementDate = new Date(m.date).toISOString().split('T')[0]
-          return (movementDate === today || movementDate === yesterday) && !m.already_inspected
+          return movementDate === today && !m.already_inspected
         })
         
-        setPendingCount(pendingMovements.length)
+        const olderPending = movementsData.filter(m => {
+          if (!m.date) return false
+          const movementDate = new Date(m.date).toISOString().split('T')[0]
+          return movementDate !== today && !m.already_inspected
+        })
+        
+        setTodayPendingCount(todayPending.length)
+        setOlderPendingCount(olderPending.length)
+        setPendingCount(todayPending.length + olderPending.length)
         setLastUpdated(res.last_updated ? new Date(res.last_updated) : new Date())
         setError(null)
       } else {
@@ -464,12 +475,32 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
 
         {/* Footer */}
         <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-sm text-slate-500">
-          <span>
-            {language === 'es'
-              ? `${filteredMovements.length} salida${filteredMovements.length !== 1 ? 's' : ''} mostrada${filteredMovements.length !== 1 ? 's' : ''} · ${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''} total`
-              : `${filteredMovements.length} output${filteredMovements.length !== 1 ? 's' : ''} shown · ${pendingCount} pending total`
-            }
-          </span>
+          <div className="flex items-center gap-4">
+            <span>
+              {language === 'es'
+                ? `${filteredMovements.length} salida${filteredMovements.length !== 1 ? 's' : ''} mostrada${filteredMovements.length !== 1 ? 's' : ''}`
+                : `${filteredMovements.length} output${filteredMovements.length !== 1 ? 's' : ''} shown`
+              }
+            </span>
+            <span className="text-yellow-600 font-medium">
+              {language === 'es'
+                ? `Hoy: ${todayPendingCount}`
+                : `Today: ${todayPendingCount}`
+              }
+            </span>
+            <span className="text-red-600 font-medium">
+              {language === 'es'
+                ? `48hrs: ${olderPendingCount}`
+                : `48hrs: ${olderPendingCount}`
+              }
+            </span>
+            <span className="text-slate-600">
+              {language === 'es'
+                ? `Total: ${pendingCount}`
+                : `Total: ${pendingCount}`
+              }
+            </span>
+          </div>
           <button
             onClick={() => { loadMovements(true); setCountdown(60) }}
             disabled={refreshing}
