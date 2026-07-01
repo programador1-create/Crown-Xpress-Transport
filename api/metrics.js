@@ -77,9 +77,9 @@ export default async function handler(req, res) {
         COUNT(CASE WHEN i.status = 'pending' THEN 1 END) as pending
       FROM employees e
       LEFT JOIN inspections i ON e.username = i.guard_name
-      WHERE e.role = 'guard'
         AND (${sql.unsafe(dateCondition)} OR i.id IS NULL)
         ${sql.unsafe(yardCondition)}
+      WHERE e.role = 'guard'
       GROUP BY e.username, e.full_name
       ORDER BY total_inspections DESC
     `
