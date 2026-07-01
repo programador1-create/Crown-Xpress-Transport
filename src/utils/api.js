@@ -229,6 +229,8 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
   console.log('UnitInfo keys:', Object.keys(unitInfo))
   console.log('Points count:', Object.keys(pointsPayload).length)
   console.log('PointsPayload sample:', Object.entries(pointsPayload).slice(0, 2))
+  console.log('Point 1 data:', pointsPayload[1])
+  console.log('Original points 1 photo length:', points[1]?.photo?.length || 0)
 
   return payload
 }
