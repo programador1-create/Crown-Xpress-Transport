@@ -31,8 +31,12 @@ export async function createInspection(req, res) {
     const ua = req.headers['user-agent'] || null
 
     // Strip data:... prefix (handle both with and without filename)
-    const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
-    const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+    // If pdfBase64 is null, set pdfBuffer to null (PDF will be generated later)
+    let pdfBuffer = null
+    if (pdfBase64) {
+      const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+      pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+    }
 
     const inspectionDate = unitInfo.inspectionDate ? new Date(unitInfo.inspectionDate) : new Date()
 
@@ -101,7 +105,7 @@ export async function createInspection(req, res) {
         0,
         ${pdfFilename || 'inspection.pdf'},
         ${pdfBuffer},
-        ${pdfBuffer.length},
+        ${pdfBuffer ? pdfBuffer.length : 0},
         ${ip},
         ${ua},
         ${ui.equipmentNomenclature || ui.equipment_nomenclature || null},
