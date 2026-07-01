@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users, MapPin } from 'lucide-react'
+import { ClipboardCheck, History, Home, ShieldCheck, FileText, Users, MapPin, BarChart3 } from 'lucide-react'
 import GuidedInspection from './GuidedInspection'
 import UnitInfo from './UnitInfoEnhanced'
 import TruckDiagram from './TruckDiagram'
@@ -13,6 +13,7 @@ import GuardHistory from './GuardHistory'
 import SupervisorView from './SupervisorView'
 import UserManagement from './UserManagement'
 import YardManagement from './YardManagement'
+import MetricsView from './MetricsView'
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
@@ -61,6 +62,7 @@ export default function Router() {
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
     canViewAll() && { id: 'supervisor', label: language === 'es' ? 'Vista Supervisor' : 'Supervisor View', icon: ShieldCheck },
+    canViewAll() && { id: 'metrics', label: language === 'es' ? 'Métricas' : 'Metrics', icon: BarChart3 },
     isAdmin && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
     isAdmin && { id: 'yards', label: language === 'es' ? 'Yardas' : 'Yards', icon: MapPin },
   ].filter(Boolean)
@@ -132,6 +134,7 @@ export default function Router() {
         )}
         {page === 'my-history' && canEdit() && <GuardHistory />}
         {page === 'supervisor' && canViewAll() && <SupervisorView />}
+        {page === 'metrics' && canViewAll() && <MetricsView yardCode={user?.yard_assignments?.map(ya => ya.yard_code).join(',')} />}
         {page === 'users' && isAdmin && <UserManagement />}
         {page === 'yards' && isAdmin && <YardManagement />}
       </div>
