@@ -19,9 +19,7 @@ export async function createInspection(req, res) {
       counts = {},
     } = body
 
-    if (!pdfBase64) {
-      return res.status(400).json({ error: 'pdfBase64 is required' })
-    }
+    // PDF is now optional - backend will generate it if not provided
     if (!guardSignature?.name || !guardSignature?.signature) {
       return res.status(400).json({ error: 'Guard signature is required' })
     }
