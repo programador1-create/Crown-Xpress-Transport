@@ -214,13 +214,17 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     operatorSignature: { ...operatorSignature, signature: compressedOperatorSig },
     sealPhoto: compressedSealPhoto,
     language: 'es',
-    pdfBase64,
-    pdfFilename,
     counts: {
       good: goodCount || 0,
       bad: failedCount || 0,
       pending: Math.max(0, getApplicablePoints(unitInfo?.inspectionType).length - (completedCount || 0))
     },
+  }
+
+  // Only include PDF if provided (to avoid 413 error)
+  if (pdfBase64) {
+    payload.pdfBase64 = pdfBase64
+    payload.pdfFilename = pdfFilename
   }
 
   // Log payload size for debugging
