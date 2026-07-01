@@ -1,4 +1,5 @@
 import { getSql, logAudit, getClientIp, readJsonBody } from './db.js'
+import { generateInspectionPDF } from './pdfGenerator.js'
 
 /** POST /api/inspections — create new inspection */
 export async function createInspection(req, res) {
@@ -169,6 +170,43 @@ export async function createInspection(req, res) {
         details: { signedAt: auditorSignature.signedAt },
         ip, ua,
       })
+    }
+
+    // Generate PDF if not provided
+    if (!pdfBase64) {
+      console.log('Generating PDF in backend...')
+      try {
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points,
+          sealPhoto,
+          guardSignature,
+          supervisorSignature,
+          operatorSignature,
+          language,
+          yardCode: unitInfo.location || '',
+        })
+
+        const pdfBase64Generated = pdfResult.doc.output('datauristring')
+        const pdfFilenameGenerated = pdfResult.filename
+
+        // Update inspection with generated PDF
+        const pdfDataB64 = String(pdfBase64Generated).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+        const pdfBufferGenerated = Buffer.from(pdfDataB64, 'base64')
+
+        await sql`
+          UPDATE inspections
+          SET pdf_filename = ${pdfFilenameGenerated},
+              pdf_data = ${pdfBufferGenerated},
+              pdf_size = ${pdfBufferGenerated.length}
+          WHERE id = ${inspection.id}
+        `
+
+        console.log('PDF generated and saved successfully')
+      } catch (pdfError) {
+        console.error('Error generating PDF in backend:', pdfError)
+        // Continue without PDF - inspection is still saved
+      }
     }
 
     return res.status(201).json({
