@@ -44,8 +44,8 @@ export default async function handler(req, res) {
     if (yardCode) {
       const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
       if (yardCodes.length > 0) {
-        const placeholders = yardCodes.map((_, i) => `$${i + 1}`).join(', ')
-        yardCondition = `AND yard_code IN (${placeholders})`
+        const escapedYardCodes = yardCodes.map(c => `'${c.replace(/'/g, "''")}'`).join(', ')
+        yardCondition = `AND yard_code IN (${escapedYardCodes})`
       }
     }
 
