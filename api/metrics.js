@@ -70,17 +70,17 @@ export default async function handler(req, res) {
     // ============================================================
     const userMetrics = await sql`
       SELECT
-        u.username,
-        u.full_name,
+        e.username,
+        e.full_name,
         COUNT(i.id) as total_inspections,
         COUNT(CASE WHEN i.status = 'completed' THEN 1 END) as completed,
         COUNT(CASE WHEN i.status = 'pending' THEN 1 END) as pending
-      FROM users u
-      LEFT JOIN inspections i ON u.username = i.guard_name
-      WHERE u.role = 'guard'
+      FROM employees e
+      LEFT JOIN inspections i ON e.username = i.guard_name
+      WHERE e.role = 'guard'
         AND (${sql.unsafe(dateCondition)} OR i.id IS NULL)
         ${sql.unsafe(yardCondition)}
-      GROUP BY u.username, u.full_name
+      GROUP BY e.username, e.full_name
       ORDER BY total_inspections DESC
     `
 
