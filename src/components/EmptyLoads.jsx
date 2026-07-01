@@ -99,22 +99,23 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       filtered = filtered.filter(m => !m.already_inspected)
     }
 
-    // Filtrar por término de búsqueda
+    // Filtrar por término de búsqueda (solo por unidad/equipo)
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(m =>
-        m.work_order?.toLowerCase().includes(term) ||
         m.truck_id?.toLowerCase().includes(term) ||
-        m.driver_code?.toLowerCase().includes(term) ||
-        m.from_city?.toLowerCase().includes(term) ||
-        m.to_city?.toLowerCase().includes(term) ||
-        m.customer?.toLowerCase().includes(term)
+        m.equipment_code?.toLowerCase().includes(term)
       )
     }
 
     // Filtrar por fecha (date viene en formato YYYY-MM-DD)
     if (selectedDate) {
-      filtered = filtered.filter(m => m.date === selectedDate)
+      filtered = filtered.filter(m => {
+        if (!m.date) return false
+        // Convertir la fecha del movimiento al formato YYYY-MM-DD para comparar
+        const movementDate = new Date(m.date).toISOString().split('T')[0]
+        return movementDate === selectedDate
+      })
     }
 
     setFilteredMovements(filtered)
