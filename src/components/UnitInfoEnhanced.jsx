@@ -3,7 +3,7 @@ import { MapPin, User, Tag, Lock, Package, Search, CheckCircle, XCircle, Loader2
 import { useLanguage } from '../context/LanguageContext'
 import { useInspection } from '../context/InspectionContext'
 import { useAuth } from '../context/AuthContext'
-import { searchOperator, searchOperatorsByName, listOperators } from '../utils/api'
+import { searchOperator, searchOperatorsByName, listOperators, getTprMovements } from '../utils/api'
 import { INSPECTION_TYPES } from '../data/inspectionPoints'
 import NumericKeypad from './NumericKeypad'
 import EmptyLoads from './EmptyLoads'
@@ -124,6 +124,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const [operatorsLoading, setOperatorsLoading] = useState(false)
   const [nameSearchResults, setNameSearchResults] = useState([])
   const [showNameResults, setShowNameResults] = useState(false)
+  const [todayPendingCount, setTodayPendingCount] = useState(0)
+  const [olderPendingCount, setOlderPendingCount] = useState(0)
 
   // Sync local inspectionType with context when context changes
   useEffect(() => {
@@ -134,6 +136,41 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     setCrownFleet(unitInfo?.crownFleet || null)
     setCustomerPrefix(unitInfo?.customerPrefix || null)
   }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize, unitInfo?.equipmentOwner, unitInfo?.crownFleet, unitInfo?.customerPrefix])
+
+  // Load pending counts from TPR
+  useEffect(() => {
+    const loadPendingCounts = async () => {
+      try {
+        const yardCodes = user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
+        const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
+        const res = await getTprMovements({ type: 'all', yardCode })
+        
+        if (res.success) {
+          const movementsData = res.data || []
+          const today = new Date().toISOString().split('T')[0]
+          
+          const todayPending = movementsData.filter(m => {
+            if (!m.date) return false
+            const movementDate = new Date(m.date).toISOString().split('T')[0]
+            return movementDate === today && !m.already_inspected
+          })
+          
+          const olderPending = movementsData.filter(m => {
+            if (!m.date) return false
+            const movementDate = new Date(m.date).toISOString().split('T')[0]
+            return movementDate !== today && !m.already_inspected
+          })
+          
+          setTodayPendingCount(todayPending.length)
+          setOlderPendingCount(olderPending.length)
+        }
+      } catch (err) {
+        console.error('Error loading pending counts:', err)
+      }
+    }
+    
+    loadPendingCounts()
+  }, [user])
 
   // Clear operator when inspection type changes to ensure correct flow order
   // BUT don't clear if operator was already set from NBCW
@@ -795,13 +832,18 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                 {language === 'es' ? 'SALIDAS NBCW' : 'NBCW OUTPUTS'}
               </span>
               <span className="text-xs text-slate-500 text-center">
-                {language === 'es' 
-                  ? 'Salidas pendientes desde sistema TPR' 
+                {language === 'es'
+                  ? 'Salidas pendientes desde sistema TPR'
                   : 'Pending outputs from TPR system'}
               </span>
-              <span className="text-xs font-semibold text-red-600">
-                {language === 'es' ? 'Salidas Pendientes' : 'Pending Outputs'}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-yellow-600">
+                  {language === 'es' ? `Hoy: ${todayPendingCount}` : `Today: ${todayPendingCount}`}
+                </span>
+                <span className="text-xs font-semibold text-red-600">
+                  {language === 'es' ? `48hrs: ${olderPendingCount}` : `48hrs: ${olderPendingCount}`}
+                </span>
+              </div>
             </button>
           </div>
         </div>
