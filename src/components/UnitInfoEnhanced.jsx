@@ -427,6 +427,13 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       updateUnitInfo('trailerType', 'BOBTAIL')
     }
 
+    // Establecer location basado en fromd del movimiento NBCW (origen del movimiento)
+    // Esto asegura que la inspección se guarde con la yarda correcta del movimiento
+    const movementYard = movementData.origin?.code || movementData.from_code || ''
+    if (movementYard) {
+      updateUnitInfo('location', movementYard)
+    }
+
     // Datos básicos del operador - Usar código de conductor de NBCW como driver_name para TODOS los tipos
     updateUnitInfo('driverName', movementData.driverCode || movementData.operator || '')
     updateUnitInfo('employeeNumber', movementData.driverCode || '')
