@@ -108,10 +108,12 @@ export function InspectionProvider({ children }) {
     setOperatorStepCompleted(false)
   }, [])
 
-  // Applicable points based on inspection type
+  // Applicable points based on inspection type and trailer type
+  // RABON is a trailerType, not an inspectionType, so we need to check both
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    const typeToUse = unitInfo?.trailerType === 'RABON' ? 'RABON' : unitInfo?.inspectionType
+    return getApplicablePoints(typeToUse)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
 
   const applicablePointIds = useMemo(() => {
     return applicablePoints.map(p => p.id)
