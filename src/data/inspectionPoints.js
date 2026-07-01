@@ -58,7 +58,7 @@ export const INSPECTION_TYPES = {
     },
     requiresSealOrLock: false,
     hasContainer: false,
-    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18] // Similar a FLATBED: Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma/Caja (14) + Piso (17) + Patín (18)
+    applicablePoints: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17] // Tractor (1-10) + Chasis (11) + Parte Trasera (12) + Plataforma/Caja (14) + Piso (17). Excluye: 13, 15, 16 (paredes laterales, frente), 18 (patín), 19-20 (refrigeración, limpieza)
   }
 }
 
