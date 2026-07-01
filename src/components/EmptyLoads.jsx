@@ -23,7 +23,6 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedDate, setSelectedDate] = useState('')
   const [filteredMovements, setFilteredMovements] = useState([])
   const [selectedMovement, setSelectedMovement] = useState(null)
   const [hideInspected, setHideInspected] = useState(true)
@@ -87,7 +86,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
 
   useEffect(() => {
     filterMovements()
-  }, [movements, searchTerm, selectedDate, hideInspected])
+  }, [movements, searchTerm, hideInspected])
 
 
   const filterMovements = () => {
@@ -108,15 +107,13 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       )
     }
 
-    // Filtrar por fecha (date viene en formato YYYY-MM-DD)
-    if (selectedDate) {
-      filtered = filtered.filter(m => {
-        if (!m.date) return false
-        // Convertir la fecha del movimiento al formato YYYY-MM-DD para comparar
-        const movementDate = new Date(m.date).toISOString().split('T')[0]
-        return movementDate === selectedDate
-      })
-    }
+    // Filtrar por fecha actual (solo movimientos del día)
+    const today = new Date().toISOString().split('T')[0]
+    filtered = filtered.filter(m => {
+      if (!m.date) return false
+      const movementDate = new Date(m.date).toISOString().split('T')[0]
+      return movementDate === today
+    })
 
     setFilteredMovements(filtered)
   }
@@ -266,19 +263,10 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder={language === 'es' ? 'Buscar salidas pendientes por orden, camión, conductor...' : 'Search pending outputs by order, truck, driver...'}
+              placeholder={language === 'es' ? 'Buscar por número de camión o equipo...' : 'Search by truck number or equipment...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
-            />
-          </div>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
             />
           </div>
         </div>
@@ -297,12 +285,12 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
               <Truck className="w-12 h-12 mx-auto text-slate-300 mb-3" />
               <p className="text-slate-500">
                 {language === 'es' 
-                  ? (searchTerm || selectedDate 
+                  ? (searchTerm 
                       ? 'No se encontraron salidas pendientes con los filtros aplicados' 
-                      : 'No hay salidas pendientes disponibles')
-                  : (searchTerm || selectedDate 
+                      : 'No hay salidas pendientes disponibles para hoy')
+                  : (searchTerm 
                       ? 'No pending outputs found with applied filters' 
-                      : 'No pending outputs available')
+                      : 'No pending outputs available for today')
                 }
               </p>
             </div>
