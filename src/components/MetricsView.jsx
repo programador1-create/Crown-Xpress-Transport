@@ -53,7 +53,7 @@ export default function MetricsView({ yardCode }) {
 
   if (!metrics) return null
 
-  const { general, byUser, byDay, comparison } = metrics
+  const { general, byGuard, byDay } = metrics
 
   return (
     <div className="space-y-6">
@@ -109,35 +109,34 @@ export default function MetricsView({ yardCode }) {
         />
       </div>
 
-      {/* Metrics by User */}
+      {/* Metrics by Guard */}
       <div className="bg-white border border-slate-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-crown-navy mb-4 flex items-center gap-2">
           <Users className="w-5 h-5" />
-          {language === 'es' ? 'Por Usuario' : 'By User'}
+          {language === 'es' ? 'Por Guard' : 'By Guard'}
         </h3>
-        {byUser.length === 0 ? (
+        {byGuard.length === 0 ? (
           <p className="text-slate-500 text-center py-4">
             {language === 'es' ? 'No hay datos disponibles' : 'No data available'}
           </p>
         ) : (
           <div className="space-y-3">
-            {byUser.map((user, idx) => (
+            {byGuard.map((guard, idx) => (
               <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div>
-                  <p className="font-medium text-slate-800">{user.full_name || user.username}</p>
-                  <p className="text-sm text-slate-500">@{user.username}</p>
+                  <p className="font-medium text-slate-800">{guard.guard_name}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="text-center">
-                    <p className="font-semibold text-slate-800">{user.total_inspections}</p>
+                    <p className="font-semibold text-slate-800">{guard.total_inspections}</p>
                     <p className="text-xs text-slate-500">{language === 'es' ? 'Total' : 'Total'}</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-semibold text-green-600">{user.completed}</p>
+                    <p className="font-semibold text-green-600">{guard.completed}</p>
                     <p className="text-xs text-slate-500">{language === 'es' ? 'Hechas' : 'Done'}</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-semibold text-red-600">{user.pending}</p>
+                    <p className="font-semibold text-red-600">{guard.pending}</p>
                     <p className="text-xs text-slate-500">{language === 'es' ? 'Faltaron' : 'Missed'}</p>
                   </div>
                 </div>
@@ -183,56 +182,6 @@ export default function MetricsView({ yardCode }) {
                     <p className="font-semibold text-red-600">{day.pending}</p>
                     <p className="text-xs text-slate-500">{language === 'es' ? 'Faltaron' : 'Missed'}</p>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Comparison: Done vs Missed */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-crown-navy mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          {language === 'es' ? 'Comparación: Hechas vs Faltaron' : 'Comparison: Done vs Missed'}
-        </h3>
-        {comparison.length === 0 ? (
-          <p className="text-slate-500 text-center py-4">
-            {language === 'es' ? 'No hay datos disponibles' : 'No data available'}
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {comparison.map((item, idx) => (
-              <div key={idx}>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-slate-800">
-                    {new Date(item.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {language === 'es' ? 'Total:' : 'Total:'} {item.total}
-                  </p>
-                </div>
-                <div className="h-4 bg-slate-200 rounded-full overflow-hidden flex">
-                  <div
-                    className="bg-green-500 h-full transition-all"
-                    style={{ width: `${(item.done / item.total) * 100}%` }}
-                  />
-                  <div
-                    className="bg-red-500 h-full transition-all"
-                    style={{ width: `${(item.missed / item.total) * 100}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-green-600">
-                    {language === 'es' ? 'Hechas:' : 'Done:'} {item.done} ({item.total > 0 ? Math.round((item.done / item.total) * 100) : 0}%)
-                  </span>
-                  <span className="text-red-600">
-                    {language === 'es' ? 'Faltaron:' : 'Missed:'} {item.missed} ({item.total > 0 ? Math.round((item.missed / item.total) * 100) : 0}%)
-                  </span>
                 </div>
               </div>
             ))}
