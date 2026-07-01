@@ -21,10 +21,20 @@ export default function InspectionHistory() {
       setLoading(true)
       setError(null)
       try {
-        // Use yard_assignments from user to filter inspections
-        const userYards = user?.yard_assignments || []
-        const yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''
-        const res = await listInspections({ limit: 200, yardCode: yardCodes })
+        // Guards see only their own inspections, Supervisors see all inspections from their assigned yards
+        const isSupervisor = user?.role === 'supervisor'
+        let res
+
+        if (isSupervisor) {
+          // Supervisor: filter by yard_assignments
+          const userYards = user?.yard_assignments || []
+          const yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''
+          res = await listInspections({ limit: 200, yardCode: yardCodes })
+        } else {
+          // Guard: filter by their own name (guard_name)
+          res = await listInspections({ limit: 200, guardName: user?.full_name })
+        }
+
         console.log('Inspections loaded:', res)
         setInspections(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
@@ -34,7 +44,7 @@ export default function InspectionHistory() {
         setLoading(false)
       }
     }
-  }, [user?.yard_assignments, user?.location_name])
+  }, [user?.yard_assignments, user?.location_name, user?.role, user?.full_name])
 
   const filtered = inspections.filter(i =>
     i.trailer_number?.toLowerCase().includes(search.toLowerCase()) ||

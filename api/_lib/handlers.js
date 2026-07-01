@@ -190,9 +190,18 @@ export async function listInspections(req, res) {
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
     const offset = parseInt(url.searchParams.get('offset') || '0', 10)
     const yardCode = url.searchParams.get('yardCode') || ''
+    const guardName = url.searchParams.get('guardName') || ''
 
     let rows
-    if (yardCode) {
+    if (guardName) {
+      // Filter by guard name (for guards to see only their own inspections)
+      rows = await sql`
+        SELECT * FROM inspections
+        WHERE guard_name = ${guardName}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `
+    } else if (yardCode) {
       // Filter by yard code(s) - handle multiple yards separated by comma
       const yardCodes = yardCode.split(',').map(c => c.trim()).filter(Boolean)
       if (yardCodes.length === 1) {
