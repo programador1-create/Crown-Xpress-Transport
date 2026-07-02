@@ -62,7 +62,7 @@ export default function Router() {
     canEdit() && { id: 'guided', label: 'v2 - Inspección Guiada', icon: Home },
     canEdit() && { id: 'my-history', label: language === 'es' ? 'Mi Historial' : 'My History', icon: History },
     canViewAll() && { id: 'supervisor', label: language === 'es' ? 'Vista Supervisor' : 'Supervisor View', icon: ShieldCheck },
-    canViewAll() && { id: 'metrics', label: language === 'es' ? 'Métricas' : 'Metrics', icon: BarChart3 },
+    isAdmin && { id: 'metrics', label: language === 'es' ? 'Métricas' : 'Metrics', icon: BarChart3 },
     isAdmin && { id: 'users', label: language === 'es' ? 'Usuarios' : 'Users', icon: Users },
     isAdmin && { id: 'yards', label: language === 'es' ? 'Yardas' : 'Yards', icon: MapPin },
   ].filter(Boolean)
@@ -134,7 +134,7 @@ export default function Router() {
         )}
         {page === 'my-history' && canEdit() && <GuardHistory />}
         {page === 'supervisor' && canViewAll() && <SupervisorView />}
-        {page === 'metrics' && canViewAll() && <MetricsView yardCode={user?.yard_assignments?.map(ya => ya.yard_code).join(',')} />}
+        {page === 'metrics' && isAdmin && <MetricsView />}
         {page === 'users' && isAdmin && <UserManagement />}
         {page === 'yards' && isAdmin && <YardManagement />}
       </div>

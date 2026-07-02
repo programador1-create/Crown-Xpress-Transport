@@ -233,11 +233,30 @@ export async function listInspections(req, res) {
     const yardCode = url.searchParams.get('yardCode') || ''
     const guardName = url.searchParams.get('guardName') || ''
 
+    // NOTE: pdf_data (bytea) is intentionally excluded here. With up to 200-500
+    // rows per request, including the full PDF binary blows past Neon's 64MB
+    // response limit (HTTP 507). The PDF is fetched separately per-inspection
+    // via GET /api/inspections/:id/pdf, or regenerated client-side from the
+    // signature fields (which are included below).
+    const LIST_COLUMNS = `
+      id, uuid, trailer_number, tractor_number, container_number, seal_number, lock_number,
+      driver_name, odometer, location, inspection_date, high_security_seal, seal_affixed,
+      language, operator_name, operator_signature, operator_signed_at,
+      guard_name, guard_signature, guard_signed_at,
+      supervisor_name, supervisor_signature, supervisor_signed_at,
+      auditor_name, auditor_signed_at,
+      status, total_good, total_bad, total_pending,
+      pdf_filename, pdf_size_bytes,
+      equipment_nomenclature, customer_prefix, crown_fleet,
+      inspection_type, trailer_type, wono, created_at,
+      original_inspection_id, reconfirmation_reason, is_reconfirmation
+    `
+
     let rows
     if (guardName) {
       // Filter by guard name (for guards to see only their own inspections)
       rows = await sql`
-        SELECT * FROM inspections
+        SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
         WHERE guard_name = ${guardName}
         ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -247,14 +266,14 @@ export async function listInspections(req, res) {
       const yardCodes = yardCode.split(',').map(c => c.trim()).filter(Boolean)
       if (yardCodes.length === 1) {
         rows = await sql`
-          SELECT * FROM inspections
+          SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
           WHERE location = ${yardCodes[0]}
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       } else {
         rows = await sql`
-          SELECT * FROM inspections
+          SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
           WHERE location = ANY(${yardCodes})
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
@@ -262,7 +281,7 @@ export async function listInspections(req, res) {
       }
     } else {
       rows = await sql`
-        SELECT * FROM inspections
+        SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
         ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `

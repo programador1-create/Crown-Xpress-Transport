@@ -110,36 +110,62 @@ export default async function handler(req, res) {
     // ============================================================
     // 2. Cross-filter: marcar los ya inspeccionados
     // ============================================================
-    let inspectedSet = new Set()
+    // IMPORTANTE: el cruce debe ser por FECHA EXACTA del movimiento, no por
+    // una ventana fija de 30 días. Los números de tractor/remolque se
+    // reutilizan dia a dia (mismo camion, distintas cargas), asi que una
+    // inspeccion de ayer con el mismo tractor NO significa que el
+    // movimiento de HOY con ese tractor ya fue inspeccionado.
+    const inspectedMap = new Map() // identifier -> Set of 'YYYY-MM-DD' dates
+    function addToInspectedMap(id, dateStr) {
+      if (!id || !dateStr) return
+      if (!inspectedMap.has(id)) inspectedMap.set(id, new Set())
+      inspectedMap.get(id).add(dateStr)
+    }
     try {
       const inspected = await sql`
-        SELECT DISTINCT
+        SELECT
           UPPER(TRIM(trailer_number))  AS trailer_number,
           UPPER(TRIM(seal_number))     AS seal_number,
           UPPER(TRIM(lock_number))     AS lock_number,
-          UPPER(TRIM(tractor_number))  AS tractor_number
+          UPPER(TRIM(tractor_number))  AS tractor_number,
+          DATE(created_at)             AS inspected_date
         FROM inspections
         WHERE status NOT IN ('superseded')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - INTERVAL '7 days'
       `
       for (const row of inspected) {
-        if (row.trailer_number)  inspectedSet.add(row.trailer_number)
-        if (row.seal_number)     inspectedSet.add(row.seal_number)
-        if (row.lock_number)     inspectedSet.add(row.lock_number)
-        if (row.tractor_number)  inspectedSet.add(row.tractor_number)
+        const dateStr = row.inspected_date instanceof Date
+          ? row.inspected_date.toISOString().split('T')[0]
+          : String(row.inspected_date).slice(0, 10)
+        addToInspectedMap(row.trailer_number, dateStr)
+        addToInspectedMap(row.seal_number, dateStr)
+        addToInspectedMap(row.lock_number, dateStr)
+        addToInspectedMap(row.tractor_number, dateStr)
       }
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
 
-    // Mark each movement with already_inspected flag
+    // Mark each movement with already_inspected flag (matched by identifier
+    // AND same calendar date as the movement itself)
     const movements = allMovements.map(m => {
       const blno  = m.bill_of_lading?.toString().trim().toUpperCase()
       const seal  = m.seal?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
-      const already = !!(blno && inspectedSet.has(blno)) ||
-                      !!(seal && inspectedSet.has(seal)) ||
-                      !!(truck && inspectedSet.has(truck))
+
+      let movementDateStr = null
+      if (m.date) {
+        const parsed = new Date(m.date)
+        if (!isNaN(parsed.getTime())) movementDateStr = parsed.toISOString().split('T')[0]
+      }
+
+      const matchesOnDate = (id) => {
+        if (!id || !movementDateStr) return false
+        const dates = inspectedMap.get(id)
+        return dates ? dates.has(movementDateStr) : false
+      }
+
+      const already = matchesOnDate(blno) || matchesOnDate(seal) || matchesOnDate(truck)
       return { ...m, already_inspected: already }
     })
 
