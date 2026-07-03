@@ -89,6 +89,16 @@ function imageToBase64(imagePath) {
   }
 }
 
+// Detect image format from base64 data URI (supports PNG/JPEG)
+function detectImageFormat(base64Data) {
+  if (!base64Data) return null
+  const str = String(base64Data)
+  if (str.startsWith('data:image/png')) return 'PNG'
+  if (str.startsWith('data:image/jpeg') || str.startsWith('data:image/jpg')) return 'JPEG'
+  // Fallback: assume PNG for signatures (legacy), JPEG for other images
+  return 'PNG'
+}
+
 // Generate PDF for inspection
 export async function generateInspectionPDF(data) {
   const {
@@ -124,10 +134,10 @@ export async function generateInspectionPDF(data) {
 
   // Header with logos
   if (crownLogo) {
-    doc.addImage(crownLogo, 'PNG', 10, 10, 30, 15)
+    doc.addImage(crownLogo, detectImageFormat(crownLogo) || 'PNG', 10, 10, 30, 15)
   }
   if (ctpatLogo) {
-    doc.addImage(ctpatLogo, 'PNG', pageWidth - 40, 10, 30, 15)
+    doc.addImage(ctpatLogo, detectImageFormat(ctpatLogo) || 'PNG', pageWidth - 40, 10, 30, 15)
   }
 
   // Title
@@ -164,7 +174,7 @@ export async function generateInspectionPDF(data) {
 
   // Truck diagram
   if (truckDiagram) {
-    doc.addImage(truckDiagram, 'JPEG', 15, yPos, pageWidth - 30, 60)
+    doc.addImage(truckDiagram, detectImageFormat(truckDiagram) || 'JPEG', 15, yPos, pageWidth - 30, 60)
     yPos += 65
   }
 
@@ -195,21 +205,21 @@ export async function generateInspectionPDF(data) {
     doc.setFontSize(10)
     doc.setTextColor(...COLORS.slate)
     doc.text(language === 'es' ? 'Firma del Guardia:' : 'Guard Signature:', 15, yPos)
-    doc.addImage(guardSignature.signature, 'PNG', 15, yPos + 5, 40, 20)
+    doc.addImage(guardSignature.signature, detectImageFormat(guardSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
     doc.text(guardSignature.name || '-', 15, yPos + 28)
     yPos += 35
   }
 
   if (supervisorSignature.signature) {
     doc.text(language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:', 15, yPos)
-    doc.addImage(supervisorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)
+    doc.addImage(supervisorSignature.signature, detectImageFormat(supervisorSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
     doc.text(supervisorSignature.name || '-', 15, yPos + 28)
     yPos += 35
   }
 
   if (operatorSignature.signature) {
     doc.text(language === 'es' ? 'Firma del Operador:' : 'Operator Signature:', 15, yPos)
-    doc.addImage(operatorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)
+    doc.addImage(operatorSignature.signature, detectImageFormat(operatorSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
     doc.text(operatorSignature.name || '-', 15, yPos + 28)
   }
 

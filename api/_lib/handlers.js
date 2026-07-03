@@ -10,6 +10,7 @@ export async function createInspection(req, res) {
     const {
       unitInfo = {},
       points = {},
+      sealPhoto = null,
       guardSignature = {},
       supervisorSignature = {},
       operatorSignature = {},
@@ -92,10 +93,12 @@ export async function createInspection(req, res) {
         console.log('PDF generated successfully, size:', pdfSizeToSave, 'bytes')
       } catch (pdfError) {
         console.error('Error generating PDF in backend:', pdfError)
+        console.error('PDF generation error stack:', pdfError.stack)
         // PDF generation failed - do not save inspection
         return res.status(500).json({
           error: 'Failed to generate PDF. Inspection not saved.',
-          details: pdfError.message
+          details: pdfError.message,
+          stack: pdfError.stack
         })
       }
     }
