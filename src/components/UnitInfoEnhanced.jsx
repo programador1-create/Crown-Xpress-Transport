@@ -91,6 +91,22 @@ const CUSTOMER_CONTAINER_PREFIXES = {
   TRLU: { name: 'TRLU', description: { es: 'Triton Container', en: 'Triton Container' } }
 }
 
+// Extract a container prefix from an equipment nomenclature (e.g. PCIU-184812-5 -> PCIU)
+function extractContainerPrefix(eqpCode) {
+  if (!eqpCode) return null
+  const normalized = eqpCode.toUpperCase().trim()
+  // ISO-style prefix: 4 letters followed by hyphen or digits
+  const isoMatch = normalized.match(/^([A-Z]{4})[-\d]/)
+  if (isoMatch) return isoMatch[1]
+  // Hyphenated prefix: ABC-12345
+  const hyphenMatch = normalized.match(/^([A-Z]+)-/)
+  if (hyphenMatch) return hyphenMatch[1]
+  // First 2-4 letters as fallback
+  const letterPrefix = normalized.match(/^([A-Z]{2,4})/)
+  if (letterPrefix) return letterPrefix[1]
+  return null
+}
+
 export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLockChange, onInspectionTypeChange, onFlowComplete }) {
   const { t, language } = useLanguage()
   const { unitInfo, updateUnitInfo, operatorFound, setOperatorFound, operatorStepCompleted, setOperatorStepCompleted } = useInspection()
@@ -136,6 +152,24 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     setCrownFleet(unitInfo?.crownFleet || null)
     setCustomerPrefix(unitInfo?.customerPrefix || null)
   }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.trailerSize, unitInfo?.equipmentOwner, unitInfo?.crownFleet, unitInfo?.customerPrefix])
+
+  // Auto-extract customer container prefix from equipment nomenclature when missing
+  // This covers NBCW data where the prefix may not be set explicitly
+  useEffect(() => {
+    if (
+      unitInfo?.inspectionType &&
+      unitInfo?.trailerType === 'CONTAINER' &&
+      unitInfo?.equipmentOwner === 'CUSTOMER' &&
+      !unitInfo?.customerPrefix &&
+      unitInfo?.equipmentNomenclature
+    ) {
+      const prefix = extractContainerPrefix(unitInfo.equipmentNomenclature)
+      if (prefix) {
+        setCustomerPrefix(prefix)
+        updateUnitInfo('customerPrefix', prefix)
+      }
+    }
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType, unitInfo?.equipmentOwner, unitInfo?.customerPrefix, unitInfo?.equipmentNomenclature, updateUnitInfo])
 
   // Load pending counts from TPR
   useEffect(() => {
@@ -262,11 +296,22 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   const handleEquipmentOwnerChange = (owner) => {
     setEquipmentOwner(owner)
     updateUnitInfo('equipmentOwner', owner)
-    // Reset crown fleet and customer prefix when changing owner
+    // Reset crown fleet when changing owner
     setCrownFleet(null)
-    setCustomerPrefix(null)
     updateUnitInfo('crownFleet', null)
-    updateUnitInfo('customerPrefix', null)
+    // For CUSTOMER, try to keep/extract prefix from equipment nomenclature
+    if (owner === 'CUSTOMER') {
+      const existingPrefix = unitInfo?.customerPrefix
+      const extractedPrefix = unitInfo?.equipmentNomenclature
+        ? extractContainerPrefix(unitInfo.equipmentNomenclature)
+        : null
+      const prefix = existingPrefix || extractedPrefix
+      setCustomerPrefix(prefix || null)
+      updateUnitInfo('customerPrefix', prefix || null)
+    } else {
+      setCustomerPrefix(null)
+      updateUnitInfo('customerPrefix', null)
+    }
   }
 
   // Handle crown fleet selection
@@ -486,9 +531,9 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
 
     // Extraer prefijo del equipo (ej: PCIU-184812-5 -> PCIU)
     if (eqpCode) {
-      const prefixMatch = eqpCode.match(/^([A-Z]+)-/)
-      if (prefixMatch) {
-        updateUnitInfo('customerPrefix', prefixMatch[1])
+      const prefix = extractContainerPrefix(eqpCode)
+      if (prefix) {
+        updateUnitInfo('customerPrefix', prefix)
       }
     }
 
@@ -591,10 +636,12 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
           } else {
             setEquipmentOwner('CUSTOMER')
             updateUnitInfo('equipmentOwner', 'CUSTOMER')
-            // Extraer prefijo del contenedor ISO (primeros 4 caracteres)
-            const prefix = eqpUpper.substring(0, 4)
-            setCustomerPrefix(prefix)
-            updateUnitInfo('customerPrefix', prefix)
+            // Extraer prefijo del contenedor
+            const prefix = extractContainerPrefix(eqpCode)
+            if (prefix) {
+              setCustomerPrefix(prefix)
+              updateUnitInfo('customerPrefix', prefix)
+            }
           }
         
         // === RABON ===
