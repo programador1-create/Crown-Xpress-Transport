@@ -1,8 +1,11 @@
 import { jsPDF } from 'jspdf'
-import { autoTable } from 'jspdf-autotable'
+import autoTableModule from 'jspdf-autotable'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+// jspdf-autotable CJS build wraps the function under .default in ESM environments (e.g. Vercel)
+const autoTable = typeof autoTableModule === 'function' ? autoTableModule : (autoTableModule.default || autoTableModule)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
