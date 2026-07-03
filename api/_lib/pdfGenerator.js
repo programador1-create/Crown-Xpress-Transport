@@ -81,11 +81,40 @@ function getTruckDiagramPath(inspectionType, trailerType) {
 // Convert image file to base64
 function imageToBase64(imagePath) {
   try {
+    if (!fs.existsSync(imagePath)) {
+      console.warn('Image file not found:', imagePath)
+      return null
+    }
     const imageBuffer = fs.readFileSync(imagePath)
-    return `data:image/${path.extname(imagePath).slice(1)};base64,${imageBuffer.toString('base64')}`
+    if (!imageBuffer || imageBuffer.length < 10) {
+      console.warn('Image file too small or empty:', imagePath, imageBuffer?.length)
+      return null
+    }
+    // Validate image signature (PNG or JPEG)
+    const isPng = imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 && imageBuffer[2] === 0x4e && imageBuffer[3] === 0x47
+    const isJpg = imageBuffer[0] === 0xff && imageBuffer[1] === 0xd8
+    if (!isPng && !isJpg) {
+      console.warn('Image file does not have valid PNG/JPEG signature:', imagePath)
+      return null
+    }
+    const format = isPng ? 'png' : 'jpeg'
+    return `data:image/${format};base64,${imageBuffer.toString('base64')}`
   } catch (e) {
     console.warn('Could not load image:', imagePath, e)
     return null
+  }
+}
+
+// Safe wrapper around jsPDF addImage to avoid failing the whole PDF if one image is corrupt
+function safeAddImage(doc, imageData, fallbackFormat, x, y, w, h) {
+  if (!imageData) return false
+  try {
+    const fmt = detectImageFormat(imageData) || fallbackFormat
+    doc.addImage(imageData, fmt, x, y, w, h)
+    return true
+  } catch (imgError) {
+    console.warn('addImage failed (format:', detectImageFormat(imageData) || fallbackFormat, '):', imgError.message)
+    return false
   }
 }
 
@@ -133,12 +162,8 @@ export async function generateInspectionPDF(data) {
   const truckDiagram = imageToBase64(truckDiagramPath)
 
   // Header with logos
-  if (crownLogo) {
-    doc.addImage(crownLogo, detectImageFormat(crownLogo) || 'PNG', 10, 10, 30, 15)
-  }
-  if (ctpatLogo) {
-    doc.addImage(ctpatLogo, detectImageFormat(ctpatLogo) || 'PNG', pageWidth - 40, 10, 30, 15)
-  }
+  safeAddImage(doc, crownLogo, 'PNG', 10, 10, 30, 15)
+  safeAddImage(doc, ctpatLogo, 'PNG', pageWidth - 40, 10, 30, 15)
 
   // Title
   doc.setFontSize(18)
@@ -173,8 +198,7 @@ export async function generateInspectionPDF(data) {
   yPos += 5
 
   // Truck diagram
-  if (truckDiagram) {
-    doc.addImage(truckDiagram, detectImageFormat(truckDiagram) || 'JPEG', 15, yPos, pageWidth - 30, 60)
+  if (safeAddImage(doc, truckDiagram, 'JPEG', 15, yPos, pageWidth - 30, 60)) {
     yPos += 65
   }
 
@@ -205,22 +229,25 @@ export async function generateInspectionPDF(data) {
     doc.setFontSize(10)
     doc.setTextColor(...COLORS.slate)
     doc.text(language === 'es' ? 'Firma del Guardia:' : 'Guard Signature:', 15, yPos)
-    doc.addImage(guardSignature.signature, detectImageFormat(guardSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
-    doc.text(guardSignature.name || '-', 15, yPos + 28)
-    yPos += 35
+    if (safeAddImage(doc, guardSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
+      doc.text(guardSignature.name || '-', 15, yPos + 28)
+      yPos += 35
+    }
   }
 
   if (supervisorSignature.signature) {
     doc.text(language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:', 15, yPos)
-    doc.addImage(supervisorSignature.signature, detectImageFormat(supervisorSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
-    doc.text(supervisorSignature.name || '-', 15, yPos + 28)
-    yPos += 35
+    if (safeAddImage(doc, supervisorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
+      doc.text(supervisorSignature.name || '-', 15, yPos + 28)
+      yPos += 35
+    }
   }
 
   if (operatorSignature.signature) {
     doc.text(language === 'es' ? 'Firma del Operador:' : 'Operator Signature:', 15, yPos)
-    doc.addImage(operatorSignature.signature, detectImageFormat(operatorSignature.signature) || 'PNG', 15, yPos + 5, 40, 20)
-    doc.text(operatorSignature.name || '-', 15, yPos + 28)
+    if (safeAddImage(doc, operatorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
+      doc.text(operatorSignature.name || '-', 15, yPos + 28)
+    }
   }
 
   // Generate filename
