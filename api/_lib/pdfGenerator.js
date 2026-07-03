@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { autoTable } from 'jspdf-autotable'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
