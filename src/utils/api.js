@@ -176,6 +176,13 @@ export async function compressImage(base64Image, maxWidth = 800, quality = 0.6, 
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
+
+      // JPEG has no alpha channel: fill white background first so transparent
+      // pixels (e.g. signatures on transparent canvas) don't turn black.
+      if (format === 'image/jpeg') {
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, width, height)
+      }
       ctx.drawImage(img, 0, 0, width, height)
       
       // Convert to compressed format (JPEG or PNG)

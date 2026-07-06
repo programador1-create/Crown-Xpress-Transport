@@ -110,7 +110,7 @@ export default function SubmitBar({ onSuccess }) {
       return
     }
     
-    const signatureData = sigRef.current.toDataURL('image/jpeg', 0.7)
+    const signatureData = sigRef.current.toDataURL('image/png')
     const capturedOperatorSignature = {
       name: unitInfo.driverName?.toUpperCase() || '',
       signature: signatureData,
