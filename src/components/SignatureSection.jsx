@@ -27,6 +27,15 @@ export default function SignatureSection() {
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
 
+  // Debug: log signature state changes to detect disappearance bugs
+  useEffect(() => {
+    console.log('DEBUG SignatureSection:', {
+      guard: { name: guardSignature?.name, hasSig: !!guardSignature?.signature, signedAt: guardSignature?.signedAt },
+      operator: { name: operatorSignature?.name, hasSig: !!operatorSignature?.signature, signedAt: operatorSignature?.signedAt },
+      supervisor: { name: supervisorSignature?.name, hasSig: !!supervisorSignature?.signature, signedAt: supervisorSignature?.signedAt },
+    })
+  }, [guardSignature, operatorSignature, supervisorSignature])
+
   // Load supervisors for current yard
   useEffect(() => {
     const loadSupervisors = async () => {
