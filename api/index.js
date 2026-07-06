@@ -1,5 +1,5 @@
 // Vercel serverless entry point (exported as default)
-import { createInspection, listInspections, getInspection, downloadPdf, signAuditor, healthCheck, reconfirmInspection, getInspectionChain } from './_lib/handlers.js'
+import { createInspection, listInspections, getInspection, downloadPdf, signAuditor, healthCheck, reconfirmInspection, getInspectionChain, updateInspectionPdf } from './_lib/handlers.js'
 
 export default async function handler(req, res) {
   const { url, method } = req
@@ -26,6 +26,9 @@ export default async function handler(req, res) {
     }
     if (suffix === '/pdf' && method === 'GET') {
       return await downloadPdf(req, res, id)
+    }
+    if (suffix === '/pdf' && method === 'PUT') {
+      return await updateInspectionPdf(req, res, id)
     }
     if (suffix === '/sign-auditor' && method === 'POST') {
       return await signAuditor(req, res, id)

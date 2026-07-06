@@ -46,6 +46,15 @@ export async function createInspection(payload) {
   return res // { success, id, uuid, createdAt, pdfUrl }
 }
 
+/** Upload PDF separately after inspection is saved (to avoid 413) */
+export async function updateInspectionPdf(id, pdfBase64, pdfFilename) {
+  const res = await fetchJson(`${API_BASE}/inspections/${id}/pdf`, {
+    method: 'PUT',
+    body: JSON.stringify({ pdfBase64, pdfFilename }),
+  })
+  return res
+}
+
 /** List inspections (paginated) */
 export async function listInspections({ limit = 50, offset = 0, yardCode = '' } = {}) {
   const params = { limit, offset }

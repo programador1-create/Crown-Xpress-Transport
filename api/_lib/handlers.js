@@ -1,5 +1,4 @@
 import { getSql, logAudit, getClientIp, readJsonBody } from './db.js'
-import { generateInspectionPDF } from './pdfGenerator.js'
 
 /** POST /api/inspections — create new inspection */
 export async function createInspection(req, res) {
@@ -64,46 +63,16 @@ export async function createInspection(req, res) {
     const location = ui.location || null
     const guard_name_field = ui.guard_name || guardSignature.name || null
 
-    // Generate PDF if not provided (before saving inspection)
+    // Use PDF from frontend if provided; otherwise save inspection without PDF (client will upload it separately)
     let pdfBufferToSave = pdfBuffer
-    let pdfFilenameToSave = pdfFilename
+    let pdfFilenameToSave = pdfFilename || null
     let pdfSizeToSave = pdfBuffer ? pdfBuffer.length : 0
 
     if (!pdfBase64) {
-      console.log('Generating PDF in backend...')
-      try {
-        const pdfResult = await generateInspectionPDF({
-          unitInfo,
-          points,
-          sealPhoto,
-          guardSignature,
-          supervisorSignature,
-          operatorSignature,
-          language,
-          yardCode: unitInfo.location || '',
-        })
-
-        const pdfBase64Generated = pdfResult.doc.output('datauristring')
-        pdfFilenameToSave = pdfResult.filename
-
-        const pdfDataB64 = String(pdfBase64Generated).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
-        pdfBufferToSave = Buffer.from(pdfDataB64, 'base64')
-        pdfSizeToSave = pdfBufferToSave.length
-
-        console.log('PDF generated successfully, size:', pdfSizeToSave, 'bytes')
-      } catch (pdfError) {
-        console.error('Error generating PDF in backend:', pdfError)
-        console.error('PDF generation error stack:', pdfError.stack)
-        // PDF generation failed - do not save inspection
-        return res.status(500).json({
-          error: 'Failed to generate PDF. Inspection not saved.',
-          details: pdfError.message,
-          stack: pdfError.stack
-        })
-      }
+      console.log('No PDF provided - saving inspection without PDF (client will upload via PUT /pdf)')
     }
 
-    // Only save inspection if PDF generation succeeded
+    // Save inspection always (PDF can be updated later)
     const [inspection] = await sql`
       INSERT INTO inspections (
         trailer_number, seal_number, lock_number, driver_name, odometer, location,
@@ -506,6 +475,36 @@ export async function getInspectionChain(req, res, id) {
     return res.status(200).json({ chain })
   } catch (err) {
     console.error('getInspectionChain error:', err)
+    return res.status(500).json({ error: err.message })
+  }
+}
+
+/** PUT /api/inspections/:id/pdf — upload PDF generated on frontend */
+export async function updateInspectionPdf(req, res, id) {
+  try {
+    const body = await readJsonBody(req)
+    const { pdfBase64, pdfFilename } = body
+    if (!pdfBase64) return res.status(400).json({ error: 'pdfBase64 required' })
+
+    const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+    const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+    const sql = getSql()
+
+    const [row] = await sql`
+      UPDATE inspections
+      SET pdf_filename = ${pdfFilename || 'inspection.pdf'},
+          pdf_data = ${pdfBuffer},
+          pdf_size_bytes = ${pdfBuffer.length},
+          updated_at = NOW()
+      WHERE id = ${parseInt(id, 10)}
+      RETURNING id
+    `
+    if (!row) return res.status(404).json({ error: 'Inspection not found' })
+
+    console.log('PDF updated for inspection', id, '- size:', pdfBuffer.length, 'bytes')
+    return res.status(200).json({ success: true, pdfSize: pdfBuffer.length })
+  } catch (err) {
+    console.error('updateInspectionPdf error:', err)
     return res.status(500).json({ error: err.message })
   }
 }

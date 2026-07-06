@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { useInspection } from '../context/InspectionContext'
 import { generateInspectionPDF } from '../utils/pdfGenerator'
-import { createInspection, buildPayload } from '../utils/api'
+import { createInspection, buildPayload, updateInspectionPdf } from '../utils/api'
 import SignatureCanvas from 'react-signature-canvas'
 import { useRef } from 'react'
 import { getApplicablePoints } from '../data/inspectionPoints'
@@ -56,49 +56,45 @@ export default function SubmitBar({ onSuccess }) {
   }
 
   // Generate PDF using existing operator signature from context
-  const handleGeneratePDF = async () => {
+  const handleGeneratePDF = async (operatorSig = ctx.operatorSignature) => {
     setGenerating(true)
-
     try {
-      // 1. Upload to backend WITHOUT PDF (backend will generate it)
-      const payload = await buildPayload(ctx, null, null)
-      console.log('Submit payload signatures:', {
-        guard: { name: payload.guardSignature?.name, hasSig: !!payload.guardSignature?.signature },
-        operator: { name: payload.operatorSignature?.name, hasSig: !!payload.operatorSignature?.signature },
-        supervisor: { name: payload.supervisorSignature?.name, hasSig: !!payload.supervisorSignature?.signature },
-        status: payload.supervisorSignature?.signature ? 'completed' : 'pending',
-        equipmentNomenclature: payload.unitInfo?.equipmentNomenclature,
-        customerPrefix: payload.unitInfo?.customerPrefix,
-        crownFleet: payload.unitInfo?.crownFleet,
-        trailerNumber: payload.unitInfo?.trailerNumber
-      })
-      const uploadResult = await createInspection(payload)
-
-      // 2. Generate PDF locally for display only
+      // 1. Generate PDF in frontend
       const pdfResult = await generateInspectionPDF({
         unitInfo: ctx.unitInfo,
         points: ctx.points,
         sealPhoto: ctx.sealPhoto,
         guardSignature: ctx.guardSignature,
         supervisorSignature: ctx.supervisorSignature,
-        operatorSignature: ctx.operatorSignature,
+        operatorSignature: operatorSig,
         language,
         yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
       })
       const pdfFilename = pdfResult.filename
+      const pdfBase64 = pdfResult.doc.output('datauristring')
 
-      // 3. Show PDF in modal viewer
+      // 2. Save inspection WITHOUT pdf first (to avoid 413)
+      const payload = await buildPayload({ ...ctx, operatorSignature: operatorSig }, null, null)
+      const uploadResult = await createInspection(payload)
+      const inspectionId = uploadResult?.id
+
+      // 3. Upload PDF separately in background (non-blocking for UX)
+      if (inspectionId) {
+        updateInspectionPdf(inspectionId, pdfBase64, pdfFilename).catch(e =>
+          console.warn('PDF upload failed (non-fatal):', e.message)
+        )
+      }
+
+      // 4. Show PDF in modal viewer
       const pdfBlob = pdfResult.doc.output('blob')
       const pdfBlobUrl = URL.createObjectURL(pdfBlob)
       setPdfUrl(pdfBlobUrl)
       setPdfFilename(pdfFilename)
       setShowPdfViewer(true)
-
-      // Reset generating state
       setGenerating(false)
     } catch (err) {
       console.error('Error generating PDF:', err)
-      alert(language === 'es' ? 'Error al generar PDF' : 'Error generating PDF')
+      alert(language === 'es' ? `Error al guardar: ${err.message}` : `Error saving: ${err.message}`)
       setGenerating(false)
     }
   }
@@ -111,66 +107,15 @@ export default function SubmitBar({ onSuccess }) {
       return
     }
     
-    const signatureData = sigRef.current.toDataURL('image/png')
-    setOperatorSignature({
+    const signatureData = sigRef.current.toDataURL('image/jpeg', 0.7)
+    const capturedOperatorSignature = {
       name: unitInfo.driverName?.toUpperCase() || '',
       signature: signatureData,
       signedAt: new Date().toISOString()
-    })
-
+    }
+    setOperatorSignature(capturedOperatorSignature)
     setShowSignatureModal(false)
-    setGenerating(true)
-
-    // Small delay to ensure state is updated
-    setTimeout(async () => {
-      try {
-        // Create operator signature object with captured signature
-        const capturedOperatorSignature = {
-          name: unitInfo.driverName?.toUpperCase() || '',
-          signature: signatureData,
-          signedAt: new Date().toISOString()
-        }
-
-        // 1. Generate PDF with the new signature
-        const pdfResult = await generateInspectionPDF({
-          unitInfo: ctx.unitInfo,
-          points: ctx.points,
-          sealPhoto: ctx.sealPhoto,
-          guardSignature: ctx.guardSignature,
-          supervisorSignature: ctx.supervisorSignature,
-          operatorSignature: capturedOperatorSignature,
-          language,
-          yardCode: user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean).join(',') || user?.location_code || '',
-        })
-        const pdfBase64 = pdfResult.doc.output('datauristring')
-        const pdfFilename = pdfResult.filename
-
-        // 2. Upload to backend WITHOUT PDF (backend will generate it) - pass captured operator signature
-        const payload = await buildPayload({ ...ctx, operatorSignature: capturedOperatorSignature }, null, null)
-        console.log('Submit payload signatures (operator modal):', {
-          guard: { name: payload.guardSignature?.name, hasSig: !!payload.guardSignature?.signature },
-          operator: { name: payload.operatorSignature?.name, hasSig: !!payload.operatorSignature?.signature },
-          supervisor: { name: payload.supervisorSignature?.name, hasSig: !!payload.supervisorSignature?.signature },
-        })
-        const uploadResult = await createInspection(payload)
-
-        // 3. Show PDF in modal viewer
-        const pdfBlob = pdfResult.doc.output('blob')
-        const pdfBlobUrl = URL.createObjectURL(pdfBlob)
-        setPdfUrl(pdfBlobUrl)
-        setPdfFilename(pdfFilename)
-        setShowPdfViewer(true)
-        
-        // Reset generating state
-        setGenerating(false)
-        
-      } catch (e) {
-        console.error('Submit error:', e)
-        const msg = e.message || String(e)
-        alert(language === 'es' ? `Error al guardar: ${msg}` : `Error saving: ${msg}`)
-        setGenerating(false)
-      }
-    }, 100)
+    await handleGeneratePDF(capturedOperatorSignature)
   }
   
   const clearSignature = () => {
