@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Filter, MapPin, User, Truck, Download, FileText, Search, ChevronRight, X, PenTool, Eye, CheckCircle } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { listInspections, downloadPdf, signSupervisor, getInspection } from '../utils/api'
+import { listInspections, downloadPdf, signSupervisor, getInspection, updateInspectionPdf } from '../utils/api'
 import { generateInspectionPDF } from '../utils/pdfGenerator'
 import AuditTrail from './AuditTrail'
 import SignatureCanvas from './SignatureCanvas'
@@ -283,14 +283,62 @@ export default function SupervisorView() {
 
     try {
       console.log('Signing supervisor for inspection ID:', signingInspection.id)
-
-      // Backend will regenerate the PDF to avoid sending huge base64 payloads (HTTP 413)
-      // Sign supervisor without PDF
-      await signSupervisor(signingInspection.id, {
+      const supervisorSig = {
         name: user?.full_name || 'Supervisor',
         signature: signatureImage,
         signedAt: new Date().toISOString()
-      })
+      }
+
+      // 1. Save supervisor signature first (fast, no PDF - avoids serverless timeout)
+      await signSupervisor(signingInspection.id, supervisorSig)
+
+      // 2. Regenerate PDF in frontend and upload it separately (non-blocking)
+      try {
+        const inspectionData = await getInspection(signingInspection.id)
+        const insp = inspectionData.inspection
+        const unitInfo = {
+          trailerNumber: insp.trailer_number,
+          tractorNumber: insp.tractor_number,
+          containerNumber: insp.container_number,
+          equipmentNomenclature: insp.equipment_nomenclature,
+          customerPrefix: insp.customer_prefix,
+          sealNumber: insp.seal_number,
+          lockNumber: insp.lock_number,
+          driverName: insp.driver_name,
+          odometer: insp.odometer,
+          location: insp.location,
+          inspectionDate: insp.inspection_date,
+          highSecuritySeal: insp.high_security_seal,
+          sealAffixed: insp.seal_affixed,
+          inspectionType: insp.inspection_type,
+          trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
+          workOrder: insp.wono
+        }
+        const pointsObj = {}
+        for (const p of (inspectionData.points || [])) {
+          pointsObj[p.point_id] = {
+            status: p.status,
+            issueId: p.issue_id,
+            issueCustomText: p.issue_text,
+            photo: p.photo
+          }
+        }
+        const pdfResult = await generateInspectionPDF({
+          unitInfo,
+          points: pointsObj,
+          sealPhoto: insp.seal_photo,
+          guardSignature: insp.guard_name ? { name: insp.guard_name, signature: insp.guard_signature, signedAt: insp.guard_signed_at } : null,
+          supervisorSignature: supervisorSig,
+          operatorSignature: insp.operator_name ? { name: insp.operator_name, signature: insp.operator_signature, signedAt: insp.operator_signed_at } : null,
+          language: insp.language || 'es',
+          yardCode: insp.location || ''
+        })
+        const pdfBase64 = pdfResult.doc.output('datauristring')
+        await updateInspectionPdf(signingInspection.id, pdfBase64, pdfResult.filename)
+        console.log('Supervisor PDF regenerated and uploaded')
+      } catch (pdfErr) {
+        console.warn('PDF regeneration/upload failed (signature already saved):', pdfErr.message)
+      }
 
       // Refresh inspections list
       const res = await listInspections({ limit: 500 })
