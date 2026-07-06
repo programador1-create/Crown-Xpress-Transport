@@ -218,10 +218,11 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     }
   }
 
-  // Compress signatures
-  const compressedGuardSig = guardSignature?.signature ? await compressImage(guardSignature.signature, 200, 0.7) : null
-  const compressedSupervisorSig = supervisorSignature?.signature ? await compressImage(supervisorSignature.signature, 200, 0.7) : null
-  const compressedOperatorSig = operatorSignature?.signature ? await compressImage(operatorSignature.signature, 200, 0.5) : null
+  // Compress signatures as PNG to preserve transparency (JPEG would turn the
+  // transparent background black). PNG at 300px is small enough for the payload.
+  const compressedGuardSig = guardSignature?.signature ? await compressImage(guardSignature.signature, 300, 1, 'image/png') : null
+  const compressedSupervisorSig = supervisorSignature?.signature ? await compressImage(supervisorSignature.signature, 300, 1, 'image/png') : null
+  const compressedOperatorSig = operatorSignature?.signature ? await compressImage(operatorSignature.signature, 300, 1, 'image/png') : null
 
   // Send the full PDF to backend for storage
   const payload = {
