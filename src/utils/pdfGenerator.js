@@ -222,7 +222,7 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
     generated: 'Generated'
   }
 
-  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
+  const doc = new jsPDF({ unit: 'mm', format: 'letter', compress: true })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 20

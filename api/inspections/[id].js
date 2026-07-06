@@ -249,6 +249,41 @@ export default async function handler(req, res) {
       })
     }
 
+    if (req.method === 'PUT') {
+      const { pdfBase64, pdfFilename } = req.body
+      if (!pdfBase64) {
+        return res.status(400).json({ error: 'pdfBase64 required' })
+      }
+
+      // id may be '56' or '56/pdf' depending on how Vercel routes it
+      const rawId = String(id).replace(/\/pdf$/, '').replace(/\.pdf$/, '')
+      const inspectionId = parseInt(rawId)
+      if (isNaN(inspectionId)) {
+        return res.status(400).json({ error: 'Invalid inspection ID' })
+      }
+
+      const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+      const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+
+      console.log('PUT /api/inspections/[id] - Uploading PDF, size:', pdfBuffer.length, 'bytes')
+
+      const [updated] = await sql`
+        UPDATE inspections
+        SET pdf_filename = ${pdfFilename || 'inspection.pdf'},
+            pdf_data = ${pdfBuffer},
+            pdf_size_bytes = ${pdfBuffer.length},
+            updated_at = NOW()
+        WHERE id = ${inspectionId}
+        RETURNING id
+      `
+
+      if (!updated) {
+        return res.status(404).json({ error: 'Inspection not found' })
+      }
+
+      return res.status(200).json({ success: true, pdfSize: pdfBuffer.length })
+    }
+
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
     console.error('API Error:', error)

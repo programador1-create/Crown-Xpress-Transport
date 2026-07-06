@@ -78,11 +78,14 @@ export default function SubmitBar({ onSuccess }) {
       const uploadResult = await createInspection(payload)
       const inspectionId = uploadResult?.id
 
-      // 3. Upload PDF separately in background (non-blocking for UX)
+      // 3. Upload PDF separately (blocking - needed for supervisor view)
       if (inspectionId) {
-        updateInspectionPdf(inspectionId, pdfBase64, pdfFilename).catch(e =>
-          console.warn('PDF upload failed (non-fatal):', e.message)
-        )
+        try {
+          await updateInspectionPdf(inspectionId, pdfBase64, pdfFilename)
+          console.log('PDF uploaded successfully for inspection', inspectionId)
+        } catch (e) {
+          console.warn('PDF upload failed:', e.message)
+        }
       }
 
       // 4. Show PDF in modal viewer
