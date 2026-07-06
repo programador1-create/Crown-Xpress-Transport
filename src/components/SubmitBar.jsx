@@ -62,8 +62,10 @@ export default function SubmitBar({ onSuccess }) {
     try {
       // 1. Upload to backend WITHOUT PDF (backend will generate it)
       const payload = await buildPayload(ctx, null, null)
-      console.log('Submit payload:', {
-        supervisorSignature: payload.supervisorSignature,
+      console.log('Submit payload signatures:', {
+        guard: { name: payload.guardSignature?.name, hasSig: !!payload.guardSignature?.signature },
+        operator: { name: payload.operatorSignature?.name, hasSig: !!payload.operatorSignature?.signature },
+        supervisor: { name: payload.supervisorSignature?.name, hasSig: !!payload.supervisorSignature?.signature },
         status: payload.supervisorSignature?.signature ? 'completed' : 'pending',
         equipmentNomenclature: payload.unitInfo?.equipmentNomenclature,
         customerPrefix: payload.unitInfo?.customerPrefix,
@@ -145,6 +147,11 @@ export default function SubmitBar({ onSuccess }) {
 
         // 2. Upload to backend WITHOUT PDF (backend will generate it) - pass captured operator signature
         const payload = await buildPayload({ ...ctx, operatorSignature: capturedOperatorSignature }, null, null)
+        console.log('Submit payload signatures (operator modal):', {
+          guard: { name: payload.guardSignature?.name, hasSig: !!payload.guardSignature?.signature },
+          operator: { name: payload.operatorSignature?.name, hasSig: !!payload.operatorSignature?.signature },
+          supervisor: { name: payload.supervisorSignature?.name, hasSig: !!payload.supervisorSignature?.signature },
+        })
         const uploadResult = await createInspection(payload)
 
         // 3. Show PDF in modal viewer
