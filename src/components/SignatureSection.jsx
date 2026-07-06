@@ -179,13 +179,40 @@ export default function SignatureSection() {
             <p className="font-semibold text-crown-navy">{unitInfo?.driverName?.toUpperCase() || '—'}</p>
           </div>
 
-          <div className="text-center py-4">
-            <p className="text-sm text-slate-600">
-              {language === 'es'
-                ? 'La firma del operador se capturará al generar el PDF (requerida)'
-                : 'Operator signature will be captured when generating PDF (required)'}
-            </p>
-          </div>
+          {operatorSignature?.signature ? (
+            <div className="space-y-3">
+              <div className="border border-slate-200 rounded p-2 bg-white">
+                <img
+                  src={operatorSignature.signature}
+                  alt="Operator signature"
+                  className="h-20 object-contain"
+                />
+              </div>
+              <div className="text-sm text-slate-600">
+                <p><strong>{language === 'es' ? 'Fecha:' : 'Date:'}</strong> {operatorSignature?.signedAt ? new Date(operatorSignature.signedAt).toLocaleString(language === 'es' ? 'es-MX' : 'en-US') : '—'}</p>
+              </div>
+              <button
+                onClick={() => setShowOperatorSignature(true)}
+                className="btn-secondary text-sm"
+              >
+                <PenTool className="w-4 h-4" />
+                {language === 'es' ? 'Cambiar firma' : 'Change signature'}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-slate-600 mb-3">
+                {language === 'es' ? 'Se requiere firma del operador' : 'Operator signature required'}
+              </p>
+              <button
+                onClick={() => setShowOperatorSignature(true)}
+                className="btn-gold"
+              >
+                <PenTool className="w-4 h-4" />
+                {language === 'es' ? 'Firmar como Operador' : 'Sign as Operator'}
+              </button>
+            </div>
+          )}
         </div>
         )}
 
