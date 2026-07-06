@@ -24,6 +24,15 @@ const COLORS = {
   slateLight: [148, 163, 184],
 }
 
+// Detect image format from base64 data URI (PNG/JPEG)
+function detectImageFormat(base64Data) {
+  if (!base64Data) return 'PNG'
+  const str = String(base64Data)
+  if (str.startsWith('data:image/jpeg') || str.startsWith('data:image/jpg')) return 'JPEG'
+  if (str.startsWith('data:image/png')) return 'PNG'
+  return 'PNG'
+}
+
 // Load logo image as base64
 async function loadLogoImage() {
   try {
@@ -644,7 +653,8 @@ function drawSignatureBox(doc, x, y, w, h, label, sig, T) {
   if (sig?.signature) {
     try {
       // Add signature with white background to ensure proper contrast
-      doc.addImage(sig.signature, 'PNG', x + 2, y + 6, w - 4, h - 13)
+      const format = detectImageFormat(sig.signature)
+      doc.addImage(sig.signature, format, x + 2, y + 6, w - 4, h - 13)
     } catch (e) { /* ignore */ }
   }
 

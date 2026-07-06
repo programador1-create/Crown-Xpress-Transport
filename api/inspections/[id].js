@@ -215,6 +215,7 @@ export default async function handler(req, res) {
           }
         } catch (pdfError) {
           console.error('Error regenerating PDF in backend:', pdfError)
+          console.error('Error regenerating PDF in backend stack:', pdfError.stack)
           // Continue without updating PDF; supervisor signature is still saved
         }
       }
