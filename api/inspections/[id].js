@@ -1,4 +1,5 @@
 import { getSql } from '../_lib/db.js'
+import { generateInspectionPDF } from '../_lib/pdfGenerator.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -138,9 +139,8 @@ export default async function handler(req, res) {
       const cleanId = String(id).replace(/\.pdf$/, '')
       const inspectionId = parseInt(cleanId)
 
-      // Prepare PDF update if provided
+      // Prepare PDF update if provided; otherwise regenerate in backend to avoid huge frontend payloads
       let pdfUpdate = {}
-      let pdfBuffer = null
       if (pdfBase64) {
         console.log('pdfBase64 starts with data:application/pdf?', pdfBase64.startsWith('data:application/pdf'))
         console.log('pdfBase64 first 100 chars:', pdfBase64.substring(0, 100))
@@ -148,12 +148,74 @@ export default async function handler(req, res) {
         const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
         console.log('pdfDataB64 length after removing prefix:', pdfDataB64.length)
         console.log('pdfDataB64 first 100 chars:', pdfDataB64.substring(0, 100))
-        pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+        const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
         console.log('PDF buffer length:', pdfBuffer.length)
         pdfUpdate = {
           pdf_filename: pdfFilename || 'inspection.pdf',
           pdf_data: pdfBuffer,
           pdf_size_bytes: pdfBuffer.length
+        }
+      } else {
+        console.log('Regenerating PDF in backend after supervisor signature...')
+        try {
+          const [fullInspection] = await sql`SELECT * FROM inspections WHERE id = ${inspectionId}`
+          const fullPoints = await sql`
+            SELECT point_id, status, issue_id, issue_text, photo
+            FROM inspection_points
+            WHERE inspection_id = ${inspectionId}
+            ORDER BY point_id
+          `
+          if (fullInspection) {
+            const unitInfo = {
+              trailerNumber: fullInspection.trailer_number,
+              tractorNumber: fullInspection.tractor_number,
+              containerNumber: fullInspection.container_number,
+              equipmentNomenclature: fullInspection.equipment_nomenclature,
+              customerPrefix: fullInspection.customer_prefix,
+              sealNumber: fullInspection.seal_number,
+              lockNumber: fullInspection.lock_number,
+              driverName: fullInspection.driver_name,
+              odometer: fullInspection.odometer,
+              location: fullInspection.location,
+              inspectionDate: fullInspection.inspection_date,
+              highSecuritySeal: fullInspection.high_security_seal,
+              sealAffixed: fullInspection.seal_affixed,
+              inspectionType: fullInspection.inspection_type,
+              trailerType: fullInspection.trailer_type || (fullInspection.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
+              workOrder: fullInspection.wono
+            }
+            const pointsObj = {}
+            for (const p of fullPoints) {
+              pointsObj[p.point_id] = {
+                status: p.status,
+                issueId: p.issue_id,
+                issueCustomText: p.issue_text,
+                photo: p.photo
+              }
+            }
+            const pdfResult = await generateInspectionPDF({
+              unitInfo,
+              points: pointsObj,
+              sealPhoto: fullInspection.seal_photo,
+              guardSignature: fullInspection.guard_name ? { name: fullInspection.guard_name, signature: fullInspection.guard_signature, signedAt: fullInspection.guard_signed_at } : null,
+              supervisorSignature: { name, signature, signedAt },
+              operatorSignature: fullInspection.operator_name ? { name: fullInspection.operator_name, signature: fullInspection.operator_signature, signedAt: fullInspection.operator_signed_at } : null,
+              language: fullInspection.language || 'es',
+              yardCode: fullInspection.location || ''
+            })
+            const pdfBase64Generated = pdfResult.doc.output('datauristring')
+            const pdfDataB64 = String(pdfBase64Generated).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+            const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+            pdfUpdate = {
+              pdf_filename: pdfResult.filename,
+              pdf_data: pdfBuffer,
+              pdf_size_bytes: pdfBuffer.length
+            }
+            console.log('Backend PDF regenerated, size:', pdfBuffer.length, 'bytes')
+          }
+        } catch (pdfError) {
+          console.error('Error regenerating PDF in backend:', pdfError)
+          // Continue without updating PDF; supervisor signature is still saved
         }
       }
 
@@ -165,7 +227,7 @@ export default async function handler(req, res) {
             supervisor_signed_at = ${signedAt},
             status = 'completed',
             updated_at = NOW()
-            ${pdfBase64 ? sql`, pdf_filename = ${pdfUpdate.pdf_filename}, pdf_data = ${pdfUpdate.pdf_data}, pdf_size_bytes = ${pdfUpdate.pdf_size_bytes}` : sql``}
+            ${Object.keys(pdfUpdate).length > 0 ? sql`, pdf_filename = ${pdfUpdate.pdf_filename}, pdf_data = ${pdfUpdate.pdf_data}, pdf_size_bytes = ${pdfUpdate.pdf_size_bytes}` : sql``}
         WHERE id = ${inspectionId}
         RETURNING *
       `
