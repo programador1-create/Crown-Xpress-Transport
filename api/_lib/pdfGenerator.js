@@ -127,8 +127,13 @@ function detectImageFormat(base64Data) {
   const str = String(base64Data)
   if (str.startsWith('data:image/png')) return 'PNG'
   if (str.startsWith('data:image/jpeg') || str.startsWith('data:image/jpg')) return 'JPEG'
-  // Fallback: assume PNG for signatures (legacy), JPEG for other images
-  return 'PNG'
+  // Fallback: detect from raw base64 bytes (no data URI prefix)
+  // JPEG starts with /9j/ in base64 (0xff 0xd8 bytes)
+  // PNG starts with iVBOR in base64 (0x89 0x50 0x4e 0x47 bytes)
+  const raw = str.startsWith('data:') ? str.split(',')[1] || str : str
+  if (raw.startsWith('iVBOR')) return 'PNG'
+  if (raw.startsWith('/9j/') || raw.startsWith('/9g/')) return 'JPEG'
+  return 'JPEG' // Default to JPEG since signatures are compressed as JPEG
 }
 
 // Generate PDF for inspection
@@ -146,9 +151,9 @@ export async function generateInspectionPDF(data) {
 
   console.log('PDF Generator - trailerType:', unitInfo.trailerType)
   console.log('PDF Generator - points keys:', Object.keys(points))
-  console.log('PDF Generator - guardSignature signature length:', guardSignature.signature?.length || 0)
-  console.log('PDF Generator - supervisorSignature signature length:', supervisorSignature.signature?.length || 0)
-  console.log('PDF Generator - operatorSignature signature length:', operatorSignature.signature?.length || 0)
+  console.log('PDF Generator - guardSignature:', { len: guardSignature?.signature?.length || 0, fmt: detectImageFormat(guardSignature?.signature), prefix: guardSignature?.signature?.substring(0, 30) })
+  console.log('PDF Generator - supervisorSignature:', { len: supervisorSignature?.signature?.length || 0, fmt: detectImageFormat(supervisorSignature?.signature), prefix: supervisorSignature?.signature?.substring(0, 30) })
+  console.log('PDF Generator - operatorSignature:', { len: operatorSignature?.signature?.length || 0, fmt: detectImageFormat(operatorSignature?.signature), prefix: operatorSignature?.signature?.substring(0, 30) })
 
   const doc = new jsPDF('p', 'mm', 'letter')
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -228,28 +233,33 @@ export async function generateInspectionPDF(data) {
   yPos = doc.lastAutoTable.finalY + 10
 
   // Signatures
-  if (guardSignature.signature) {
+  if (guardSignature?.signature) {
     doc.setFontSize(10)
     doc.setTextColor(...COLORS.slate)
     doc.text(language === 'es' ? 'Firma del Guardia:' : 'Guard Signature:', 15, yPos)
-    if (safeAddImage(doc, guardSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
+    if (safeAddImage(doc, guardSignature.signature, 'JPEG', 15, yPos + 5, 40, 20)) {
       doc.text(guardSignature.name || '-', 15, yPos + 28)
       yPos += 35
     }
   }
 
-  if (supervisorSignature.signature) {
-    doc.text(language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:', 15, yPos)
-    if (safeAddImage(doc, supervisorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
-      doc.text(supervisorSignature.name || '-', 15, yPos + 28)
+  if (operatorSignature?.signature) {
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.slate)
+    doc.text(language === 'es' ? 'Firma del Operador:' : 'Operator Signature:', 15, yPos)
+    if (safeAddImage(doc, operatorSignature.signature, 'JPEG', 15, yPos + 5, 40, 20)) {
+      doc.text(operatorSignature.name || '-', 15, yPos + 28)
       yPos += 35
     }
   }
 
-  if (operatorSignature.signature) {
-    doc.text(language === 'es' ? 'Firma del Operador:' : 'Operator Signature:', 15, yPos)
-    if (safeAddImage(doc, operatorSignature.signature, 'PNG', 15, yPos + 5, 40, 20)) {
-      doc.text(operatorSignature.name || '-', 15, yPos + 28)
+  if (supervisorSignature?.signature) {
+    doc.setFontSize(10)
+    doc.setTextColor(...COLORS.slate)
+    doc.text(language === 'es' ? 'Firma del Supervisor:' : 'Supervisor Signature:', 15, yPos)
+    if (safeAddImage(doc, supervisorSignature.signature, 'JPEG', 15, yPos + 5, 40, 20)) {
+      doc.text(supervisorSignature.name || '-', 15, yPos + 28)
+      yPos += 35
     }
   }
 
