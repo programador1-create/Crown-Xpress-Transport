@@ -203,14 +203,15 @@ export default async function handler(req, res) {
     let nbcw = { total: 0, inspected: 0, pending: 0 }
     let nbcwByYard = []
     try {
+      console.log('Metrics date params:', { anchorDate, offset, dateCondition, tprDateCondition })
       const tprRows = isAllYards
         ? await sql`
-            SELECT wono, fromd
+            SELECT wono, truckid, fromd
             FROM tpr
             WHERE ${sql.unsafe(tprDateCondition)}
           `
         : await sql`
-            SELECT wono, fromd
+            SELECT wono, truckid, fromd
             FROM tpr
             WHERE ${sql.unsafe(tprDateCondition)}
               AND TRIM(fromd) = ${yardCode}
@@ -233,10 +234,37 @@ export default async function handler(req, res) {
         if (row.wono) inspectedSet.add(row.wono)
       }
 
+      // Fallback: inspecciones creadas sin work order (datos antiguos) pueden
+      // cruzarse por el número de tractor/camión (truckid) del TPR.
+      const fallbackRows = await sql`
+        SELECT DISTINCT UPPER(TRIM(tractor_number)) AS tractor_number
+        FROM inspections
+        WHERE status <> 'superseded'
+          AND (wono IS NULL OR TRIM(wono) = '')
+          AND tractor_number IS NOT NULL
+          AND TRIM(tractor_number) <> ''
+          AND ${sql.unsafe(dateCondition)}
+      `
+      const fallbackTractors = new Set()
+      for (const row of fallbackRows) {
+        if (row.tractor_number) fallbackTractors.add(row.tractor_number)
+      }
+
+      console.log('NBCW counts:', {
+        tprRows: tprRows.length,
+        inspectedRows: inspectedRows.length,
+        inspectedSet: inspectedSet.size,
+        fallbackTractors: fallbackTractors.size,
+        sampleTprWonos: tprRows.slice(0, 5).map(r => r.wono?.toString().trim().toUpperCase()).filter(Boolean),
+        sampleInspectionWonos: Array.from(inspectedSet).slice(0, 5)
+      })
+
       const perYard = new Map()
       for (const m of tprRows) {
         const wono = m.wono?.toString().trim().toUpperCase()
-        const already = !!(wono && inspectedSet.has(wono))
+        const truck = m.truckid?.toString().trim().toUpperCase()
+        const already = !!(wono && inspectedSet.has(wono)) ||
+                        !!(truck && fallbackTractors.has(truck))
 
         nbcw.total++
         if (already) nbcw.inspected++
@@ -250,6 +278,7 @@ export default async function handler(req, res) {
         }
       }
       nbcw.pending = Math.max(0, nbcw.total - nbcw.inspected)
+      console.log('NBCW result:', nbcw)
 
       if (isAllYards) {
         nbcwByYard = yards

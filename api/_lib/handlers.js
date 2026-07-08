@@ -62,6 +62,7 @@ export async function createInspection(req, res) {
     const odometer = ui.odometer || null
     const location = ui.location || null
     const guard_name_field = ui.guard_name || guardSignature.name || null
+    const work_order = (ui.workOrder || ui.wono || '').toString().trim() || null
 
     // Use PDF from frontend if provided; otherwise save inspection without PDF (client will upload it separately)
     let pdfBufferToSave = pdfBuffer
@@ -124,7 +125,7 @@ export async function createInspection(req, res) {
         ${ui.crownFleet || ui.crown_fleet || null},
         ${ui.inspectionType || ui.inspection_type || 'LOADED'},
         ${ui.trailerType || ui.trailer_type || null},
-        ${ui.workOrder || ui.wono || null}
+        ${work_order}
       )
       RETURNING id, inspection_uuid, created_at
     `
