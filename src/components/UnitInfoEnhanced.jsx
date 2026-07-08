@@ -8,6 +8,31 @@ import { INSPECTION_TYPES } from '../data/inspectionPoints'
 import NumericKeypad from './NumericKeypad'
 import EmptyLoads from './EmptyLoads'
 
+// Helpers for local date handling (avoids UTC shifts in UTC-7)
+function getLocalISODate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseMovementDate(dateStr) {
+  if (!dateStr) return null
+  const trimmed = dateStr.toString().trim()
+  const parts = trimmed.split('/')
+  if (parts.length === 3) {
+    const month = parseInt(parts[0], 10)
+    const day = parseInt(parts[1], 10)
+    const year = parseInt(parts[2], 10)
+    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+      return getLocalISODate(new Date(year, month - 1, day))
+    }
+  }
+  const d = new Date(trimmed)
+  if (!isNaN(d.getTime())) return getLocalISODate(d)
+  return null
+}
+
 const YARDS = [
   { id: 1, name: 'Yard A - Laredo' },
   { id: 2, name: 'Yard B - El Paso' },
@@ -181,18 +206,16 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
         
         if (res.success) {
           const movementsData = res.data || []
-          const today = new Date().toISOString().split('T')[0]
+          const today = getLocalISODate()
           
           const todayPending = movementsData.filter(m => {
-            if (!m.date) return false
-            const movementDate = new Date(m.date).toISOString().split('T')[0]
+            const movementDate = parseMovementDate(m.date || m.fecha_raw)
             return movementDate === today && !m.already_inspected
           })
           
           const olderPending = movementsData.filter(m => {
-            if (!m.date) return false
-            const movementDate = new Date(m.date).toISOString().split('T')[0]
-            return movementDate !== today && !m.already_inspected
+            const movementDate = parseMovementDate(m.date || m.fecha_raw)
+            return movementDate && movementDate !== today && !m.already_inspected
           })
           
           setTodayPendingCount(todayPending.length)
