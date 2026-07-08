@@ -1,5 +1,9 @@
 import { getSql } from './_lib/db.js'
 
+function isValidISODate(str) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(str) && !isNaN(new Date(str).getTime())
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -17,6 +21,14 @@ export default async function handler(req, res) {
 
   try {
     const { period = 'day', yardCode = 'all' } = req.query
+    // Fecha y offset enviados desde el frontend en zona horaria local.
+    // created_at se almacena en UTC; convirtiéndolo a la zona del usuario
+    // antes de extraer la fecha evitamos desfaces de un día (problema en UTC-7).
+    const anchorDate = isValidISODate(req.query.date) ? req.query.date : null
+    const rawOffset = parseInt(req.query.offset, 10)
+    const offset = !isNaN(rawOffset) ? rawOffset : 0
+    const dateLiteral = anchorDate ? `'${anchorDate}'::date` : 'CURRENT_DATE'
+    const localDateExpr = `(created_at AT TIME ZONE 'UTC' - INTERVAL '${offset} minutes')::date`
 
     // ============================================================
     // CALCULAR RANGO DE FECHAS SEGÚN PERIODO
@@ -25,13 +37,13 @@ export default async function handler(req, res) {
     let dateLabel = ''
 
     if (period === 'day') {
-      dateCondition = `DATE(created_at) = CURRENT_DATE`
+      dateCondition = `${localDateExpr} = ${dateLiteral}`
       dateLabel = 'hoy'
     } else if (period === 'week') {
-      dateCondition = `created_at >= DATE_TRUNC('week', CURRENT_DATE)`
+      dateCondition = `${localDateExpr} >= DATE_TRUNC('week', ${dateLiteral})::date AND ${localDateExpr} < (DATE_TRUNC('week', ${dateLiteral}) + INTERVAL '7 days')::date`
       dateLabel = 'esta semana'
     } else if (period === 'month') {
-      dateCondition = `created_at >= DATE_TRUNC('month', CURRENT_DATE)`
+      dateCondition = `${localDateExpr} >= DATE_TRUNC('month', ${dateLiteral})::date AND ${localDateExpr} < (DATE_TRUNC('month', ${dateLiteral}) + INTERVAL '1 month')::date`
       dateLabel = 'este mes'
     } else {
       return res.status(400).json({ error: 'Invalid period. Use: day, week, or month' })
@@ -78,30 +90,30 @@ export default async function handler(req, res) {
         `
 
     // ============================================================
-    // 2. MÉTRICAS POR DÍA (ÚLTIMOS 7 DÍAS)
+    // 2. MÉTRICAS POR DÍA (ÚLTIMOS 7 DÍAS DESDE LA FECHA ANCLA)
     // ============================================================
     const dailyMetrics = isAllYards
       ? await sql`
           SELECT
-            DATE(created_at) as date,
+            ${sql.unsafe(localDateExpr)} as date,
             COUNT(CASE WHEN status <> 'superseded' THEN 1 END) as total_inspections,
             COUNT(CASE WHEN status IN ('completed', 'audited') THEN 1 END) as completed,
             COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
           FROM inspections
-          WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
-          GROUP BY DATE(created_at)
+          WHERE ${sql.unsafe(`${localDateExpr} >= ${dateLiteral} - INTERVAL '7 days'`)}
+          GROUP BY ${sql.unsafe(localDateExpr)}
           ORDER BY date DESC
         `
       : await sql`
           SELECT
-            DATE(created_at) as date,
+            ${sql.unsafe(localDateExpr)} as date,
             COUNT(CASE WHEN status <> 'superseded' THEN 1 END) as total_inspections,
             COUNT(CASE WHEN status IN ('completed', 'audited') THEN 1 END) as completed,
             COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
           FROM inspections
-          WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+          WHERE ${sql.unsafe(`${localDateExpr} >= ${dateLiteral} - INTERVAL '7 days'`)}
             AND location = ${yardCode}
-          GROUP BY DATE(created_at)
+          GROUP BY ${sql.unsafe(localDateExpr)}
           ORDER BY date DESC
         `
 
@@ -179,12 +191,13 @@ export default async function handler(req, res) {
     // en absoluto. NOTA: la sincronización de tpr solo retiene ~2-7 días,
     // por lo que esta comparación es más precisa para period=day.
     let tprDateCondition = ''
+    const tprDateLiteral = anchorDate ? `TO_DATE('${anchorDate}', 'YYYY-MM-DD')` : 'CURRENT_DATE'
     if (period === 'day') {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') = CURRENT_DATE`
+      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') = ${tprDateLiteral}`
     } else if (period === 'week') {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('week', CURRENT_DATE)`
+      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('week', ${tprDateLiteral})`
     } else {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', CURRENT_DATE)`
+      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', ${tprDateLiteral})`
     }
 
     let nbcw = { total: 0, inspected: 0, pending: 0 }
@@ -192,48 +205,38 @@ export default async function handler(req, res) {
     try {
       const tprRows = isAllYards
         ? await sql`
-            SELECT blno, seal, truckid, fromd
+            SELECT wono, fromd
             FROM tpr
             WHERE ${sql.unsafe(tprDateCondition)}
           `
         : await sql`
-            SELECT blno, seal, truckid, fromd
+            SELECT wono, fromd
             FROM tpr
             WHERE ${sql.unsafe(tprDateCondition)}
               AND TRIM(fromd) = ${yardCode}
           `
 
-      // IMPORTANTE: el cruce debe limitarse al MISMO rango de fechas que se
-      // está midiendo (dateCondition), no a una ventana fija de 30 días.
-      // Los números de tractor/remolque se reutilizan día a día, así que una
-      // inspección de ayer con el mismo tractor NO cuenta como "ya
-      // inspeccionado" para un movimiento de HOY (falso positivo).
+      // El cruce se hace por WORK ORDER (wono), igual que en tpr.js. Así una
+      // misma caja/tractor puede inspeccionarse varias veces al día para
+      // movimientos distintos, y no se generan falsos positivos por números
+      // reutilizados entre días.
       const inspectedRows = await sql`
-        SELECT DISTINCT
-          UPPER(TRIM(trailer_number)) AS trailer_number,
-          UPPER(TRIM(seal_number))    AS seal_number,
-          UPPER(TRIM(lock_number))    AS lock_number,
-          UPPER(TRIM(tractor_number)) AS tractor_number
+        SELECT DISTINCT UPPER(TRIM(wono)) AS wono
         FROM inspections
         WHERE status <> 'superseded'
+          AND wono IS NOT NULL
+          AND TRIM(wono) <> ''
           AND ${sql.unsafe(dateCondition)}
       `
       const inspectedSet = new Set()
       for (const row of inspectedRows) {
-        if (row.trailer_number) inspectedSet.add(row.trailer_number)
-        if (row.seal_number) inspectedSet.add(row.seal_number)
-        if (row.lock_number) inspectedSet.add(row.lock_number)
-        if (row.tractor_number) inspectedSet.add(row.tractor_number)
+        if (row.wono) inspectedSet.add(row.wono)
       }
 
       const perYard = new Map()
       for (const m of tprRows) {
-        const blno = m.blno?.toString().trim().toUpperCase()
-        const seal = m.seal?.toString().trim().toUpperCase()
-        const truck = m.truckid?.toString().trim().toUpperCase()
-        const already = !!(blno && inspectedSet.has(blno)) ||
-                        !!(seal && inspectedSet.has(seal)) ||
-                        !!(truck && inspectedSet.has(truck))
+        const wono = m.wono?.toString().trim().toUpperCase()
+        const already = !!(wono && inspectedSet.has(wono))
 
         nbcw.total++
         if (already) nbcw.inspected++

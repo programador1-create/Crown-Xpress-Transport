@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import { BarChart3, Users, Calendar, CheckCircle, Clock, AlertCircle, RefreshCw, TrendingUp, Award, MapPin, Building2, Truck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
+function getLocalISODate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function MetricsView() {
   const { t, language } = useLanguage()
   const [period, setPeriod] = useState('day')
@@ -14,7 +21,13 @@ export default function MetricsView() {
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ period, yardCode: selectedYard })
+      const now = new Date()
+      const params = new URLSearchParams({
+        period,
+        yardCode: selectedYard,
+        date: getLocalISODate(now),
+        offset: now.getTimezoneOffset().toString(),
+      })
 
       const res = await fetch(`/api/metrics?${params}`)
       const data = await res.json()
