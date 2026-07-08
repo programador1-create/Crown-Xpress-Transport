@@ -249,7 +249,9 @@ export default async function handler(req, res) {
     }
 
     // 2. Inspecciones del periodo con work order (cruce primario).
-    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos).
+    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos)
+    // y que tengan PDF generado (pdf_data IS NOT NULL), ya que un camión puede
+    // tener múltiples inspecciones en el día pero solo las completadas cuentan.
     let inspectedSet = new Set()
     try {
       const inspectedQuery = `
@@ -260,6 +262,7 @@ export default async function handler(req, res) {
           AND TRIM(wono) <> ''
           AND ${dateCondition}
           AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
+          AND pdf_data IS NOT NULL
       `
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
@@ -271,7 +274,8 @@ export default async function handler(req, res) {
     }
 
     // 3. Fallback por tractor para inspecciones sin work order (datos antiguos).
-    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos).
+    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos)
+    // y que tengan PDF generado (pdf_data IS NOT NULL).
     let fallbackTractors = new Set()
     try {
       const fallbackQuery = `
@@ -283,6 +287,7 @@ export default async function handler(req, res) {
           AND TRIM(tractor_number) <> ''
           AND ${dateCondition}
           AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
+          AND pdf_data IS NOT NULL
       `
       const fallbackRows = await sql.query(fallbackQuery, [])
       for (const row of fallbackRows) {
