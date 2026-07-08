@@ -172,11 +172,11 @@ export default function MetricsView() {
         <div className="card-header">
           <h3 className="text-base font-semibold text-white flex items-center gap-2">
             <Truck className="w-5 h-5" />
-            {language === 'es' ? 'NBCW — Métricas del Día' : 'NBCW — Daily Metrics'}
+            {language === 'es' ? 'NBCW — Pendientes Reales' : 'NBCW — Actual Pending'}
           </h3>
         </div>
         <div className="card-body">
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="text-center">
               <p className="text-3xl font-extrabold text-crown-navy">{nbcw.total}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">
@@ -186,13 +186,19 @@ export default function MetricsView() {
             <div className="text-center">
               <p className="text-3xl font-extrabold text-green-600">{nbcw.inspected}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">
-                {language === 'es' ? 'Inspecciones 20 pts' : '20-pt Inspections'}
+                {language === 'es' ? 'Cruzan TPR' : 'Match TPR'}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-blue-600">{nbcw.inspectedToday || 0}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">
+                {language === 'es' ? 'Inspecc. Hoy' : 'Insp. Today'}
               </p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-extrabold text-red-600">{nbcw.pending}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">
-                {language === 'es' ? 'Pendientes NBCW' : 'NBCW Pending'}
+                {language === 'es' ? 'Pendientes' : 'Pending'}
               </p>
             </div>
           </div>
@@ -204,8 +210,8 @@ export default function MetricsView() {
           </div>
           <p className="text-xs text-slate-400 mt-3">
             {language === 'es'
-              ? 'Salidas registradas en sistema NBCW vs inspecciones de 20 puntos creadas. "Pendientes NBCW" son las salidas que aún no tienen inspección.'
-              : 'NBCW system outputs vs 20-point inspections created. "NBCW Pending" are outputs without inspection.'}
+              ? 'Compara las salidas registradas en NBCW contra las inspecciones realmente creadas (sin importar si ya fueron aprobadas por el supervisor). "Pendientes Reales" son las que aún no se han inspeccionado.'
+              : 'Compares NBCW logged outputs against inspections actually created (regardless of supervisor approval). "Actually Pending" are the ones not yet inspected at all.'}
           </p>
 
           {metrics?.debug && (

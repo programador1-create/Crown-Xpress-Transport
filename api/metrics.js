@@ -205,7 +205,7 @@ export default async function handler(req, res) {
       tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', ${tprDateLiteral})`
     }
 
-    let nbcw = { total: 0, inspected: 0, pending: 0 }
+    let nbcw = { total: 0, inspected: 0, pending: 0, inspectedToday: 0 }
     let nbcwByYard = []
     console.log('Metrics date params:', { anchorDate, offset, period, yardCode, isAllYards, dateCondition, tprDateCondition })
 
@@ -249,9 +249,6 @@ export default async function handler(req, res) {
     }
 
     // 2. Inspecciones del periodo con work order (cruce primario).
-    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos)
-    // y que tengan PDF generado (pdf_data IS NOT NULL), ya que un camión puede
-    // tener múltiples inspecciones en el día pero solo las completadas cuentan.
     let inspectedSet = new Set()
     try {
       const inspectedQuery = `
@@ -261,8 +258,6 @@ export default async function handler(req, res) {
           AND wono IS NOT NULL
           AND TRIM(wono) <> ''
           AND ${dateCondition}
-          AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
-          AND pdf_data IS NOT NULL
       `
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
@@ -273,9 +268,23 @@ export default async function handler(req, res) {
       console.error('NBCW inspectedRows query failed:', inspErr.message, inspErr.stack)
     }
 
+    // 2b. Contar inspecciones de hoy (todas, no solo las que cruzan con TPR)
+    let inspectedTodayCount = 0
+    try {
+      const todayInspectedQuery = `
+        SELECT COUNT(*) AS count
+        FROM inspections
+        WHERE status <> 'superseded'
+          AND ${dateCondition}
+      `
+      const todayResult = await sql.query(todayInspectedQuery, [])
+      inspectedTodayCount = Number(todayResult[0]?.count) || 0
+      console.log('NBCW inspectedToday count:', inspectedTodayCount)
+    } catch (todayErr) {
+      console.error('NBCW inspectedToday query failed:', todayErr.message, todayErr.stack)
+    }
+
     // 3. Fallback por tractor para inspecciones sin work order (datos antiguos).
-    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos)
-    // y que tengan PDF generado (pdf_data IS NOT NULL).
     let fallbackTractors = new Set()
     try {
       const fallbackQuery = `
@@ -286,8 +295,6 @@ export default async function handler(req, res) {
           AND tractor_number IS NOT NULL
           AND TRIM(tractor_number) <> ''
           AND ${dateCondition}
-          AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
-          AND pdf_data IS NOT NULL
       `
       const fallbackRows = await sql.query(fallbackQuery, [])
       for (const row of fallbackRows) {
@@ -323,6 +330,7 @@ export default async function handler(req, res) {
       }
     }
     nbcw.pending = Math.max(0, nbcw.total - nbcw.inspected)
+    nbcw.inspectedToday = inspectedTodayCount
     console.log('NBCW result:', nbcw)
 
     if (isAllYards) {
