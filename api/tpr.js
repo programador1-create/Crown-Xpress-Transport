@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY fecha DESC, timearrv DESC
+      ORDER BY TO_DATE(fecha, 'MM/DD/YYYY') DESC, timearrv DESC
     `
 
     const allMovements = await sql.query(query, params)

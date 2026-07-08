@@ -4,6 +4,31 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTprMovements } from '../utils/api'
 
+// Helpers for local date handling (avoids UTC shifts in UTC-7)
+function getLocalISODate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseMovementDate(dateStr) {
+  if (!dateStr) return null
+  const trimmed = dateStr.toString().trim()
+  const parts = trimmed.split('/')
+  if (parts.length === 3) {
+    const month = parseInt(parts[0], 10)
+    const day = parseInt(parts[1], 10)
+    const year = parseInt(parts[2], 10)
+    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+      return getLocalISODate(new Date(year, month - 1, day))
+    }
+  }
+  const d = new Date(trimmed)
+  if (!isNaN(d.getTime())) return getLocalISODate(d)
+  return null
+}
+
 // Helper component for detail rows
 function DetailRow({ label, value }) {
   const displayValue = value?.toString().trim() || '-'
@@ -31,6 +56,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [todayPendingCount, setTodayPendingCount] = useState(0)
   const [olderPendingCount, setOlderPendingCount] = useState(0)
   const [countdown, setCountdown] = useState(60)
+  const [dateFilter, setDateFilter] = useState('last2days')
   const pollingRef = useRef(null)
   const countdownRef = useRef(null)
 
@@ -48,21 +74,19 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         setMovements(movementsData)
         
         // Filter by last 2 days for pending count - separate today vs older
-        const today = new Date().toISOString().split('T')[0]
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-        
+        const today = getLocalISODate()
+        const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
+
         const todayPending = movementsData.filter(m => {
-          if (!m.date) return false
-          const movementDate = new Date(m.date).toISOString().split('T')[0]
+          const movementDate = parseMovementDate(m.date || m.fecha_raw)
           return movementDate === today && !m.already_inspected
         })
-        
+
         const olderPending = movementsData.filter(m => {
-          if (!m.date) return false
-          const movementDate = new Date(m.date).toISOString().split('T')[0]
+          const movementDate = parseMovementDate(m.date || m.fecha_raw)
           return movementDate !== today && !m.already_inspected
         })
-        
+
         setTodayPendingCount(todayPending.length)
         setOlderPendingCount(olderPending.length)
         setPendingCount(todayPending.length + olderPending.length)
@@ -108,7 +132,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
 
   useEffect(() => {
     filterMovements()
-  }, [movements, searchTerm, hideInspected])
+  }, [movements, searchTerm, hideInspected, dateFilter])
 
 
   const filterMovements = () => {
@@ -129,12 +153,14 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       )
     }
 
-    // Filtrar por fecha de los últimos 2 días
-    const today = new Date().toISOString().split('T')[0]
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    // Filtrar por fecha usando zona horaria local
+    const today = getLocalISODate()
+    const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
     filtered = filtered.filter(m => {
-      if (!m.date) return false
-      const movementDate = new Date(m.date).toISOString().split('T')[0]
+      const movementDate = parseMovementDate(m.date || m.fecha_raw)
+      if (!movementDate) return false
+      if (dateFilter === 'today') return movementDate === today
+      if (dateFilter === 'yesterday') return movementDate === yesterday
       return movementDate === today || movementDate === yesterday
     })
 
@@ -292,6 +318,28 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-crown-navy/20"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">
+              {language === 'es' ? 'Fecha:' : 'Date:'}
+            </span>
+            {[
+              { key: 'today', labelEs: 'Hoy', labelEn: 'Today' },
+              { key: 'yesterday', labelEs: 'Ayer', labelEn: 'Yesterday' },
+              { key: 'last2days', labelEs: '2 días', labelEn: '2 days' },
+            ].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setDateFilter(opt.key)}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  dateFilter === opt.key
+                    ? 'bg-crown-navy text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {language === 'es' ? opt.labelEs : opt.labelEn}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Error */}
@@ -321,8 +369,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             <div className="space-y-3">
               {filteredMovements.map((movement, index) => {
                 // Determine row color based on date
-                const today = new Date().toISOString().split('T')[0]
-                const movementDate = movement.date ? new Date(movement.date).toISOString().split('T')[0] : null
+                const today = getLocalISODate()
+                const movementDate = parseMovementDate(movement.date || movement.fecha_raw)
                 const isToday = movementDate === today
                 const isOlder = movementDate && movementDate !== today
 
