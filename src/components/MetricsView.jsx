@@ -101,7 +101,6 @@ export default function MetricsView() {
   const completed = general.completed || 0
   const pending = general.pending || 0
   const audited = general.audited || 0
-  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -239,27 +238,6 @@ export default function MetricsView() {
         </div>
       </div>
 
-      {/* Completion Rate Bar */}
-      <div className="card">
-        <div className="card-body !py-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-crown-navy" />
-              <span className="font-semibold text-slate-700 text-sm">
-                {language === 'es' ? 'Tasa de aprobación' : 'Approval rate'}
-              </span>
-            </div>
-            <span className="text-lg font-bold text-crown-navy">{completionRate}%</span>
-          </div>
-          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-crown-navy to-crown-gold rounded-full transition-all duration-700"
-              style={{ width: `${completionRate}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Metrics by Yard (only on general report) */}
       {isAllYards && (
         <div className="card">
@@ -275,9 +253,6 @@ export default function MetricsView() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {byYard.map((y) => {
-                  const rate = y.total_inspections > 0
-                    ? Math.round((y.completed / y.total_inspections) * 100)
-                    : 0
                   return (
                     <button
                       key={y.yard_id}
@@ -291,15 +266,6 @@ export default function MetricsView() {
                         <div className="min-w-0">
                           <p className="font-semibold text-slate-800 truncate">{y.yard_name}</p>
                           <p className="text-[10px] uppercase tracking-wide text-slate-400">{y.yard_code} · {y.yard_type}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-green-500 rounded-full"
-                                style={{ width: `${rate}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-slate-500 font-medium">{rate}%</span>
-                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 flex-shrink-0">
@@ -331,9 +297,6 @@ export default function MetricsView() {
           ) : (
             <div className="space-y-2">
               {byGuard.map((guard, idx) => {
-                const rate = guard.total_inspections > 0
-                  ? Math.round((guard.completed / guard.total_inspections) * 100)
-                  : 0
                 return (
                   <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
                     <div className="flex items-center gap-3 min-w-0">
@@ -349,15 +312,6 @@ export default function MetricsView() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 truncate">{guard.guard_name}</p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-green-500 rounded-full"
-                              style={{ width: `${rate}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-slate-500 font-medium">{rate}%</span>
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-5 flex-shrink-0">
@@ -388,9 +342,6 @@ export default function MetricsView() {
           ) : (
             <div className="space-y-2">
               {byDay.map((day, idx) => {
-                const rate = day.total_inspections > 0
-                  ? Math.round((day.completed / day.total_inspections) * 100)
-                  : 0
                 return (
                   <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
                     <div className="flex items-center gap-3 min-w-0">
@@ -405,15 +356,6 @@ export default function MetricsView() {
                             day: 'numeric'
                           })}
                         </p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-green-500 rounded-full"
-                              style={{ width: `${rate}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-slate-500 font-medium">{rate}%</span>
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-5 flex-shrink-0">
