@@ -249,6 +249,7 @@ export default async function handler(req, res) {
     }
 
     // 2. Inspecciones del periodo con work order (cruce primario).
+    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos).
     let inspectedSet = new Set()
     try {
       const inspectedQuery = `
@@ -258,6 +259,7 @@ export default async function handler(req, res) {
           AND wono IS NOT NULL
           AND TRIM(wono) <> ''
           AND ${dateCondition}
+          AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
       `
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
@@ -269,6 +271,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Fallback por tractor para inspecciones sin work order (datos antiguos).
+    // Solo contamos inspecciones de 20 puntos (excluyendo botada de 10 puntos).
     let fallbackTractors = new Set()
     try {
       const fallbackQuery = `
@@ -279,6 +282,7 @@ export default async function handler(req, res) {
           AND tractor_number IS NOT NULL
           AND TRIM(tractor_number) <> ''
           AND ${dateCondition}
+          AND (inspection_type NOT IN ('BOBTAIL', 'BOTADA') OR inspection_type IS NULL)
       `
       const fallbackRows = await sql.query(fallbackQuery, [])
       for (const row of fallbackRows) {
