@@ -33,6 +33,7 @@ export default function MetricsView() {
       const data = await res.json()
       
       if (data.success) {
+        console.log('Metrics response:', data)
         setMetrics(data)
       } else {
         setError(data.error || 'Error loading metrics')
@@ -206,6 +207,17 @@ export default function MetricsView() {
               ? 'Compara las salidas registradas en NBCW contra las inspecciones realmente creadas (sin importar si ya fueron aprobadas por el supervisor). "Pendientes Reales" son las que aún no se han inspeccionado.'
               : 'Compares NBCW logged outputs against inspections actually created (regardless of supervisor approval). "Actually Pending" are the ones not yet inspected at all.'}
           </p>
+
+          {metrics?.debug && (
+            <details className="mt-3 text-xs">
+              <summary className="cursor-pointer text-slate-500 hover:text-slate-700">
+                {language === 'es' ? 'Diagnóstico NBCW' : 'NBCW diagnostics'}
+              </summary>
+              <pre className="mt-2 p-2 bg-slate-50 rounded text-[10px] overflow-auto">
+                {JSON.stringify(metrics.debug, null, 2)}
+              </pre>
+            </details>
+          )}
 
           {isAllYards && nbcwByYard.length > 0 && (
             <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">

@@ -343,7 +343,17 @@ export default async function handler(req, res) {
       byGuard: guardMetrics,
       byYard,
       nbcw,
-      nbcwByYard
+      nbcwByYard,
+      debug: {
+        anchorDate,
+        offset,
+        tprDateCondition,
+        dateCondition,
+        tprRowsCount: tprRows.length,
+        inspectedSetSize: inspectedSet.size,
+        fallbackTractorsSize: fallbackTractors.size,
+        nbcw
+      }
     })
 
   } catch (error) {
