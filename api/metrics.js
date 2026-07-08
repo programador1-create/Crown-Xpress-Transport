@@ -52,6 +52,12 @@ export default async function handler(req, res) {
     const isAllYards = !yardCode || yardCode === 'all'
 
     // ============================================================
+    // NBCW: Usar zona horaria de Tijuana para TPR (MM/DD/YYYY)
+    // ============================================================
+    const tprDateLiteral = anchorDate ? `'${anchorDate}'::date` : '(NOW() AT TIME ZONE \'America/Tijuana\')::date'
+    const tprLocalDateExpr = `(NOW() AT TIME ZONE 'America/Tijuana')::date`
+
+    // ============================================================
     // 0. LISTA DE YARDAS (existentes y recién creadas)
     // ============================================================
     const yards = await sql`
@@ -191,7 +197,6 @@ export default async function handler(req, res) {
     // en absoluto. NOTA: la sincronización de tpr solo retiene ~2-7 días,
     // por lo que esta comparación es más precisa para period=day.
     let tprDateCondition = ''
-    const tprDateLiteral = anchorDate ? `TO_DATE('${anchorDate}', 'YYYY-MM-DD')` : 'CURRENT_DATE'
     if (period === 'day') {
       tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') = ${tprDateLiteral}`
     } else if (period === 'week') {
@@ -231,8 +236,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days'`
-          : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days' AND TRIM(fromd) = $1`
+          ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`
+          : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND TRIM(fromd) = $1`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))

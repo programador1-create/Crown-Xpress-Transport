@@ -60,7 +60,8 @@ export default async function handler(req, res) {
 
     // Sincronizar registros de los ultimos 2 dias para mostrar pendientes
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days'`)
+    // Usamos zona horaria de Tijuana (America/Tijuana) para consistencia
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -121,7 +122,7 @@ export default async function handler(req, res) {
         WHERE status NOT IN ('superseded')
           AND wono IS NOT NULL
           AND TRIM(wono) <> ''
-          AND created_at >= NOW() - INTERVAL '7 days'
+          AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
       `
       for (const row of inspected) {
         if (row.wono) inspectedWonos.add(row.wono)
