@@ -250,6 +250,7 @@ export default async function handler(req, res) {
 
     // 2. Inspecciones del periodo con work order (cruce primario).
     let inspectedSet = new Set()
+    let inspectedWonosList = []
     try {
       const inspectedQuery = `
         SELECT DISTINCT UPPER(TRIM(wono)) AS wono
@@ -261,11 +262,31 @@ export default async function handler(req, res) {
       `
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
-        if (row.wono) inspectedSet.add(row.wono)
+        if (row.wono) {
+          inspectedSet.add(row.wono)
+          inspectedWonosList.push(row.wono)
+        }
       }
       console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique:', inspectedSet.size)
     } catch (inspErr) {
       console.error('NBCW inspectedRows query failed:', inspErr.message, inspErr.stack)
+    }
+
+    // 2a. Debug: inspecciones sin work order (para entender por qué no cruzan)
+    let nullWonoCount = 0
+    try {
+      const nullWonoQuery = `
+        SELECT COUNT(*) AS count
+        FROM inspections
+        WHERE status <> 'superseded'
+          AND (wono IS NULL OR TRIM(wono) = '')
+          AND ${dateCondition}
+      `
+      const nullResult = await sql.query(nullWonoQuery, [])
+      nullWonoCount = Number(nullResult[0]?.count) || 0
+      console.log('NBCW inspections without work order:', nullWonoCount)
+    } catch (nullErr) {
+      console.error('NBCW null wono query failed:', nullErr.message, nullErr.stack)
     }
 
     // 2b. Contar inspecciones de hoy (todas, no solo las que cruzan con TPR)
@@ -308,7 +329,10 @@ export default async function handler(req, res) {
     console.log('NBCW samples:', {
       sampleTprWonos: tprRows.slice(0, 5).map(r => r.wono?.toString().trim().toUpperCase()).filter(Boolean),
       sampleInspectionWonos: Array.from(inspectedSet).slice(0, 5),
-      sampleFallbackTractors: Array.from(fallbackTractors).slice(0, 5)
+      sampleFallbackTractors: Array.from(fallbackTractors).slice(0, 5),
+      allInspectionWonos: inspectedWonosList,
+      nullWonoCount,
+      inspectedTodayCount
     })
 
     const perYard = new Map()
@@ -374,6 +398,9 @@ export default async function handler(req, res) {
         tprRowsCount: tprRows.length,
         inspectedSetSize: inspectedSet.size,
         fallbackTractorsSize: fallbackTractors.size,
+        nullWonoCount,
+        inspectedTodayCount,
+        allInspectionWonos: inspectedWonosList,
         nbcw
       }
     })
