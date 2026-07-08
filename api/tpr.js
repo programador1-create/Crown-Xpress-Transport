@@ -117,16 +117,19 @@ export default async function handler(req, res) {
     const inspectedWonos = new Set()
     try {
       const inspected = await sql`
-        SELECT DISTINCT UPPER(TRIM(wono)) AS wono
+        SELECT DISTINCT UPPER(TRIM(wono)) AS wono, created_at
         FROM inspections
         WHERE status NOT IN ('superseded')
           AND wono IS NOT NULL
           AND TRIM(wono) <> ''
           AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
       `
+      console.log('Cross-filter: found', inspected.length, 'inspections with wono in last 7 days')
       for (const row of inspected) {
         if (row.wono) inspectedWonos.add(row.wono)
       }
+      console.log('Cross-filter: inspectedWonos size:', inspectedWonos.size)
+      console.log('Cross-filter: sample wonos:', Array.from(inspectedWonos).slice(0, 10))
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
@@ -135,6 +138,9 @@ export default async function handler(req, res) {
     const movements = allMovements.map(m => {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const already = !!(wono && inspectedWonos.has(wono))
+      if (m.truck_id?.toString().trim() === '465') {
+        console.log('DEBUG truck 465:', { wono, already, inspectedWonosHas: inspectedWonos.has(wono) })
+      }
       return { ...m, already_inspected: already }
     })
 
