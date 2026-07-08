@@ -202,102 +202,130 @@ export default async function handler(req, res) {
 
     let nbcw = { total: 0, inspected: 0, pending: 0 }
     let nbcwByYard = []
-    try {
-      console.log('Metrics date params:', { anchorDate, offset, dateCondition, tprDateCondition })
-      const tprRows = isAllYards
-        ? await sql`
-            SELECT wono, truckid, fromd
-            FROM tpr
-            WHERE ${sql.unsafe(tprDateCondition)}
-          `
-        : await sql`
-            SELECT wono, truckid, fromd
-            FROM tpr
-            WHERE ${sql.unsafe(tprDateCondition)}
-              AND TRIM(fromd) = ${yardCode}
-          `
+    console.log('Metrics date params:', { anchorDate, offset, period, yardCode, isAllYards, dateCondition, tprDateCondition })
 
-      // El cruce se hace por WORK ORDER (wono), igual que en tpr.js. Así una
-      // misma caja/tractor puede inspeccionarse varias veces al día para
-      // movimientos distintos, y no se generan falsos positivos por números
-      // reutilizados entre días.
-      const inspectedRows = await sql`
+    // 1. TPR rows (movimientos NBCW del periodo). Usamos sql.query como en tpr.js
+    // porque el driver de Neon lo soporta bien ahí.
+    let tprRows = []
+    try {
+      const tprQuery = isAllYards
+        ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition}`
+        : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND TRIM(fromd) = $1`
+      const tprParams = isAllYards ? [] : [yardCode]
+      tprRows = await sql.query(tprQuery, tprParams)
+      console.log('NBCW tprRows count:', tprRows.length, isAllYards ? '(all yards)' : `(yard ${yardCode})`)
+    } catch (tprErr) {
+      console.error('NBCW tprRows query failed:', tprErr.message, tprErr.stack)
+    }
+
+    // Fallback: si el filtro exacto no devuelve filas para el día, consultamos
+    // los últimos 2 días igual que tpr.js y filtramos en JS para evitar falsos 0.
+    function parseMdyToIso(mdy) {
+      if (!mdy) return null
+      const parts = String(mdy).split('/').map(Number)
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return null
+      const [m, d, y] = parts
+      return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    }
+
+    if (period === 'day' && tprRows.length === 0) {
+      try {
+        const fallbackQuery = isAllYards
+          ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days'`
+          : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= CURRENT_DATE - INTERVAL '2 days' AND TRIM(fromd) = $1`
+        const fallbackParams = isAllYards ? [] : [yardCode]
+        const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
+        const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))
+        tprRows = fallbackRows.filter(r => parseMdyToIso(r.fecha) === targetDate)
+        console.log('NBCW tprRows fallback count:', tprRows.length, 'from', fallbackRows.length, 'rows')
+      } catch (fallbackErr) {
+        console.error('NBCW tprRows fallback query failed:', fallbackErr.message, fallbackErr.stack)
+      }
+    }
+
+    // 2. Inspecciones del periodo con work order (cruce primario).
+    let inspectedSet = new Set()
+    try {
+      const inspectedQuery = `
         SELECT DISTINCT UPPER(TRIM(wono)) AS wono
         FROM inspections
         WHERE status <> 'superseded'
           AND wono IS NOT NULL
           AND TRIM(wono) <> ''
-          AND ${sql.unsafe(dateCondition)}
+          AND ${dateCondition}
       `
-      const inspectedSet = new Set()
+      const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
         if (row.wono) inspectedSet.add(row.wono)
       }
+      console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique:', inspectedSet.size)
+    } catch (inspErr) {
+      console.error('NBCW inspectedRows query failed:', inspErr.message, inspErr.stack)
+    }
 
-      // Fallback: inspecciones creadas sin work order (datos antiguos) pueden
-      // cruzarse por el número de tractor/camión (truckid) del TPR.
-      const fallbackRows = await sql`
+    // 3. Fallback por tractor para inspecciones sin work order (datos antiguos).
+    let fallbackTractors = new Set()
+    try {
+      const fallbackQuery = `
         SELECT DISTINCT UPPER(TRIM(tractor_number)) AS tractor_number
         FROM inspections
         WHERE status <> 'superseded'
           AND (wono IS NULL OR TRIM(wono) = '')
           AND tractor_number IS NOT NULL
           AND TRIM(tractor_number) <> ''
-          AND ${sql.unsafe(dateCondition)}
+          AND ${dateCondition}
       `
-      const fallbackTractors = new Set()
+      const fallbackRows = await sql.query(fallbackQuery, [])
       for (const row of fallbackRows) {
         if (row.tractor_number) fallbackTractors.add(row.tractor_number)
       }
+      console.log('NBCW fallbackTractors count:', fallbackTractors.size)
+    } catch (fallbackErr) {
+      console.error('NBCW fallbackRows query failed:', fallbackErr.message, fallbackErr.stack)
+    }
 
-      console.log('NBCW counts:', {
-        tprRows: tprRows.length,
-        inspectedRows: inspectedRows.length,
-        inspectedSet: inspectedSet.size,
-        fallbackTractors: fallbackTractors.size,
-        sampleTprWonos: tprRows.slice(0, 5).map(r => r.wono?.toString().trim().toUpperCase()).filter(Boolean),
-        sampleInspectionWonos: Array.from(inspectedSet).slice(0, 5)
-      })
+    console.log('NBCW samples:', {
+      sampleTprWonos: tprRows.slice(0, 5).map(r => r.wono?.toString().trim().toUpperCase()).filter(Boolean),
+      sampleInspectionWonos: Array.from(inspectedSet).slice(0, 5),
+      sampleFallbackTractors: Array.from(fallbackTractors).slice(0, 5)
+    })
 
-      const perYard = new Map()
-      for (const m of tprRows) {
-        const wono = m.wono?.toString().trim().toUpperCase()
-        const truck = m.truckid?.toString().trim().toUpperCase()
-        const already = !!(wono && inspectedSet.has(wono)) ||
-                        !!(truck && fallbackTractors.has(truck))
+    const perYard = new Map()
+    for (const m of tprRows) {
+      const wono = m.wono?.toString().trim().toUpperCase()
+      const truck = m.truckid?.toString().trim().toUpperCase()
+      const already = !!(wono && inspectedSet.has(wono)) ||
+                      !!(truck && fallbackTractors.has(truck))
 
-        nbcw.total++
-        if (already) nbcw.inspected++
+      nbcw.total++
+      if (already) nbcw.inspected++
 
-        const yc = m.fromd?.toString().trim().toUpperCase()
-        if (yc) {
-          if (!perYard.has(yc)) perYard.set(yc, { total: 0, inspected: 0 })
-          const entry = perYard.get(yc)
-          entry.total++
-          if (already) entry.inspected++
-        }
+      const yc = m.fromd?.toString().trim().toUpperCase()
+      if (yc) {
+        if (!perYard.has(yc)) perYard.set(yc, { total: 0, inspected: 0 })
+        const entry = perYard.get(yc)
+        entry.total++
+        if (already) entry.inspected++
       }
-      nbcw.pending = Math.max(0, nbcw.total - nbcw.inspected)
-      console.log('NBCW result:', nbcw)
+    }
+    nbcw.pending = Math.max(0, nbcw.total - nbcw.inspected)
+    console.log('NBCW result:', nbcw)
 
-      if (isAllYards) {
-        nbcwByYard = yards
-          .map(y => {
-            const e = perYard.get(y.code?.toUpperCase()) || { total: 0, inspected: 0 }
-            return {
-              yard_id: y.id,
-              yard_name: y.name,
-              yard_code: y.code,
-              nbcw_total: e.total,
-              nbcw_inspected: e.inspected,
-              nbcw_pending: Math.max(0, e.total - e.inspected),
-            }
-          })
-          .filter(y => y.nbcw_total > 0)
-          .sort((a, b) => b.nbcw_total - a.nbcw_total)
-      }
-    } catch (nbcwErr) {
-      console.warn('NBCW cross-check failed (non-fatal):', nbcwErr.message)
+    if (isAllYards) {
+      nbcwByYard = yards
+        .map(y => {
+          const e = perYard.get(y.code?.toUpperCase()) || { total: 0, inspected: 0 }
+          return {
+            yard_id: y.id,
+            yard_name: y.name,
+            yard_code: y.code,
+            nbcw_total: e.total,
+            nbcw_inspected: e.inspected,
+            nbcw_pending: Math.max(0, e.total - e.inspected),
+          }
+        })
+        .filter(y => y.nbcw_total > 0)
+        .sort((a, b) => b.nbcw_total - a.nbcw_total)
     }
 
     // ============================================================
