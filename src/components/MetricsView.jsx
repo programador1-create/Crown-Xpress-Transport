@@ -176,17 +176,11 @@ export default function MetricsView() {
           </h3>
         </div>
         <div className="card-body">
-          <div className="grid grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="text-center">
               <p className="text-3xl font-extrabold text-crown-navy">{nbcw.total}</p>
               <p className="text-xs font-medium text-slate-500 mt-1">
                 {language === 'es' ? 'Salidas NBCW' : 'NBCW Outputs'}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-extrabold text-green-600">{nbcw.inspected}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">
-                {language === 'es' ? 'Cruzan TPR' : 'Match TPR'}
               </p>
             </div>
             <div className="text-center">
@@ -244,39 +238,6 @@ export default function MetricsView() {
           )}
         </div>
       </div>
-
-      {/* General Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={BarChart3}
-          label={language === 'es' ? 'Total Registradas' : 'Total Registered'}
-          value={total}
-          color="blue"
-        />
-        <MetricCard
-          icon={CheckCircle}
-          label={language === 'es' ? 'Aprobadas' : 'Approved'}
-          value={completed}
-          color="green"
-        />
-        <MetricCard
-          icon={Clock}
-          label={language === 'es' ? 'Pend. Aprobación' : 'Pending Approval'}
-          value={pending}
-          color="yellow"
-        />
-        <MetricCard
-          icon={AlertCircle}
-          label={language === 'es' ? 'Auditadas' : 'Audited'}
-          value={audited}
-          color="red"
-        />
-      </div>
-      <p className="text-xs text-slate-400 -mt-2 px-1">
-        {language === 'es'
-          ? 'Nota: "Pend. Aprobación" ya está incluida dentro del Total — son inspecciones realizadas por el guard que esperan la firma del supervisor.'
-          : 'Note: "Pending Approval" is already included in the Total — these are inspections completed by the guard awaiting supervisor sign-off.'}
-      </p>
 
       {/* Completion Rate Bar */}
       <div className="card">
@@ -346,14 +307,6 @@ export default function MetricsView() {
                           <p className="text-lg font-bold text-slate-800">{y.total_inspections}</p>
                           <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Total' : 'Total'}</p>
                         </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-green-600">{y.completed}</p>
-                          <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Aprobadas' : 'Approved'}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-yellow-600">{y.pending}</p>
-                          <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Pend. Aprob.' : 'Pend. Appr.'}</p>
-                        </div>
                       </div>
                     </button>
                   )
@@ -412,14 +365,6 @@ export default function MetricsView() {
                         <p className="text-lg font-bold text-slate-800">{guard.total_inspections}</p>
                         <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Total' : 'Total'}</p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-green-600">{guard.completed}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Aprobadas' : 'Approved'}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-yellow-600">{guard.pending}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Pend. Aprob.' : 'Pend. Appr.'}</p>
-                      </div>
                     </div>
                   </div>
                 )
@@ -475,14 +420,6 @@ export default function MetricsView() {
                       <div className="text-center">
                         <p className="text-lg font-bold text-slate-800">{day.total_inspections}</p>
                         <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Total' : 'Total'}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-green-600">{day.completed}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Aprobadas' : 'Approved'}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-yellow-600">{day.pending}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{language === 'es' ? 'Pend. Aprob.' : 'Pend. Appr.'}</p>
                       </div>
                     </div>
                   </div>
