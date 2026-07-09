@@ -171,11 +171,27 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     // Determinar tipo de equipo e inspección basado en campos TPR
     const el = movement.equipment_type?.trim() // 'L' = Loaded, 'E' = Empty
     const eqpcode = movement.equipment_code?.trim() || ''
-    const isBotada = eqpcode.includes('Botada') || eqpcode.includes('BOTADA')
-    
+    const tableCode = movement.table_code?.trim() || ''
+    const eqpUpper = eqpcode.toUpperCase()
+    // Detectar Botada de forma estricta: eqpcode exactamente BOTADA o table_code BOTADA
+    const isBotada = eqpUpper === 'BOTADA' || tableCode.toUpperCase() === 'BOTADA'
+
+    // Log para debuggear inconsistencias en clasificación Botada
+    if (eqpUpper.includes('BOTADA') || tableCode.toUpperCase().includes('BOTADA')) {
+      console.log('Botada classification debug:', {
+        workOrder: movement.work_order,
+        truckId: movement.truck_id,
+        eqpcode,
+        tableCode,
+        equipmentType: el,
+        isBotada,
+        inspectionType: isBotada ? 'BOBTAIL' : (el === 'E' ? 'EMPTY' : 'LOADED')
+      })
+    }
+
     let inspectionType = 'LOADED'
     let inspectionReason = ''
-    
+
     if (isBotada) {
       inspectionType = 'BOBTAIL'
       inspectionReason = 'Botada - Solo tractor sin trailer'
@@ -424,8 +440,9 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
                           const eqpUpper = eqp.toUpperCase()
 
                           // Detectar tipo de equipo basado en eqpcode
+                          const tableCode = movement.table_code?.trim() || ''
                           let tipoEquipo = ''
-                          if (eqp.includes('Botada') || eqp.includes('BOTADA')) {
+                          if (eqpUpper === 'BOTADA' || tableCode.toUpperCase() === 'BOTADA') {
                             tipoEquipo = 'BOTADO'
                           } else if (eqpUpper.startsWith('CXC') || /^[A-Z]{4}-\d{6}-\d$/.test(eqpUpper)) {
                             tipoEquipo = 'CONTENEDOR'
