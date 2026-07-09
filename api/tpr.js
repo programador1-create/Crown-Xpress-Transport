@@ -153,7 +153,7 @@ export default async function handler(req, res) {
           // Si tenemos tprId, cruzamos también solo por work_order::tpr_id
           // para evitar problemas de fecha u otros campos.
           if (tprId) {
-            inspectedByTprId.add(`${workOrder}::${tprId}`)
+            inspectedByTprId.add(`${workOrder}::${tprId.toLowerCase()}`)
           } else {
             // Fallback para inspecciones antiguas sin tpr_id: matchear solo por work_order
             inspectedByWono.add(workOrder)
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
       const fecha = m.fecha?.toString().trim() || ''
       const sqlId = m.sql_id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
-      const sqlIdKey = sqlId && wono ? `${wono}::${sqlId}` : null
+      const sqlIdKey = sqlId && wono ? `${wono}::${sqlId.toLowerCase()}` : null
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
       const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
       const alreadyByWonoOnly = !!(wono && inspectedByWono.has(wono))
@@ -212,6 +212,7 @@ export default async function handler(req, res) {
           already,
           alreadyByWono,
           alreadyBySqlId,
+          alreadyByWonoOnly,
           alreadyByTractor,
           fecha: m.fecha,
         })
