@@ -341,7 +341,7 @@ async function syncTprToNeon() {
           row.tablecode || null,
           row.trxcode || null
         )
-        paramIndex += 26
+        paramIndex += 27
       }
 
       const query = `INSERT INTO tpr (${columns}) VALUES ${values.join(', ')}`
