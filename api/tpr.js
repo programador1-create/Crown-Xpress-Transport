@@ -119,6 +119,7 @@ export default async function handler(req, res) {
     // solo no identifica de forma única un movimiento. Se agrega el id de Neon de la fila TPR.
     // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     const inspectedKeys = new Set()
+    const inspectedByTprId = new Set()
     try {
       const inspected = await sql`
         SELECT DISTINCT
@@ -145,9 +146,14 @@ export default async function handler(req, res) {
             ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
             : ''
           inspectedKeys.add(`${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${tprId}`)
+          // Si tenemos tprId, cruzamos también solo por work_order::tpr_id
+          // para evitar problemas de fecha u otros campos.
+          if (tprId) {
+            inspectedByTprId.add(`${workOrder}::${tprId}`)
+          }
         }
       }
-      console.log('TPR inspectedKeys count:', inspectedKeys.size)
+      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size)
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
@@ -171,7 +177,7 @@ export default async function handler(req, res) {
       console.warn('Fallback tractor query failed (non-fatal):', localErr.message)
     }
 
-    // Mark each movement with already_inspected flag (matched by composite key)
+    // Mark each movement with already_inspected flag (matched by composite key or tprId)
     const movements = allMovements.map(m => {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
@@ -179,9 +185,11 @@ export default async function handler(req, res) {
       const fecha = m.fecha?.toString().trim() || ''
       const tprId = m.id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${tprId}`
+      const tprIdKey = tprId && wono ? `${wono}::${tprId}` : null
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
+      const alreadyByTprId = !!(tprIdKey && inspectedByTprId.has(tprIdKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      const already = alreadyByWono || alreadyByTractor
+      const already = alreadyByWono || alreadyByTprId || alreadyByTractor
 
       // Debug: log specific trucks
       const debugTrucks = ['465', '409', '358']
@@ -192,8 +200,10 @@ export default async function handler(req, res) {
           fromd,
           tprId,
           compositeKey,
+          tprIdKey,
           already,
           alreadyByWono,
+          alreadyByTprId,
           alreadyByTractor,
           fecha: m.fecha,
         })

@@ -254,6 +254,7 @@ export default async function handler(req, res) {
     // misma fromd y fecha, así que wono + truck_id + fromd + fecha no es suficiente.
     // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     let inspectedSet = new Set()
+    let inspectedByTprId = new Set()
     let inspectedWonosList = []
     try {
       const inspectedQuery = `
@@ -283,10 +284,14 @@ export default async function handler(req, res) {
             : ''
           const key = `${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${tprId}`
           inspectedSet.add(key)
+          // Si tenemos tprId, cruzamos también solo por work_order::tpr_id
+          if (tprId) {
+            inspectedByTprId.add(`${workOrder}::${tprId}`)
+          }
           inspectedWonosList.push(row.wono)
         }
       }
-      console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique keys:', inspectedSet.size)
+      console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique keys:', inspectedSet.size, 'inspectedByTprId:', inspectedByTprId.size)
     } catch (inspErr) {
       console.error('NBCW inspectedRows query failed:', inspErr.message, inspErr.stack)
     }
@@ -362,9 +367,11 @@ export default async function handler(req, res) {
       const fecha = m.fecha?.toString().trim() || ''
       const tprId = m.id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${tprId}`
+      const tprIdKey = tprId && wono ? `${wono}::${tprId}` : null
       const alreadyByWono = !!(wono && inspectedSet.has(compositeKey))
+      const alreadyByTprId = !!(tprIdKey && inspectedByTprId.has(tprIdKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      const already = alreadyByWono || alreadyByTractor
+      const already = alreadyByWono || alreadyByTprId || alreadyByTractor
 
       nbcw.total++
       if (already) nbcw.inspected++
