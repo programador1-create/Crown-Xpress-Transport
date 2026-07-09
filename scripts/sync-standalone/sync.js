@@ -145,7 +145,14 @@ async function syncTprToNeon() {
 
     const result = await sqlPool.request().query(`
       SELECT
-        DRVID            AS sql_id,
+        HASHBYTES('MD5', CONCAT(
+          ISNULL(RTRIM(WONO), ''), '|',
+          ISNULL(RTRIM(TRUCKID), ''), '|',
+          ISNULL(RTRIM(FECHA), ''), '|',
+          ISNULL(RTRIM(FROMD), ''), '|',
+          ISNULL(RTRIM(TOD), ''), '|',
+          ISNULL(RTRIM(TIMEARRV), '')
+        )) AS sql_id,
         RTRIM(DRVCODE)   AS drvcode,
         RTRIM(WONO)      AS wono,
         RTRIM(BLNO)      AS blno,
