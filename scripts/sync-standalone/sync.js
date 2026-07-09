@@ -221,7 +221,7 @@ async function syncTprToNeon() {
     await neonClient.query(`
       CREATE TABLE IF NOT EXISTS tpr (
         id SERIAL PRIMARY KEY,
-        sql_id VARCHAR(50) UNIQUE,
+        sql_id VARCHAR(50),
         drvcode VARCHAR(50),
         wono VARCHAR(50),
         blno VARCHAR(50),
