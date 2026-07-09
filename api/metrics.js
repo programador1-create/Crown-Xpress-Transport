@@ -249,11 +249,16 @@ export default async function handler(req, res) {
     }
 
     // 2. Inspecciones del periodo con work order (cruce primario).
+    // Usamos CLAVE COMPUESTA: wono + tractor_number + location, porque un
+    // mismo wono puede tener varios movimientos (ida y vuelta).
     let inspectedSet = new Set()
     let inspectedWonosList = []
     try {
       const inspectedQuery = `
-        SELECT DISTINCT UPPER(TRIM(wono)) AS wono
+        SELECT DISTINCT
+          UPPER(TRIM(wono)) AS wono,
+          UPPER(TRIM(tractor_number)) AS truck_id,
+          UPPER(TRIM(location)) AS location
         FROM inspections
         WHERE status <> 'superseded'
           AND wono IS NOT NULL
@@ -263,11 +268,12 @@ export default async function handler(req, res) {
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
         if (row.wono) {
-          inspectedSet.add(row.wono)
+          const key = `${row.wono}::${row.truck_id || ''}::${row.location || ''}`
+          inspectedSet.add(key)
           inspectedWonosList.push(row.wono)
         }
       }
-      console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique:', inspectedSet.size)
+      console.log('NBCW inspectedRows count:', inspectedRows.length, 'unique keys:', inspectedSet.size)
     } catch (inspErr) {
       console.error('NBCW inspectedRows query failed:', inspErr.message, inspErr.stack)
     }
@@ -339,8 +345,11 @@ export default async function handler(req, res) {
     for (const m of tprRows) {
       const wono = m.wono?.toString().trim().toUpperCase()
       const truck = m.truckid?.toString().trim().toUpperCase()
-      const already = !!(wono && inspectedSet.has(wono)) ||
-                      !!(truck && fallbackTractors.has(truck))
+      const fromd = m.fromd?.toString().trim().toUpperCase()
+      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}`
+      const alreadyByWono = !!(wono && inspectedSet.has(compositeKey))
+      const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
+      const already = alreadyByWono || alreadyByTractor
 
       nbcw.total++
       if (already) nbcw.inspected++

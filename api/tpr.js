@@ -111,13 +111,17 @@ export default async function handler(req, res) {
     // ============================================================
     // 2. Cross-filter: marcar los ya inspeccionados
     // ============================================================
-    // El cruce se hace por WORK ORDER (wono), que identifica de forma única
-    // cada movimiento. Así una misma caja/tractor puede inspeccionarse varias
-    // veces al día para movimientos distintos (cada uno con su propio wono).
-    const inspectedWonos = new Set()
+    // El cruce se hace por CLAVE COMPUESTA: WORK ORDER + TRUCK ID + FROMD.
+    // Un mismo work order (wono) puede aparecer varias veces en TPR para
+    // movimientos distintos del mismo camión (ej: viaje de ida y vuelta),
+    // así que wono solo no identifica de forma única un movimiento.
+    const inspectedKeys = new Set()
     try {
       const inspected = await sql`
-        SELECT DISTINCT UPPER(TRIM(wono)) AS wono
+        SELECT DISTINCT
+          UPPER(TRIM(wono)) AS wono,
+          UPPER(TRIM(tractor_number)) AS truck_id,
+          UPPER(TRIM(location)) AS location
         FROM inspections
         WHERE status NOT IN ('superseded')
           AND wono IS NOT NULL
@@ -125,25 +129,56 @@ export default async function handler(req, res) {
           AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
       `
       for (const row of inspected) {
-        if (row.wono) inspectedWonos.add(row.wono)
+        if (row.wono) {
+          inspectedKeys.add(`${row.wono}::${row.truck_id || ''}::${row.location || ''}`)
+        }
       }
+      console.log('TPR inspectedKeys count:', inspectedKeys.size)
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
 
-    // Mark each movement with already_inspected flag (matched by work order)
+    // Fallback: inspecciones sin work order o sin truck_id (datos antiguos)
+    const fallbackTractors = new Set()
+    try {
+      const fallback = await sql`
+        SELECT DISTINCT UPPER(TRIM(tractor_number)) AS truck_id
+        FROM inspections
+        WHERE status NOT IN ('superseded')
+          AND (wono IS NULL OR TRIM(wono) = '' OR tractor_number IS NULL OR TRIM(tractor_number) = '')
+          AND tractor_number IS NOT NULL
+          AND TRIM(tractor_number) <> ''
+          AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
+      `
+      for (const row of fallback) {
+        if (row.truck_id) fallbackTractors.add(row.truck_id)
+      }
+    } catch (localErr) {
+      console.warn('Fallback tractor query failed (non-fatal):', localErr.message)
+    }
+
+    // Mark each movement with already_inspected flag (matched by composite key)
     const movements = allMovements.map(m => {
       const wono = m.work_order?.toString().trim().toUpperCase()
-      const already = !!(wono && inspectedWonos.has(wono))
-      // Debug: log truck 465 specifically
-      if (m.truck_id?.toString().trim() === '465') {
-        console.log('Truck 465 debug:', {
+      const truck = m.truck_id?.toString().trim().toUpperCase()
+      const fromd = m.from_code?.toString().trim().toUpperCase()
+      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}`
+      const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
+      const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
+      const already = alreadyByWono || alreadyByTractor
+
+      // Debug: log specific trucks
+      const debugTrucks = ['465', '409', '358']
+      if (debugTrucks.includes(m.truck_id?.toString().trim())) {
+        console.log(`Truck ${m.truck_id?.toString().trim()} debug:`, {
           wono,
+          truck,
+          fromd,
+          compositeKey,
           already,
-          hasWono: !!wono,
-          inInspectedSet: wono ? inspectedWonos.has(wono) : false,
+          alreadyByWono,
+          alreadyByTractor,
           fecha: m.fecha,
-          fromd: m.fromd
         })
       }
       return { ...m, already_inspected: already }
