@@ -214,8 +214,8 @@ export default async function handler(req, res) {
     let tprRows = []
     try {
       const tprQuery = isAllYards
-        ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition}`
-        : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND TRIM(fromd) = $1`
+        ? `SELECT id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition}`
+        : `SELECT id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND TRIM(fromd) = $1`
       const tprParams = isAllYards ? [] : [yardCode]
       tprRows = await sql.query(tprQuery, tprParams)
       console.log('NBCW tprRows count:', tprRows.length, isAllYards ? '(all yards)' : `(yard ${yardCode})`)
@@ -236,8 +236,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`
-          : `SELECT wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND TRIM(fromd) = $1`
+          ? `SELECT id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`
+          : `SELECT id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND TRIM(fromd) = $1`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))
@@ -249,8 +249,10 @@ export default async function handler(req, res) {
     }
 
     // 2. Inspecciones del periodo con work order (cruce primario).
-    // Usamos CLAVE COMPUESTA: wono + tractor_number + location, porque un
-    // mismo wono puede tener varios movimientos (ida y vuelta).
+    // Usamos CLAVE COMPUESTA: wono + tractor_number + location + fecha + tpr_id, porque un
+    // mismo wono puede tener varios movimientos (ida y vuelta) e incluso la
+    // misma fromd y fecha, así que wono + truck_id + fromd + fecha no es suficiente.
+    // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     let inspectedSet = new Set()
     let inspectedWonosList = []
     try {
@@ -258,7 +260,8 @@ export default async function handler(req, res) {
         SELECT DISTINCT
           UPPER(TRIM(wono)) AS wono,
           UPPER(TRIM(tractor_number)) AS truck_id,
-          UPPER(TRIM(location)) AS location
+          UPPER(TRIM(location)) AS location,
+          inspection_date
         FROM inspections
         WHERE status <> 'superseded'
           AND wono IS NOT NULL
@@ -268,7 +271,17 @@ export default async function handler(req, res) {
       const inspectedRows = await sql.query(inspectedQuery, [])
       for (const row of inspectedRows) {
         if (row.wono) {
-          const key = `${row.wono}::${row.truck_id || ''}::${row.location || ''}`
+          // El campo wono puede ser una clave compuesta work_order::tpr_id
+          const wonoParts = row.wono.split('::')
+          const workOrder = wonoParts[0] || row.wono
+          const tprId = wonoParts[1] || ''
+          // Convertir inspection_date (TIMESTAMPTZ) al formato MM/DD/YYYY usado en TPR.fecha
+          // Se fuerza la zona horaria America/Tijuana para evitar desplazamientos UTC.
+          const d = row.inspection_date ? new Date(row.inspection_date) : null
+          const fecha = d && !isNaN(d.getTime())
+            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
+            : ''
+          const key = `${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${tprId}`
           inspectedSet.add(key)
           inspectedWonosList.push(row.wono)
         }
@@ -346,7 +359,9 @@ export default async function handler(req, res) {
       const wono = m.wono?.toString().trim().toUpperCase()
       const truck = m.truckid?.toString().trim().toUpperCase()
       const fromd = m.fromd?.toString().trim().toUpperCase()
-      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}`
+      const fecha = m.fecha?.toString().trim() || ''
+      const tprId = m.id?.toString().trim() || ''
+      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${tprId}`
       const alreadyByWono = !!(wono && inspectedSet.has(compositeKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
       const already = alreadyByWono || alreadyByTractor

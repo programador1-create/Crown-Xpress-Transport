@@ -125,7 +125,8 @@ export function InspectionProvider({ children }) {
   const goodCount = applicablePointIds.filter(id => points[id]?.status === 'good').length
   const progressPercent = applicablePoints.length > 0 ? Math.round((completedCount / applicablePoints.length) * 100) : 0
 
-  // Determine if seal is required based on inspection type
+  // Determine if seal is required based on inspection type and trailer type
+  // FLATBED does not require seal/lock; RABON does require seal photo
   const requiresSeal = unitInfo?.inspectionType === 'LOADED' && unitInfo?.trailerType !== 'FLATBED'
 
   // Validation

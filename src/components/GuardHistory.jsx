@@ -200,7 +200,7 @@ export default function GuardHistory() {
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
           trailerType: insp.trailer_type,
-          workOrder: insp.wono
+          workOrder: insp.wono?.split('::')[0] || insp.wono
         }
 
         // Convert points array to object keyed by point_id
@@ -304,7 +304,7 @@ export default function GuardHistory() {
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
           trailerType: insp.trailer_type,
-          workOrder: insp.wono
+          workOrder: insp.wono?.split('::')[0] || insp.wono
         }
 
         // Convert points array to object keyed by point_id with camelCase

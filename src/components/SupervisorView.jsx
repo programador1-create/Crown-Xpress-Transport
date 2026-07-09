@@ -154,7 +154,7 @@ export default function SupervisorView() {
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
           trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
-          workOrder: insp.wono
+          workOrder: insp.wono?.split('::')[0] || insp.wono
         }
 
         // Convert points array to object keyed by point_id with camelCase
@@ -233,7 +233,7 @@ export default function SupervisorView() {
           sealAffixed: insp.seal_affixed === 'yes' ? 'yes' : 'no',
           inspectionType: insp.inspection_type || 'LOADED',
           trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
-          workOrder: insp.wono
+          workOrder: insp.wono?.split('::')[0] || insp.wono
         }
 
         // Convert points array to object keyed by point_id with camelCase
@@ -312,7 +312,7 @@ export default function SupervisorView() {
           sealAffixed: insp.seal_affixed,
           inspectionType: insp.inspection_type,
           trailerType: insp.trailer_type || (insp.inspection_type === 'BOBTAIL' ? 'BOBTAIL' : null),
-          workOrder: insp.wono
+          workOrder: insp.wono?.split('::')[0] || insp.wono
         }
         const pointsObj = {}
         for (const p of (inspectionData.points || [])) {

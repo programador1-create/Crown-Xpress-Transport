@@ -22,10 +22,12 @@ export default function GuidedInspection() {
   const [unitInfoFlowComplete, setUnitInfoFlowComplete] = useState(false)
   const [showEmptyLoads, setShowEmptyLoads] = useState(false)
 
-  // Get applicable points based on inspection type
+  // Get applicable points based on inspection type and trailer type
+  // RABON is a trailerType, not an inspectionType
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    const typeToUse = unitInfo?.trailerType === 'RABON' ? 'RABON' : unitInfo?.inspectionType
+    return getApplicablePoints(typeToUse)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
 
   const totalPoints = applicablePoints.length
   const allPointsCompleted = completedCount === totalPoints
@@ -103,8 +105,8 @@ export default function GuidedInspection() {
     }
   }
 
-  // Determine if seal photo stage is needed (only for LOADED)
-  const needsSealPhoto = unitInfo?.inspectionType === 'LOADED'
+  // Determine if seal photo stage is needed (only for LOADED, not FLATBED)
+  const needsSealPhoto = unitInfo?.inspectionType === 'LOADED' && unitInfo?.trailerType !== 'FLATBED'
   
   const stages = [
     { id: 'unitInfo', name: language === 'es' ? 'Datos del Camión' : 'Truck Info', icon: ClipboardCheck },

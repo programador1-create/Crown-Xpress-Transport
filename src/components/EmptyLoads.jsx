@@ -205,6 +205,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
 
     // Preparar datos para la inspección
     const inspectionData = {
+      tprId: movement.id, // id de Neon de la fila TPR, para cruce exacto
       workOrder: movement.work_order,
       truckNumber: movement.truck_id?.trim(),
       driverCode: movement.driver_code?.trim(),

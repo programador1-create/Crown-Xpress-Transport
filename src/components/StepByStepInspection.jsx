@@ -15,13 +15,14 @@ export default function StepByStepInspection({ onAllCompleted }) {
   const [markedGoodPoints, setMarkedGoodPoints] = useState([])
   const [keptBadPoints, setKeptBadPoints] = useState([])
 
-  // Filter inspection points based on inspection type
+  // Filter inspection points based on inspection type and trailer type
+  // RABON is a trailerType, not an inspectionType
   const applicablePoints = useMemo(() => {
-    const inspectionType = unitInfo?.inspectionType || 'LOADED'
-    const typeConfig = INSPECTION_TYPES[inspectionType]
+    const typeToUse = unitInfo?.trailerType === 'RABON' ? 'RABON' : (unitInfo?.inspectionType || 'LOADED')
+    const typeConfig = INSPECTION_TYPES[typeToUse]
     if (!typeConfig) return inspectionPoints
     return inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
-  }, [unitInfo?.inspectionType])
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
 
   const totalPoints = applicablePoints.length
   const isLastStep = currentStep === totalPoints - 1

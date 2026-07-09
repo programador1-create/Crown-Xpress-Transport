@@ -185,10 +185,12 @@ export default function TruckDiagramVisual({ onPointClick, compact = false }) {
     return pointPositionsLoaded
   }, [unitInfo?.inspectionType, unitInfo?.trailerType])
   
-  // Get applicable points based on inspection type
+  // Get applicable points based on inspection type and trailer type
+  // RABON is a trailerType, not an inspectionType
   const applicablePoints = useMemo(() => {
-    return getApplicablePoints(unitInfo?.inspectionType)
-  }, [unitInfo?.inspectionType])
+    const typeToUse = unitInfo?.trailerType === 'RABON' ? 'RABON' : unitInfo?.inspectionType
+    return getApplicablePoints(typeToUse)
+  }, [unitInfo?.inspectionType, unitInfo?.trailerType])
   
   const applicablePointIds = useMemo(() => {
     return applicablePoints.map(p => p.id)

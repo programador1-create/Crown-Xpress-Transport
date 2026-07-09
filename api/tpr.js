@@ -67,6 +67,7 @@ export default async function handler(req, res) {
 
     const query = `
       SELECT
+        id,
         drvcode AS driver_code,
         wono AS work_order,
         blno AS bill_of_lading,
@@ -111,17 +112,20 @@ export default async function handler(req, res) {
     // ============================================================
     // 2. Cross-filter: marcar los ya inspeccionados
     // ============================================================
-    // El cruce se hace por CLAVE COMPUESTA: WORK ORDER + TRUCK ID + FROMD.
+    // El cruce se hace por CLAVE COMPUESTA: WORK ORDER + TRUCK ID + FROMD + FECHA + TPR_ID.
     // Un mismo work order (wono) puede aparecer varias veces en TPR para
     // movimientos distintos del mismo camión (ej: viaje de ida y vuelta),
-    // así que wono solo no identifica de forma única un movimiento.
+    // incluso con la misma fromd y fecha, así que wono + truck_id + fromd + fecha
+    // solo no identifica de forma única un movimiento. Se agrega el id de Neon de la fila TPR.
+    // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     const inspectedKeys = new Set()
     try {
       const inspected = await sql`
         SELECT DISTINCT
           UPPER(TRIM(wono)) AS wono,
           UPPER(TRIM(tractor_number)) AS truck_id,
-          UPPER(TRIM(location)) AS location
+          UPPER(TRIM(location)) AS location,
+          inspection_date
         FROM inspections
         WHERE status NOT IN ('superseded')
           AND wono IS NOT NULL
@@ -130,7 +134,17 @@ export default async function handler(req, res) {
       `
       for (const row of inspected) {
         if (row.wono) {
-          inspectedKeys.add(`${row.wono}::${row.truck_id || ''}::${row.location || ''}`)
+          // El campo wono puede ser una clave compuesta work_order::tpr_id
+          const wonoParts = row.wono.split('::')
+          const workOrder = wonoParts[0] || row.wono
+          const tprId = wonoParts[1] || ''
+          // Convertir inspection_date (TIMESTAMPTZ) al formato MM/DD/YYYY usado en TPR.fecha
+          // Se fuerza la zona horaria America/Tijuana para evitar desplazamientos UTC.
+          const d = row.inspection_date ? new Date(row.inspection_date) : null
+          const fecha = d && !isNaN(d.getTime())
+            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
+            : ''
+          inspectedKeys.add(`${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${tprId}`)
         }
       }
       console.log('TPR inspectedKeys count:', inspectedKeys.size)
@@ -162,7 +176,9 @@ export default async function handler(req, res) {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
       const fromd = m.from_code?.toString().trim().toUpperCase()
-      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}`
+      const fecha = m.fecha?.toString().trim() || ''
+      const tprId = m.id?.toString().trim() || ''
+      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${tprId}`
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
       const already = alreadyByWono || alreadyByTractor
@@ -174,6 +190,7 @@ export default async function handler(req, res) {
           wono,
           truck,
           fromd,
+          tprId,
           compositeKey,
           already,
           alreadyByWono,
