@@ -1,0 +1,19 @@
+{
+  "name": "nbcw-sync-standalone",
+  "version": "1.0.0",
+  "description": "Sincronizacion standalone de SQL Server NBCW a Neon PostgreSQL",
+  "type": "module",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "test": "node sync.js --dry-run"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.5",
+    "dotenv": "^16.4.5",
+    "mssql": "^10.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
