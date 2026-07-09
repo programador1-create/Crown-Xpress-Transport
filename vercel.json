@@ -54,14 +54,6 @@
       "destination": "/api/tpr.js"
     },
     {
-      "source": "/api/metrics",
-      "destination": "/api/metrics.js"
-    },
-    {
-      "source": "/api/inspections/:id/pdf",
-      "destination": "/api/inspections/[id]/pdf.js"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

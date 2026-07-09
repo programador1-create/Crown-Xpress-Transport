@@ -9,6 +9,14 @@ Carpeta independiente para sincronizar la tabla `tpr` de SQL Server (NBCW) a Neo
 - Acceso de red a SQL Server NBCW
 - Acceso a internet hacia Neon PostgreSQL
 
+## Nota importante: SQL Server 2005
+
+Este sync usa `mssql@5` con el driver `tedious@4` porque es compatible con **SQL Server 2005 Express**. Las versiones mas recientes de `mssql` solo funcionan con SQL Server 2008+.
+
+## Conexion a Neon
+
+Este sync usa `pg` (node-postgres) para conectarse a Neon por **TCP** (puerto 5432). No usa WebSockets.
+
 ## Instalacion rapida
 
 1. Copia esta carpeta completa al PC de sincronizacion, por ejemplo:
