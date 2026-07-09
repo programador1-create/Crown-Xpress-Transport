@@ -70,6 +70,8 @@ export async function createInspection(req, res) {
       ? `${raw_work_order}::${tpr_id}`
       : raw_work_order
 
+    console.log('createInspection work_order saved:', work_order, 'tpr_id:', tpr_id, 'raw:', raw_work_order)
+
     // Use PDF from frontend if provided; otherwise save inspection without PDF (client will upload it separately)
     let pdfBufferToSave = pdfBuffer
     let pdfFilenameToSave = pdfFilename || null

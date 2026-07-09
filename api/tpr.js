@@ -213,12 +213,35 @@ export default async function handler(req, res) {
 
     const pendingCount = movements.filter(m => !m.already_inspected).length
 
+    // Debug: devolver keys de cruce si se solicita con ?debug=1
+    const debug = req.query?.debug === '1' || req.query?.debug === 'true'
+    const debugInfo = debug ? {
+      inspectedKeysSample: Array.from(inspectedKeys).slice(0, 50),
+      inspectedByTprIdSample: Array.from(inspectedByTprId).slice(0, 50),
+      movementKeys: movements.slice(0, 20).map(m => ({
+        id: m.id,
+        work_order: m.work_order,
+        truck_id: m.truck_id,
+        fecha: m.fecha,
+        already_inspected: m.already_inspected,
+        compositeKey: `${m.work_order?.toString().trim().toUpperCase()}::${m.truck_id?.toString().trim().toUpperCase()}::${m.from_code?.toString().trim().toUpperCase()}::${m.fecha?.toString().trim()}::${m.id?.toString().trim()}`,
+        tprIdKey: m.id && m.work_order ? `${m.work_order?.toString().trim().toUpperCase()}::${m.id?.toString().trim()}` : null
+      })),
+      rawInspectionsSample: inspected.slice(0, 20).map(r => ({
+        wono: r.wono,
+        truck_id: r.truck_id,
+        location: r.location,
+        inspection_date: r.inspection_date
+      }))
+    } : undefined
+
     return res.status(200).json({
       success: true,
       data: movements,
       count: movements.length,
       pending_count: pendingCount,
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
+      ...(debugInfo ? { _debug: debugInfo } : {})
     })
 
   } catch (error) {
