@@ -72,6 +72,7 @@ export default async function handler(req, res) {
         drvcode AS driver_code,
         wono AS work_order,
         blno AS bill_of_lading,
+        fecha AS fecha,
         fecha AS fecha_raw,
         fecha AS date,
         fromd AS from_code,
