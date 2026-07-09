@@ -199,9 +199,9 @@ async function syncTprToNeon() {
     console.log('Conectado a Neon')
 
     // Asegurar que la tabla exista con el esquema correcto. Si no existe o tiene
-    // columnas viejas (inglés) o falta sql_id, se recrea. Si ya existe con el
-    // esquema español y sql_id, solo se limpian los datos para preservar los ids
-    // estables y que las inspecciones guardadas sigan cruzando correctamente.
+    // columnas viejas (inglés) o falta sql_id, o tiene restricción UNIQUE en sql_id,
+    // se recrea. Si ya existe con el esquema español y sql_id sin UNIQUE,
+    // solo se limpian los datos para preservar los ids estables.
     let recreateTable = false
     try {
       const tableCheck = await neonClient.query(`
@@ -212,6 +212,17 @@ async function syncTprToNeon() {
       if (tableCheck.rows.length < 2) {
         recreateTable = true
         await neonClient.query('DROP TABLE IF EXISTS tpr')
+      } else {
+        // Verificar si existe restricción UNIQUE en sql_id
+        const constraintCheck = await neonClient.query(`
+          SELECT constraint_name
+          FROM information_schema.table_constraints
+          WHERE table_name = 'tpr' AND constraint_type = 'UNIQUE'
+        `)
+        if (constraintCheck.rows.length > 0) {
+          recreateTable = true
+          await neonClient.query('DROP TABLE IF EXISTS tpr')
+        }
       }
     } catch (checkErr) {
       recreateTable = true
