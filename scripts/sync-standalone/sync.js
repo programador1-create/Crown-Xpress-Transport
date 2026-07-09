@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { appendFileSync, existsSync, mkdirSync } from 'fs'
+import { createHash } from 'crypto'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -14,6 +15,12 @@ if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR)
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0]
 const logFile = join(LOG_DIR, `sync-${timestamp}.log`)
+
+// Generar sql_id estable desde columnas clave
+function generateSqlId(row) {
+  const key = `${row.wono || ''}|${row.truckid || ''}|${row.fecha || ''}|${row.fromd || ''}|${row.tod || ''}|${row.timearrv || ''}`
+  return createHash('md5').update(key).digest('hex')
+}
 const originalLog = console.log
 const originalError = console.error
 
@@ -145,13 +152,6 @@ async function syncTprToNeon() {
 
     const result = await sqlPool.request().query(`
       SELECT
-        CONVERT(VARCHAR(32), HASHBYTES('MD5', ISNULL(RTRIM(WONO), '') + '|' +
-          ISNULL(RTRIM(TRUCKID), '') + '|' +
-          ISNULL(RTRIM(FECHA), '') + '|' +
-          ISNULL(RTRIM(FROMD), '') + '|' +
-          ISNULL(RTRIM(TOD), '') + '|' +
-          ISNULL(RTRIM(TIMEARRV), '')
-        ), 2) AS sql_id,
         RTRIM(DRVCODE)   AS drvcode,
         RTRIM(WONO)      AS wono,
         RTRIM(BLNO)      AS blno,
@@ -272,7 +272,10 @@ async function syncTprToNeon() {
     const filteredRows = rows.filter(row => {
       const rowDate = parseSqlDate(row.fecha)
       return rowDate && rowDate >= cutoffStr
-    })
+    }).map(row => ({
+      ...row,
+      sql_id: generateSqlId(row)
+    }))
     console.log(`${filteredRows.length} registros dentro del rango de sincronizacion`)
 
     if (filteredRows.length === 0) {
