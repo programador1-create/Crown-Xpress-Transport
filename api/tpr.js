@@ -120,8 +120,9 @@ export default async function handler(req, res) {
     // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     const inspectedKeys = new Set()
     const inspectedByTprId = new Set()
+    let inspected = []
     try {
-      const inspected = await sql`
+      inspected = await sql`
         SELECT DISTINCT
           UPPER(TRIM(wono)) AS wono,
           UPPER(TRIM(tractor_number)) AS truck_id,
