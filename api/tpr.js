@@ -122,6 +122,7 @@ export default async function handler(req, res) {
     // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
     const inspectedKeys = new Set()
     const inspectedByTprId = new Set()
+    const inspectedByWono = new Set()
     let inspected = []
     try {
       inspected = await sql`
@@ -153,10 +154,13 @@ export default async function handler(req, res) {
           // para evitar problemas de fecha u otros campos.
           if (tprId) {
             inspectedByTprId.add(`${workOrder}::${tprId}`)
+          } else {
+            // Fallback para inspecciones antiguas sin tpr_id: matchear solo por work_order
+            inspectedByWono.add(workOrder)
           }
         }
       }
-      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size)
+      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size, 'inspectedByWono count:', inspectedByWono.size)
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
@@ -191,8 +195,9 @@ export default async function handler(req, res) {
       const sqlIdKey = sqlId && wono ? `${wono}::${sqlId}` : null
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
       const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
+      const alreadyByWonoOnly = !!(wono && inspectedByWono.has(wono))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      const already = alreadyByWono || alreadyBySqlId || alreadyByTractor
+      const already = alreadyByWono || alreadyBySqlId || alreadyByWonoOnly || alreadyByTractor
 
       // Debug: log specific trucks
       const debugTrucks = ['465', '409', '358']
