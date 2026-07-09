@@ -68,6 +68,7 @@ export default async function handler(req, res) {
     const query = `
       SELECT
         id,
+        sql_id,
         drvcode AS driver_code,
         wono AS work_order,
         blno AS bill_of_lading,
@@ -178,19 +179,19 @@ export default async function handler(req, res) {
       console.warn('Fallback tractor query failed (non-fatal):', localErr.message)
     }
 
-    // Mark each movement with already_inspected flag (matched by composite key or tprId)
+    // Mark each movement with already_inspected flag (matched by composite key or sql_id)
     const movements = allMovements.map(m => {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
       const fromd = m.from_code?.toString().trim().toUpperCase()
       const fecha = m.fecha?.toString().trim() || ''
-      const tprId = m.id?.toString().trim() || ''
-      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${tprId}`
-      const tprIdKey = tprId && wono ? `${wono}::${tprId}` : null
+      const sqlId = m.sql_id?.toString().trim() || ''
+      const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
+      const sqlIdKey = sqlId && wono ? `${wono}::${sqlId}` : null
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
-      const alreadyByTprId = !!(tprIdKey && inspectedByTprId.has(tprIdKey))
+      const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      const already = alreadyByWono || alreadyByTprId || alreadyByTractor
+      const already = alreadyByWono || alreadyBySqlId || alreadyByTractor
 
       // Debug: log specific trucks
       const debugTrucks = ['465', '409', '358']
@@ -199,12 +200,12 @@ export default async function handler(req, res) {
           wono,
           truck,
           fromd,
-          tprId,
+          sqlId,
           compositeKey,
-          tprIdKey,
+          sqlIdKey,
           already,
           alreadyByWono,
-          alreadyByTprId,
+          alreadyBySqlId,
           alreadyByTractor,
           fecha: m.fecha,
         })
@@ -221,12 +222,13 @@ export default async function handler(req, res) {
       inspectedByTprIdSample: Array.from(inspectedByTprId).slice(0, 50),
       movementKeys: movements.slice(0, 20).map(m => ({
         id: m.id,
+        sql_id: m.sql_id,
         work_order: m.work_order,
         truck_id: m.truck_id,
         fecha: m.fecha,
         already_inspected: m.already_inspected,
-        compositeKey: `${m.work_order?.toString().trim().toUpperCase()}::${m.truck_id?.toString().trim().toUpperCase()}::${m.from_code?.toString().trim().toUpperCase()}::${m.fecha?.toString().trim()}::${m.id?.toString().trim()}`,
-        tprIdKey: m.id && m.work_order ? `${m.work_order?.toString().trim().toUpperCase()}::${m.id?.toString().trim()}` : null
+        compositeKey: `${m.work_order?.toString().trim().toUpperCase()}::${m.truck_id?.toString().trim().toUpperCase()}::${m.from_code?.toString().trim().toUpperCase()}::${m.fecha?.toString().trim()}::${m.sql_id?.toString().trim()}`,
+        sqlIdKey: m.sql_id && m.work_order ? `${m.work_order?.toString().trim().toUpperCase()}::${m.sql_id?.toString().trim()}` : null
       })),
       rawInspectionsSample: inspected.slice(0, 20).map(r => ({
         wono: r.wono,

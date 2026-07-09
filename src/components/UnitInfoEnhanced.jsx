@@ -543,7 +543,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
     updateUnitInfo('driverName', movementData.driverCode || movementData.operator || '')
     updateUnitInfo('employeeNumber', movementData.driverCode || '')
     updateUnitInfo('workOrder', movementData.workOrder || '')
-    updateUnitInfo('tprId', movementData.tprId || null)
+    updateUnitInfo('sqlId', movementData.sqlId || null)
     updateUnitInfo('origin', movementData.origin || {})
     updateUnitInfo('destination', movementData.destination || {})
     updateUnitInfo('customer', movementData.customer || '')

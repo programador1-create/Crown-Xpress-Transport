@@ -145,6 +145,7 @@ async function syncTprToNeon() {
 
     const result = await sqlPool.request().query(`
       SELECT
+        DRVID            AS sql_id,
         RTRIM(DRVCODE)   AS drvcode,
         RTRIM(WONO)      AS wono,
         RTRIM(BLNO)      AS blno,
@@ -192,17 +193,17 @@ async function syncTprToNeon() {
     console.log('Conectado a Neon')
 
     // Asegurar que la tabla exista con el esquema correcto. Si no existe o tiene
-    // columnas viejas (inglés), se recrea. Si ya existe con el esquema español,
-    // solo se limpian los datos para preservar los ids estables y que las
-    // inspecciones guardadas sigan cruzando correctamente.
+    // columnas viejas (inglés) o falta sql_id, se recrea. Si ya existe con el
+    // esquema español y sql_id, solo se limpian los datos para preservar los ids
+    // estables y que las inspecciones guardadas sigan cruzando correctamente.
     let recreateTable = false
     try {
       const tableCheck = await neonClient.query(`
         SELECT column_name
         FROM information_schema.columns
-        WHERE table_name = 'tpr' AND column_name = 'drvcode'
+        WHERE table_name = 'tpr' AND column_name IN ('drvcode', 'sql_id')
       `)
-      if (tableCheck.rows.length === 0) {
+      if (tableCheck.rows.length < 2) {
         recreateTable = true
         await neonClient.query('DROP TABLE IF EXISTS tpr')
       }
@@ -214,6 +215,7 @@ async function syncTprToNeon() {
     await neonClient.query(`
       CREATE TABLE IF NOT EXISTS tpr (
         id SERIAL PRIMARY KEY,
+        sql_id VARCHAR(50) UNIQUE,
         drvcode VARCHAR(50),
         wono VARCHAR(50),
         blno VARCHAR(50),
@@ -273,12 +275,19 @@ async function syncTprToNeon() {
     }
 
     await neonClient.query('BEGIN')
+        if (recreateTable) {
+      console.log('Recreando tabla tpr (DROP TABLE)')
+    } else {
+      console.log('Limpiando datos tpr (DELETE FROM)')
+    }
+
+    await neonClient.query('BEGIN')
     if (!recreateTable) {
       await neonClient.query('DELETE FROM tpr')
     }
 
     const columns = [
-      'drvcode', 'wono', 'blno', 'fecha', 'fromd', 'fromcity', 'fromedo',
+      'sql_id', 'drvcode', 'wono', 'blno', 'fecha', 'fromd', 'fromcity', 'fromedo',
       'tod', 'tocity', 'toedo', 'tipmov', 'status', 'el', 'eqpcode',
       'deldate', 'cstmer', 'timearrv', 'timedepar', 'oper', 'truckid', 'seal',
       'instruc1', 'instruc2', 'amount', 'tablecode', 'trxcode', 'synced_at'
@@ -294,10 +303,11 @@ async function syncTprToNeon() {
       let paramIndex = 1
 
       for (const row of batch) {
-        const placeholders = Array.from({ length: 26 }, (_, j) => `$${paramIndex + j}`).join(', ')
+        const placeholders = Array.from({ length: 27 }, (_, j) => `$${paramIndex + j}`).join(', ')
         values.push(`(${placeholders}, NOW())`)
 
         params.push(
+          row.sql_id || null,
           row.drvcode || null,
           row.wono || null,
           row.blno || null,
