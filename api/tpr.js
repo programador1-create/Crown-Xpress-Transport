@@ -167,6 +167,7 @@ export default async function handler(req, res) {
 
     // Fallback: inspecciones sin work order o sin truck_id (datos antiguos)
     const fallbackTractors = new Set()
+    const inspectedByWonoWithDate = new Set()
     try {
       const fallback = await sql`
         SELECT DISTINCT UPPER(TRIM(tractor_number)) AS truck_id
@@ -182,6 +183,33 @@ export default async function handler(req, res) {
       }
     } catch (localErr) {
       console.warn('Fallback tractor query failed (non-fatal):', localErr.message)
+    }
+    
+    // Agregar fecha a inspectedByWono para evitar falsos positivos
+    try {
+      const inspectedWithDate = await sql`
+        SELECT DISTINCT 
+          UPPER(TRIM(wono)) AS wono,
+          inspection_date
+        FROM inspections
+        WHERE status NOT IN ('superseded')
+          AND wono IS NOT NULL
+          AND TRIM(wono) <> ''
+          AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
+      `
+      for (const row of inspectedWithDate) {
+        if (row.wono) {
+          const wonoParts = row.wono.split('::')
+          const workOrder = wonoParts[0] || row.wono
+          const d = row.inspection_date ? new Date(row.inspection_date) : null
+          const fecha = d && !isNaN(d.getTime())
+            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
+            : ''
+          inspectedByWonoWithDate.add(`${workOrder}::${fecha}`)
+        }
+      }
+    } catch (localErr) {
+      console.warn('Inspected with date query failed (non-fatal):', localErr.message)
     }
 
     // Mark each movement with already_inspected flag (matched by composite key or sql_id)
@@ -204,9 +232,10 @@ export default async function handler(req, res) {
       const sqlId = m.sql_id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
       const sqlIdKey = sqlId && wono ? `${wono}::${sqlId.toLowerCase()}` : null
+      const wonoWithDateKey = wono && fecha ? `${wono}::${fecha}` : null
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
       const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
-      const alreadyByWonoOnly = !!(wono && inspectedByWono.has(wono))
+      const alreadyByWonoOnly = !!(wonoWithDateKey && inspectedByWonoWithDate.has(wonoWithDateKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
       const already = alreadyByWono || alreadyBySqlId || alreadyByWonoOnly || alreadyByTractor
 
