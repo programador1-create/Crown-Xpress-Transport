@@ -283,10 +283,15 @@ async function syncTprToNeon() {
     const filteredRows = rows.filter(row => {
       const rowDate = parseSqlDate(row.fecha)
       return rowDate && rowDate >= cutoffStr
-    }).map(row => ({
-      ...row,
-      sql_id: generateSqlId(row)
-    }))
+    }).map(row => {
+      // Normalizar fecha a formato YYYY-MM-DD antes de generar sql_id
+      const normalizedFecha = parseSqlDate(row.fecha)
+      return {
+        ...row,
+        fecha: normalizedFecha,
+        sql_id: generateSqlId({ ...row, fecha: normalizedFecha })
+      }
+    })
     console.log(`${filteredRows.length} registros dentro del rango de sincronizacion`)
 
     if (filteredRows.length === 0) {

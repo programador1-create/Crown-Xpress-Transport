@@ -189,7 +189,18 @@ export default async function handler(req, res) {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
       const fromd = m.from_code?.toString().trim().toUpperCase()
-      const fecha = m.fecha?.toString().trim() || ''
+      // Convertir fecha de YYYY-MM-DD a MM/DD/YYYY
+      let fecha = ''
+      if (m.fecha) {
+        const fechaStr = m.fecha?.toString().trim()
+        if (fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Formato YYYY-MM-DD
+          const [year, month, day] = fechaStr.split('-')
+          fecha = `${month}/${day}/${year}`
+        } else {
+          fecha = fechaStr
+        }
+      }
       const sqlId = m.sql_id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
       const sqlIdKey = sqlId && wono ? `${wono}::${sqlId.toLowerCase()}` : null
