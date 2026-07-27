@@ -45,16 +45,24 @@ const INSPECTION_POINTS = {
   20: { es: 'Otros', en: 'Others' },
 }
 
-// Applicable points for each trailer type
+// Applicable points for each trailer/inspection type
 const APPLICABLE_POINTS = {
-  RABON: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+  RABON: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17],
+  BOBTAIL: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  FLATBED: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17, 18],
   DEFAULT: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
 }
 
-// Get applicable points based on trailer type
-function getApplicablePoints(trailerType) {
+// Get applicable points based on trailer type and inspection type
+function getApplicablePoints(trailerType, inspectionType) {
   if (trailerType === 'RABON') {
     return APPLICABLE_POINTS.RABON
+  }
+  if (trailerType === 'FLATBED') {
+    return APPLICABLE_POINTS.FLATBED
+  }
+  if (inspectionType === 'BOBTAIL') {
+    return APPLICABLE_POINTS.BOBTAIL
   }
   return APPLICABLE_POINTS.DEFAULT
 }
@@ -211,7 +219,7 @@ export async function generateInspectionPDF(data) {
   }
 
   // Inspection points table - filter by applicable points for trailer type
-  const applicablePointIds = getApplicablePoints(unitInfo.trailerType)
+  const applicablePointIds = getApplicablePoints(unitInfo.trailerType, unitInfo.inspectionType)
   const tableData = Object.entries(points)
     .filter(([id]) => applicablePointIds.includes(parseInt(id)))
     .map(([id, point]) => [

@@ -120,7 +120,7 @@ export async function createInspection(req, res) {
         ${auditorSignature.signature && guardSignature?.signature ? 'audited' : (supervisorSignature?.signature && guardSignature?.signature ? 'completed' : 'pending')},
         ${counts.good || 0},
         ${counts.bad || 0},
-        0,
+        ${counts.pending || 0},
         ${pdfFilenameToSave || 'inspection.pdf'},
         ${pdfBufferToSave},
         ${pdfSizeToSave},
@@ -145,6 +145,7 @@ export async function createInspection(req, res) {
       issueId: p.issueId,
       issueText: p.issueText || null,
       hasPhoto: !!p.photo,
+      photo: p.photo || null,
     }))
     for (const pt of pointRows) {
       await sql`
@@ -401,7 +402,7 @@ export async function reconfirmInspection(req, res, originalId) {
     const allPoints = Object.values(pointsMap)
     const total_good = allPoints.filter(p => p.status === 'good').length
     const total_bad = allPoints.filter(p => p.status === 'bad').length
-    const total_pending = 20 - total_good - total_bad
+    const total_pending = allPoints.length - total_good - total_bad
 
     // Insert new inspection (reconfirmation)
     const [newInsp] = await sql`

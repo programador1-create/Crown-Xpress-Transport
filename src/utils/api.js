@@ -236,7 +236,11 @@ export async function buildPayload(ctx, pdfBase64, pdfFilename) {
     counts: {
       good: goodCount || 0,
       bad: failedCount || 0,
-      pending: Math.max(0, getApplicablePoints(unitInfo?.inspectionType).length - (completedCount || 0))
+      pending: Math.max(0, getApplicablePoints(
+        unitInfo?.trailerType === 'RABON' ? 'RABON' :
+        unitInfo?.trailerType === 'FLATBED' ? 'FLATBED' :
+        unitInfo?.inspectionType
+      ).length - (completedCount || 0))
     },
   }
 

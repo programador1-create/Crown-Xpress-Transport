@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS inspections (
     auditor_name        VARCHAR(120),
     auditor_signed_at   TIMESTAMPTZ,
     status              VARCHAR(20) DEFAULT 'completed'
-                        CHECK (status IN ('draft','completed','audited','rejected','reconfirmed','superseded')),
+                        CHECK (status IN ('draft','pending','completed','audited','rejected','reconfirmed','superseded')),
     total_good          INT DEFAULT 0,
     total_bad           INT DEFAULT 0,
     total_pending       INT DEFAULT 0,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS inspection_points (
     id              SERIAL PRIMARY KEY,
     inspection_id   INT NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
     point_id        INT NOT NULL CHECK (point_id BETWEEN 1 AND 20),
-    status          VARCHAR(10) CHECK (status IN ('good','bad')),
+    status          VARCHAR(10) CHECK (status IN ('good','bad','pending')),
     issue_id        INT,
     issue_text      VARCHAR(500),
     has_photo       BOOLEAN DEFAULT FALSE,

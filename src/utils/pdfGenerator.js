@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { inspectionPoints, getIssuesForPoint, INSPECTION_TYPES } from '../data/inspectionPoints'
+import { inspectionPoints, getIssuesForPoint, INSPECTION_TYPES, getApplicablePoints } from '../data/inspectionPoints'
 
 // Crown Xpress logo will be loaded from public folder
 const CROWN_LOGO_URL = '/crown-logo.png'
@@ -227,12 +227,14 @@ export async function generateInspectionPDF({ unitInfo, points, sealPhoto, guard
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 20
 
-  // Get applicable points based on inspection type
+  // Get applicable points based on inspection type AND trailer type
+  // RABON is a trailerType, not an inspectionType, so check both
   const inspectionType = unitInfo?.inspectionType || 'LOADED'
-  const typeConfig = INSPECTION_TYPES[inspectionType]
-  const applicablePoints = typeConfig 
-    ? inspectionPoints.filter(p => typeConfig.applicablePoints.includes(p.id))
-    : inspectionPoints
+  const trailerType = unitInfo?.trailerType
+  const typeToUse = trailerType === 'RABON' ? 'RABON' : 
+                    trailerType === 'FLATBED' ? 'FLATBED' : 
+                    inspectionType
+  const applicablePoints = getApplicablePoints(typeToUse)
 
   // ===== HEADER =====
   drawHeader(doc, T, pageWidth, margin, logoBase64, inspectionType, language)
