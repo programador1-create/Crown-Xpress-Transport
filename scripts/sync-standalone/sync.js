@@ -300,14 +300,10 @@ async function syncTprToNeon() {
     }
 
     await neonClient.query('BEGIN')
-        if (recreateTable) {
+    if (recreateTable) {
       console.log('Recreando tabla tpr (DROP TABLE)')
     } else {
       console.log('Limpiando datos tpr (DELETE FROM)')
-    }
-
-    await neonClient.query('BEGIN')
-    if (!recreateTable) {
       await neonClient.query('DELETE FROM tpr')
     }
 

@@ -135,7 +135,7 @@ export async function createInspection(req, res) {
         ${ui.trailerType || ui.trailer_type || null},
         ${work_order}
       )
-      RETURNING id, inspection_uuid, created_at
+      RETURNING id, uuid, created_at
     `
 
     // Insert per-point details
@@ -194,7 +194,7 @@ export async function createInspection(req, res) {
     return res.status(201).json({
       success: true,
       id: inspection.id,
-      uuid: inspection.inspection_uuid,
+      uuid: inspection.uuid,
       createdAt: inspection.created_at,
       pdfUrl: `/api/inspections/${inspection.id}/pdf`,
     })
@@ -427,7 +427,7 @@ export async function reconfirmInspection(req, res, originalId) {
         ${pdfBase64 ? Buffer.from(pdfBase64, 'base64').length : null},
         ${ip}, ${ua}
       )
-      RETURNING id, inspection_uuid, created_at
+      RETURNING id, uuid, created_at
     `
 
     // Insert merged points
@@ -460,7 +460,7 @@ export async function reconfirmInspection(req, res, originalId) {
     return res.status(201).json({
       success: true,
       id: newInsp.id,
-      uuid: newInsp.inspection_uuid,
+      uuid: newInsp.uuid,
       original_id: originalId,
       pdfUrl: null,
       modifications: modifications.length,

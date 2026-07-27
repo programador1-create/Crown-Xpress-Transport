@@ -114,15 +114,12 @@ export default async function handler(req, res) {
     // ============================================================
     // 2. Cross-filter: marcar los ya inspeccionados
     // ============================================================
-    // El cruce se hace por CLAVE COMPUESTA: WORK ORDER + TRUCK ID + FROMD + FECHA + TPR_ID.
-    // Un mismo work order (wono) puede aparecer varias veces en TPR para
-    // movimientos distintos del mismo camión (ej: viaje de ida y vuelta),
-    // incluso con la misma fromd y fecha, así que wono + truck_id + fromd + fecha
-    // solo no identifica de forma única un movimiento. Se agrega el id de Neon de la fila TPR.
-    // El campo wono de inspections almacena work_order::tpr_id cuando viene de NBCW.
+    // Una sola query obtiene todas las inspecciones de los últimos 7 días.
+    // Se procesa todo en JavaScript para minimizar compute time en Neon.
     const inspectedKeys = new Set()
     const inspectedByTprId = new Set()
-    const inspectedByWono = new Set()
+    const inspectedByWonoWithDate = new Set()
+    const fallbackTractors = new Set()
     let inspected = []
     try {
       inspected = await sql`
@@ -133,83 +130,33 @@ export default async function handler(req, res) {
           inspection_date
         FROM inspections
         WHERE status NOT IN ('superseded')
-          AND wono IS NOT NULL
-          AND TRIM(wono) <> ''
           AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
       `
       for (const row of inspected) {
-        if (row.wono) {
-          // El campo wono puede ser una clave compuesta work_order::tpr_id
+        const d = row.inspection_date ? new Date(row.inspection_date) : null
+        const fecha = d && !isNaN(d.getTime())
+          ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
+          : ''
+
+        if (row.wono && row.wono.trim() !== '') {
           const wonoParts = row.wono.split('::')
           const workOrder = wonoParts[0] || row.wono
           const tprId = wonoParts[1] || ''
-          // Convertir inspection_date (TIMESTAMPTZ) al formato MM/DD/YYYY usado en TPR.fecha
-          // Se fuerza la zona horaria America/Tijuana para evitar desplazamientos UTC.
-          const d = row.inspection_date ? new Date(row.inspection_date) : null
-          const fecha = d && !isNaN(d.getTime())
-            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
-            : ''
           inspectedKeys.add(`${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${tprId}`)
-          // Si tenemos tprId, cruzamos también solo por work_order::tpr_id
-          // para evitar problemas de fecha u otros campos.
           if (tprId) {
             inspectedByTprId.add(`${workOrder}::${tprId.toLowerCase()}`)
-          } else {
-            // Fallback para inspecciones antiguas sin tpr_id: matchear solo por work_order
-            inspectedByWono.add(workOrder)
           }
-        }
-      }
-      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size, 'inspectedByWono count:', inspectedByWono.size)
-    } catch (localErr) {
-      console.warn('Cross-filter query failed (non-fatal):', localErr.message)
-    }
-
-    // Fallback: inspecciones sin work order o sin truck_id (datos antiguos)
-    const fallbackTractors = new Set()
-    const inspectedByWonoWithDate = new Set()
-    try {
-      const fallback = await sql`
-        SELECT DISTINCT UPPER(TRIM(tractor_number)) AS truck_id
-        FROM inspections
-        WHERE status NOT IN ('superseded')
-          AND (wono IS NULL OR TRIM(wono) = '' OR tractor_number IS NULL OR TRIM(tractor_number) = '')
-          AND tractor_number IS NOT NULL
-          AND TRIM(tractor_number) <> ''
-          AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
-      `
-      for (const row of fallback) {
-        if (row.truck_id) fallbackTractors.add(row.truck_id)
-      }
-    } catch (localErr) {
-      console.warn('Fallback tractor query failed (non-fatal):', localErr.message)
-    }
-    
-    // Agregar fecha a inspectedByWono para evitar falsos positivos
-    try {
-      const inspectedWithDate = await sql`
-        SELECT DISTINCT 
-          UPPER(TRIM(wono)) AS wono,
-          inspection_date
-        FROM inspections
-        WHERE status NOT IN ('superseded')
-          AND wono IS NOT NULL
-          AND TRIM(wono) <> ''
-          AND (created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Tijuana')::date >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'
-      `
-      for (const row of inspectedWithDate) {
-        if (row.wono) {
-          const wonoParts = row.wono.split('::')
-          const workOrder = wonoParts[0] || row.wono
-          const d = row.inspection_date ? new Date(row.inspection_date) : null
-          const fecha = d && !isNaN(d.getTime())
-            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
-            : ''
           inspectedByWonoWithDate.add(`${workOrder}::${fecha}`)
         }
+
+        // Fallback: inspecciones sin wono pero con tractor_number
+        if ((!row.wono || row.wono.trim() === '') && row.truck_id) {
+          fallbackTractors.add(row.truck_id)
+        }
       }
+      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size, 'inspectedByWonoWithDate count:', inspectedByWonoWithDate.size, 'fallbackTractors count:', fallbackTractors.size)
     } catch (localErr) {
-      console.warn('Inspected with date query failed (non-fatal):', localErr.message)
+      console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
 
     // Mark each movement with already_inspected flag (matched by composite key or sql_id)
@@ -237,26 +184,10 @@ export default async function handler(req, res) {
       const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
       const alreadyByWonoOnly = !!(wonoWithDateKey && inspectedByWonoWithDate.has(wonoWithDateKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
+      // No marcar como inspeccionado si el fallback por wono+fecha coincide pero ya hay sql_id match
+      // (el sql_id match es más preciso y ya se evaluó arriba)
       const already = alreadyByWono || alreadyBySqlId || alreadyByWonoOnly || alreadyByTractor
 
-      // Debug: log specific trucks
-      const debugTrucks = ['465', '409', '358']
-      if (debugTrucks.includes(m.truck_id?.toString().trim())) {
-        console.log(`Truck ${m.truck_id?.toString().trim()} debug:`, {
-          wono,
-          truck,
-          fromd,
-          sqlId,
-          compositeKey,
-          sqlIdKey,
-          already,
-          alreadyByWono,
-          alreadyBySqlId,
-          alreadyByWonoOnly,
-          alreadyByTractor,
-          fecha: m.fecha,
-        })
-      }
       return { ...m, already_inspected: already }
     })
 
