@@ -205,6 +205,10 @@ export default async function handler(req, res) {
       tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', ${tprDateLiteral})`
     }
 
+    // Solo contar movimientos con status='OPEN' (pendientes reales).
+    // Sin este filtro, los movimientos CLOSED/completados inflan el total y el pending.
+    const tprStatusCondition = `TRIM(status) = 'OPEN'`
+
     let nbcw = { total: 0, inspected: 0, pending: 0, inspectedToday: 0 }
     let nbcwByYard = []
     console.log('Metrics date params:', { anchorDate, offset, period, yardCode, isAllYards, dateCondition, tprDateCondition })
@@ -214,8 +218,8 @@ export default async function handler(req, res) {
     let tprRows = []
     try {
       const tprQuery = isAllYards
-        ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition}`
-        : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND TRIM(fromd) = $1`
+        ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND ${tprStatusCondition}`
+        : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND ${tprStatusCondition} AND TRIM(fromd) = $1`
       const tprParams = isAllYards ? [] : [yardCode]
       tprRows = await sql.query(tprQuery, tprParams)
       console.log('NBCW tprRows count:', tprRows.length, isAllYards ? '(all yards)' : `(yard ${yardCode})`)
@@ -236,8 +240,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`
-          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND TRIM(fromd) = $1`
+          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND ${tprStatusCondition}`
+          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND ${tprStatusCondition} AND TRIM(fromd) = $1`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))
@@ -255,6 +259,7 @@ export default async function handler(req, res) {
     // El campo wono de inspections almacena work_order::sql_id cuando viene de NBCW.
     let inspectedSet = new Set()
     let inspectedBySqlId = new Set()
+    let inspectedByWonoWithDate = new Set()
     let inspectedWonosList = []
     try {
       const inspectedQuery = `
@@ -276,17 +281,22 @@ export default async function handler(req, res) {
           const wonoParts = row.wono.split('::')
           const workOrder = wonoParts[0] || row.wono
           const sqlId = wonoParts[1] || ''
-          // Convertir inspection_date (TIMESTAMPTZ) al formato MM/DD/YYYY usado en TPR.fecha
-          // Se fuerza la zona horaria America/Tijuana para evitar desplazamientos UTC.
+          // Convertir inspection_date (TIMESTAMPTZ) a formato ISO (YYYY-MM-DD) para
+          // comparar con TPR.fecha de forma consistente. Se fuerza la zona horaria
+          // America/Tijuana para evitar desplazamientos UTC.
           const d = row.inspection_date ? new Date(row.inspection_date) : null
           const fecha = d && !isNaN(d.getTime())
-            ? d.toLocaleDateString('en-US', { timeZone: 'America/Tijuana' })
+            ? d.toLocaleDateString('en-CA', { timeZone: 'America/Tijuana' })
             : ''
           const key = `${workOrder}::${row.truck_id || ''}::${row.location || ''}::${fecha}::${sqlId}`
           inspectedSet.add(key)
           // Si tenemos sqlId, cruzamos también solo por work_order::sql_id
           if (sqlId) {
-            inspectedBySqlId.add(`${workOrder}::${sqlId}`)
+            inspectedBySqlId.add(`${workOrder}::${sqlId.toLowerCase()}`)
+          }
+          // Fallback por work_order + fecha (sin truck ni sql_id)
+          if (workOrder && fecha) {
+            inspectedByWonoWithDate.add(`${workOrder}::${fecha}`)
           }
           inspectedWonosList.push(row.wono)
         }
@@ -364,14 +374,18 @@ export default async function handler(req, res) {
       const wono = m.wono?.toString().trim().toUpperCase()
       const truck = m.truckid?.toString().trim().toUpperCase()
       const fromd = m.fromd?.toString().trim().toUpperCase()
-      const fecha = m.fecha?.toString().trim() || ''
+      // Normalizar fecha TPR (MM/DD/YYYY) a ISO (YYYY-MM-DD) para coincidir
+      // con el formato usado en inspectedSet (evita mismatch de ceros iniciales).
+      const fecha = parseMdyToIso(m.fecha?.toString().trim()) || ''
       const sqlId = m.sql_id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
-      const sqlIdKey = sqlId && wono ? `${wono}::${sqlId}` : null
+      const sqlIdKey = sqlId && wono ? `${wono}::${sqlId.toLowerCase()}` : null
+      const wonoWithDateKey = wono && fecha ? `${wono}::${fecha}` : null
       const alreadyByWono = !!(wono && inspectedSet.has(compositeKey))
       const alreadyBySqlId = !!(sqlIdKey && inspectedBySqlId.has(sqlIdKey))
+      const alreadyByWonoOnly = !!(wonoWithDateKey && inspectedByWonoWithDate.has(wonoWithDateKey))
       const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      const already = alreadyByWono || alreadyBySqlId || alreadyByTractor
+      const already = alreadyByWono || alreadyBySqlId || alreadyByWonoOnly || alreadyByTractor
 
       nbcw.total++
       if (already) nbcw.inspected++
@@ -428,6 +442,8 @@ export default async function handler(req, res) {
         dateCondition,
         tprRowsCount: tprRows.length,
         inspectedSetSize: inspectedSet.size,
+        inspectedBySqlIdSize: inspectedBySqlId.size,
+        inspectedByWonoWithDateSize: inspectedByWonoWithDate.size,
         fallbackTractorsSize: fallbackTractors.size,
         nullWonoCount,
         inspectedTodayCount,

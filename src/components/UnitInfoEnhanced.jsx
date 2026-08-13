@@ -202,7 +202,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
       try {
         const yardCodes = user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
         const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
-        const res = await getTprMovements({ type: 'all', yardCode })
+        const res = await getTprMovements({ type: 'pending', yardCode })
         
         if (res.success) {
           const movementsData = res.data || []

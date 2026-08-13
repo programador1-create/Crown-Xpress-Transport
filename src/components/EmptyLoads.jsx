@@ -68,7 +68,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       if (refreshUser) refreshedUser = await refreshUser() || user
       const yardCodes = refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
       const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
-      const res = await getTprMovements({ type: 'all', yardCode })
+      const res = await getTprMovements({ type: 'pending', yardCode })
       if (res.success) {
         const movementsData = res.data || []
         setMovements(movementsData)
@@ -84,7 +84,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
 
         const olderPending = movementsData.filter(m => {
           const movementDate = parseMovementDate(m.date || m.fecha_raw)
-          return movementDate !== today && !m.already_inspected
+          return movementDate && movementDate !== today && !m.already_inspected
         })
 
         setTodayPendingCount(todayPending.length)
