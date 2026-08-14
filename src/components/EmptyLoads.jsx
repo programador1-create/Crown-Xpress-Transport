@@ -56,7 +56,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [todayPendingCount, setTodayPendingCount] = useState(0)
   const [olderPendingCount, setOlderPendingCount] = useState(0)
   const [countdown, setCountdown] = useState(60)
-  const [dateFilter, setDateFilter] = useState('last2days')
+  const [dateFilter, setDateFilter] = useState('last24hrs')
   const pollingRef = useRef(null)
   const countdownRef = useRef(null)
 
@@ -73,7 +73,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         const movementsData = res.data || []
         setMovements(movementsData)
         
-        // Filter by last 2 days for pending count - separate today vs older
+        // Filter by last 24hrs for pending count - separate today vs older
         const today = getLocalISODate()
         const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
 
@@ -154,6 +154,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     }
 
     // Filtrar por fecha usando zona horaria local
+    // last24hrs = hoy + ayer (ventana de 24 horas)
     const today = getLocalISODate()
     const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
     filtered = filtered.filter(m => {
@@ -161,6 +162,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       if (!movementDate) return false
       if (dateFilter === 'today') return movementDate === today
       if (dateFilter === 'yesterday') return movementDate === yesterday
+      // last24hrs: hoy + ayer
       return movementDate === today || movementDate === yesterday
     })
 
@@ -342,7 +344,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             {[
               { key: 'today', labelEs: 'Hoy', labelEn: 'Today' },
               { key: 'yesterday', labelEs: 'Ayer', labelEn: 'Yesterday' },
-              { key: 'last2days', labelEs: '2 días', labelEn: '2 days' },
+              { key: 'last24hrs', labelEs: '24hrs', labelEn: '24hrs' },
             ].map(opt => (
               <button
                 key={opt.key}
@@ -556,8 +558,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             </span>
             <span className="text-red-600 font-medium">
               {language === 'es'
-                ? `48hrs: ${olderPendingCount}`
-                : `48hrs: ${olderPendingCount}`
+                ? `24hrs: ${olderPendingCount}`
+                : `24hrs: ${olderPendingCount}`
               }
             </span>
             <span className="text-slate-600">

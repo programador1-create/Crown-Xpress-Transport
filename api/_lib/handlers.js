@@ -245,18 +245,19 @@ export async function listInspections(req, res) {
       `
     } else if (yardCode) {
       // Filter by yard code(s) - handle multiple yards separated by comma
-      const yardCodes = yardCode.split(',').map(c => c.trim()).filter(Boolean)
+      // Normalizar con UPPER(TRIM()) para tolerar diferencias de case/whitespace
+      const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
       if (yardCodes.length === 1) {
         rows = await sql`
           SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
-          WHERE location = ${yardCodes[0]}
+          WHERE UPPER(TRIM(location)) = ${yardCodes[0]}
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       } else {
         rows = await sql`
           SELECT ${sql.unsafe(LIST_COLUMNS)} FROM inspections
-          WHERE location = ANY(${yardCodes})
+          WHERE UPPER(TRIM(location)) = ANY(${yardCodes})
           ORDER BY created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `

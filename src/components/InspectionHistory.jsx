@@ -21,11 +21,15 @@ export default function InspectionHistory() {
       setLoading(true)
       setError(null)
       try {
-        // Guards see only their own inspections, Supervisors see all inspections from their assigned yards
+        // Guards see only their own inspections, Supervisors/Admins see all inspections from their assigned yards
+        const isAdmin = user?.role === 'admin'
         const isSupervisor = user?.role === 'supervisor'
         let res
 
-        if (isSupervisor) {
+        if (isAdmin) {
+          // Admin: ver todas las inspecciones de todas las yardas
+          res = await listInspections({ limit: 200 })
+        } else if (isSupervisor) {
           // Supervisor: filter by yard_assignments
           const userYards = user?.yard_assignments || []
           const yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''

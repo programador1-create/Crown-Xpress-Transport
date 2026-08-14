@@ -63,9 +63,14 @@ export default function SupervisorView() {
       setLoading(true)
       setError(null)
       try {
-        // Use yard_assignments from user to filter inspections
-        const userYards = user?.yard_assignments || []
-        const yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''
+        // Admin ve todas las inspecciones de todas las yardas.
+        // Supervisor ve solo las de sus yardas asignadas.
+        const isAdmin = user?.role === 'admin'
+        let yardCodes = ''
+        if (!isAdmin) {
+          const userYards = user?.yard_assignments || []
+          yardCodes = userYards.length > 0 ? userYards.map(ya => ya.yard_code).join(',') : user?.location_name || ''
+        }
         const res = await listInspections({ limit: 500, yardCode: yardCodes })
         setInspections(res.data || [])
       } catch (err) {
@@ -74,7 +79,7 @@ export default function SupervisorView() {
         setLoading(false)
       }
     }
-  }, [user?.yard_assignments, user?.location_name])
+  }, [user?.yard_assignments, user?.location_name, user?.role])
 
   // Unique values for filter dropdowns
   const yards = useMemo(() => [...new Set(inspections.map(i => i.location).filter(Boolean))].sort(), [inspections])

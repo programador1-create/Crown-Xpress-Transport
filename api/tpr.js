@@ -58,10 +58,10 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Sincronizar registros de los ultimos 2 dias para mostrar pendientes
+    // Sincronizar registros de las ultimas 24 horas para mostrar pendientes
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
     // Usamos zona horaria de Tijuana (America/Tijuana) para consistencia
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days'`)
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 

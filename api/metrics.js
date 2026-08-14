@@ -92,7 +92,7 @@ export default async function handler(req, res) {
             COUNT(CASE WHEN status = 'audited' THEN 1 END) as audited
           FROM inspections
           WHERE ${sql.unsafe(dateCondition)}
-            AND location = ${yardCode}
+            AND UPPER(TRIM(location)) = UPPER(TRIM(${yardCode}))
         `
 
     // ============================================================
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
             COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
           FROM inspections
           WHERE ${sql.unsafe(`${localDateExpr} >= ${dateLiteral} - INTERVAL '7 days'`)}
-            AND location = ${yardCode}
+            AND UPPER(TRIM(location)) = UPPER(TRIM(${yardCode}))
           GROUP BY ${sql.unsafe(localDateExpr)}
           ORDER BY date DESC
         `
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
           FROM inspections
           WHERE ${sql.unsafe(dateCondition)}
             AND guard_name IS NOT NULL
-            AND location = ${yardCode}
+            AND UPPER(TRIM(location)) = UPPER(TRIM(${yardCode}))
           GROUP BY guard_name
           ORDER BY total_inspections DESC
         `
@@ -173,9 +173,10 @@ export default async function handler(req, res) {
 
       // Combinar con el catálogo de yardas para mostrar nombre completo
       // (incluye yardas sin inspecciones aún, y las recién creadas)
-      const yardMap = new Map(yardMetrics.map(y => [y.location, y]))
+      // Normalizar con UPPER(TRIM()) para tolerar diferencias de case/whitespace
+      const yardMap = new Map(yardMetrics.map(y => [String(y.location || '').trim().toUpperCase(), y]))
       byYard = yards.map(y => {
-        const stats = yardMap.get(y.code) || { total_inspections: 0, completed: 0, pending: 0 }
+        const stats = yardMap.get(String(y.code || '').trim().toUpperCase()) || { total_inspections: 0, completed: 0, pending: 0 }
         return {
           yard_id: y.id,
           yard_name: y.name,
@@ -240,8 +241,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND ${tprStatusCondition}`
-          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '2 days' AND ${tprStatusCondition} AND TRIM(fromd) = $1`
+          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day' AND ${tprStatusCondition}`
+          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day' AND ${tprStatusCondition} AND TRIM(fromd) = $1`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))
@@ -405,7 +406,7 @@ export default async function handler(req, res) {
     if (isAllYards) {
       nbcwByYard = yards
         .map(y => {
-          const e = perYard.get(y.code?.toUpperCase()) || { total: 0, inspected: 0 }
+          const e = perYard.get(String(y.code || '').trim().toUpperCase()) || { total: 0, inspected: 0 }
           return {
             yard_id: y.id,
             yard_name: y.name,
