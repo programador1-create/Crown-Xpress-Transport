@@ -7,7 +7,7 @@ $SQLInstance = "BKUPEXEC"
 $SQLDatabase = "GPSActivity"
 $SQLUser = "ccentral"
 $SQLPassword = "Roncen810#"
-$NeonConnectionString = "postgresql://neondb_owner:npg_hg6eq0tnsrpK@ep-shiny-grass-aq5qzmg9-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+$NeonConnectionString = "postgresql://neondb_owner:npg_hg6eq0tnsrpK@ep-shiny-grass-aq5qzmg9-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require"
 $SyncDays = 9999
 
 # Logging
@@ -139,6 +139,8 @@ try {
     Write-Log "Extraccion de SQL Server completada. Ejecutando insercion a Neon..."
     
     # Ejecutar script Node.js para insertar en Neon
+    # Pasar DATABASE_URL como variable de entorno (fallback si scripts/.env no existe)
+    $env:DATABASE_URL = $NeonConnectionString
     $NodeResult = node "$PSScriptRoot\sync-to-neon.js" "$JsonFile"
     Write-Log "Resultado de insercion a Neon: $NodeResult"
     Write-Log "Sincronizacion completa"

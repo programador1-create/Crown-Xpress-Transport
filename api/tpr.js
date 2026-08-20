@@ -32,7 +32,9 @@ export default async function handler(req, res) {
 
     // Filtro por tipo de movimiento (opcional - si no se especifica, mostrar todos)
     if (effectiveType === 'pending') {
-      addCondition(`TRIM(status) = 'OPEN'`)
+      // En TPR, los movimientos pendientes pueden tener status 'OPEN', vacío ('') o NULL.
+      // Solo los que tienen status 'CLOSED' o 'CANCEL' ya fueron terminados/cancelados.
+      addCondition(`(status IS NULL OR TRIM(status) = '' OR UPPER(TRIM(status)) NOT IN ('CLOSED', 'CANCEL'))`)
     } else if (effectiveType === 'empty') {
       addCondition(`(TRIM(el) = 'E' OR eqpcode ILIKE '%Botada%')`)
     } else if (effectiveType === 'loaded') {

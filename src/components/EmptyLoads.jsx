@@ -144,12 +144,16 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
       filtered = filtered.filter(m => !m.already_inspected)
     }
 
-    // Filtrar por término de búsqueda (solo por unidad/equipo)
+    // Filtrar por término de búsqueda (unidad, equipo, orden de trabajo, chofer o cliente)
     if (searchTerm) {
-      const term = searchTerm.toLowerCase()
+      const term = searchTerm.toLowerCase().trim()
       filtered = filtered.filter(m =>
         m.truck_id?.toLowerCase().includes(term) ||
-        m.equipment_code?.toLowerCase().includes(term)
+        m.equipment_code?.toLowerCase().includes(term) ||
+        m.work_order?.toLowerCase().includes(term) ||
+        m.operator?.toLowerCase().includes(term) ||
+        m.driver_code?.toLowerCase().includes(term) ||
+        m.customer?.toLowerCase().includes(term)
       )
     }
 

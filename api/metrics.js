@@ -206,9 +206,10 @@ export default async function handler(req, res) {
       tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', ${tprDateLiteral})`
     }
 
-    // Solo contar movimientos con status='OPEN' (pendientes reales).
-    // Sin este filtro, los movimientos CLOSED/completados inflan el total y el pending.
-    const tprStatusCondition = `TRIM(status) = 'OPEN'`
+    // Solo contar movimientos no cerrados/cancelados (pendientes reales).
+    // En TPR, los pendientes pueden venir con status 'OPEN', '' o NULL.
+    // Solo 'CLOSED' o 'CANCEL' se excluyen como ya finalizados.
+    const tprStatusCondition = `(status IS NULL OR TRIM(status) = '' OR UPPER(TRIM(status)) NOT IN ('CLOSED', 'CANCEL'))`
 
     let nbcw = { total: 0, inspected: 0, pending: 0, inspectedToday: 0 }
     let nbcwByYard = []

@@ -92,7 +92,7 @@ export default async function handler(req, res) {
 
     // Filtro por tipo de movimiento
     if (type === 'pending') {
-      addCondition(`TRIM(status) = 'OPEN'`)
+      addCondition(`(status IS NULL OR TRIM(status) = '' OR UPPER(TRIM(status)) NOT IN ('CLOSED', 'CANCEL'))`)
     } else if (type === 'empty') {
       addCondition(`(TRIM(el) = 'E' OR eqpcode LIKE '%Botada%')`)
     } else if (type === 'loaded') {
