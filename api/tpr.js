@@ -31,18 +31,17 @@ export default async function handler(req, res) {
     }
 
     // Filtro por tipo de movimiento (opcional - si no se especifica, mostrar todos)
-    if (effectiveType === 'pending') {
-      // En TPR, los movimientos pendientes pueden tener status 'OPEN', vacío ('') o NULL.
-      // Solo los que tienen status 'CLOSED' o 'CANCEL' ya fueron terminados/cancelados.
-      addCondition(`(status IS NULL OR TRIM(status) = '' OR UPPER(TRIM(status)) NOT IN ('CLOSED', 'CANCEL'))`)
-    } else if (effectiveType === 'empty') {
+    if (effectiveType === 'empty') {
       addCondition(`(TRIM(el) = 'E' OR eqpcode ILIKE '%Botada%')`)
     } else if (effectiveType === 'loaded') {
       addCondition(`TRIM(el) = 'L'`)
     } else if (effectiveType === 'bobtail') {
       addCondition(`(eqpcode ILIKE '%Botada%' OR TRIM(tablecode) = 'BOTADA')`)
     }
-    // Si effectiveType no coincide con ninguno, no se aplica filtro de tipo
+    // Para 'pending' o 'all', no filtramos por status en SQL porque en TPR el status
+    // puede ser 'OPEN', '', NULL o incluso 'CLOSED' cuando el despachador cierra el viaje
+    // en sistema antes de la inspección física. El verdadero filtro de pendientes se hace
+    // abajo cruzando contra la tabla de inspecciones (already_inspected).
 
     // Filtro por yarda (soporta multiples codigos separados por coma)
     if (yardCode) {
@@ -50,7 +49,7 @@ export default async function handler(req, res) {
       if (yardCodes.length > 0) {
         const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
         params.push(...yardCodes)
-        addCondition(`TRIM(fromd) IN (${placeholders})`)
+        addCondition(`(TRIM(fromd) IN (${placeholders}) OR TRIM(tod) IN (${placeholders}))`)
       }
     }
 
@@ -60,10 +59,11 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Sincronizar registros de las ultimas 24 horas para mostrar pendientes
+    // Sincronizar registros de los últimos 7 días para mostrar pendientes recientes
+    // (permite ver pendientes de fin de semana como sábado y domingo al llegar el lunes)
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
     // Usamos zona horaria de Tijuana (America/Tijuana) para consistencia
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day'`)
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 

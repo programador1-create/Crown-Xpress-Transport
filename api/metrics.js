@@ -220,8 +220,8 @@ export default async function handler(req, res) {
     let tprRows = []
     try {
       const tprQuery = isAllYards
-        ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND ${tprStatusCondition}`
-        : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND ${tprStatusCondition} AND TRIM(fromd) = $1`
+        ? `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE ${tprDateCondition}`
+        : `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE ${tprDateCondition} AND (TRIM(fromd) = $1 OR TRIM(tod) = $1)`
       const tprParams = isAllYards ? [] : [yardCode]
       tprRows = await sql.query(tprQuery, tprParams)
       console.log('NBCW tprRows count:', tprRows.length, isAllYards ? '(all yards)' : `(yard ${yardCode})`)
@@ -230,7 +230,7 @@ export default async function handler(req, res) {
     }
 
     // Fallback: si el filtro exacto no devuelve filas para el día, consultamos
-    // los últimos 2 días igual que tpr.js y filtramos en JS para evitar falsos 0.
+    // los últimos 7 días igual que tpr.js y filtramos en JS para evitar falsos 0.
     function parseMdyToIso(mdy) {
       if (!mdy) return null
       const parts = String(mdy).split('/').map(Number)
@@ -242,8 +242,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day' AND ${tprStatusCondition}`
-          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '1 day' AND ${tprStatusCondition} AND TRIM(fromd) = $1`
+          ? `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'`
+          : `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days' AND (TRIM(fromd) = $1 OR TRIM(tod) = $1)`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))

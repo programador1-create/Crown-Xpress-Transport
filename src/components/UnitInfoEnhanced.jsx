@@ -200,7 +200,8 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
   useEffect(() => {
     const loadPendingCounts = async () => {
       try {
-        const yardCodes = user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
+        const isAdmin = user?.role === 'admin'
+        const yardCodes = !isAdmin ? (user?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []) : []
         const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
         const res = await getTprMovements({ type: 'pending', yardCode })
         

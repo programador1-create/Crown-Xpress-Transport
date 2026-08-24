@@ -66,7 +66,9 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     try {
       let refreshedUser = user
       if (refreshUser) refreshedUser = await refreshUser() || user
-      const yardCodes = refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []
+      // Si el rol es admin, no filtramos por yarda para que pueda ver todas las salidas
+      const isAdmin = refreshedUser?.role === 'admin'
+      const yardCodes = !isAdmin ? (refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []) : []
       const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
       const res = await getTprMovements({ type: 'pending', yardCode })
       if (res.success) {
@@ -158,17 +160,20 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     }
 
     // Filtrar por fecha usando zona horaria local
-    // last24hrs = hoy + ayer (ventana de 24 horas)
-    const today = getLocalISODate()
-    const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
-    filtered = filtered.filter(m => {
-      const movementDate = parseMovementDate(m.date || m.fecha_raw)
-      if (!movementDate) return false
-      if (dateFilter === 'today') return movementDate === today
-      if (dateFilter === 'yesterday') return movementDate === yesterday
-      // last24hrs: hoy + ayer
-      return movementDate === today || movementDate === yesterday
-    })
+    // Si hay un término de búsqueda específico, se permite buscar en todos los días cargados.
+    // Si no hay búsqueda, se respeta el filtro de fecha seleccionado.
+    if (!searchTerm && dateFilter !== 'all') {
+      const today = getLocalISODate()
+      const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
+      filtered = filtered.filter(m => {
+        const movementDate = parseMovementDate(m.date || m.fecha_raw)
+        if (!movementDate) return false
+        if (dateFilter === 'today') return movementDate === today
+        if (dateFilter === 'yesterday') return movementDate === yesterday
+        // last24hrs: hoy + ayer
+        return movementDate === today || movementDate === yesterday
+      })
+    }
 
     setFilteredMovements(filtered)
   }
@@ -349,6 +354,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
               { key: 'today', labelEs: 'Hoy', labelEn: 'Today' },
               { key: 'yesterday', labelEs: 'Ayer', labelEn: 'Yesterday' },
               { key: 'last24hrs', labelEs: '24hrs', labelEn: '24hrs' },
+              { key: 'all', labelEs: 'Todos', labelEn: 'All' },
             ].map(opt => (
               <button
                 key={opt.key}

@@ -7,7 +7,7 @@ $SQLInstance = "BKUPEXEC"
 $SQLDatabase = "GPSActivity"
 $SQLUser = "ccentral"
 $SQLPassword = "Roncen810#"
-$NeonConnectionString = "postgresql://neondb_owner:npg_hg6eq0tnsrpK@ep-shiny-grass-aq5qzmg9-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require"
+$NeonConnectionString = "postgresql://neondb_owner:npg_hg6eq0tnsrpK@ep-shiny-grass-aq5qzmg9-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 $SyncDays = 9999
 
 # Logging
@@ -136,14 +136,119 @@ try {
     Write-Log "Datos guardados en $JsonFile ($($JsonData.Count) registros)"
 
     $SQLConnection.Close()
-    Write-Log "Extraccion de SQL Server completada. Ejecutando insercion a Neon..."
-    
-    # Ejecutar script Node.js para insertar en Neon
-    # Pasar DATABASE_URL como variable de entorno (fallback si scripts/.env no existe)
-    $env:DATABASE_URL = $NeonConnectionString
-    $NodeResult = node "$PSScriptRoot\sync-to-neon.js" "$JsonFile"
-    Write-Log "Resultado de insercion a Neon: $NodeResult"
-    Write-Log "Sincronizacion completa"
+    Write-Log "Extraccion de SQL Server completada ($($JsonData.Count) registros). Insertando directamente a Neon..."
+
+    # Insercion directa a Neon via API HTTP nativa (sin dependencia de Node.js/npm)
+    $uriMatch = [regex]::Match($NeonConnectionString, '@([^/:]+)')
+    $dbHost = $uriMatch.Groups[1].Value
+    $httpHost = $dbHost -replace '-pooler', ''
+    $NeonHttpEndpoint = "https://$httpHost/sql"
+
+    function Execute-NeonQuery([string]$sqlQuery) {
+        $headers = @{
+            "Neon-Connection-String" = $NeonConnectionString
+            "Content-Type" = "application/json"
+        }
+        $body = @{ query = $sqlQuery } | ConvertTo-Json
+        return Invoke-RestMethod -Uri $NeonHttpEndpoint -Method Post -Headers $headers -Body $body
+    }
+
+    function Escape-Sql([string]$val) {
+        if ($null -eq $val) { return "NULL" }
+        $trimmed = $val.Trim()
+        if ($trimmed -eq "") { return "NULL" }
+        return "'" + $trimmed.Replace("'", "''") + "'"
+    }
+
+    # Asegurar schema correcto de la tabla tpr
+    $createTableQuery = @"
+    CREATE TABLE IF NOT EXISTS tpr (
+        id SERIAL PRIMARY KEY,
+        drvcode VARCHAR(50),
+        wono VARCHAR(50),
+        blno VARCHAR(50),
+        fecha VARCHAR(12),
+        fromd VARCHAR(50),
+        fromcity VARCHAR(100),
+        fromedo VARCHAR(50),
+        tod VARCHAR(50),
+        tocity VARCHAR(100),
+        toedo VARCHAR(50),
+        tipmov VARCHAR(50),
+        status VARCHAR(50),
+        el VARCHAR(50),
+        eqpcode VARCHAR(100),
+        deldate VARCHAR(12),
+        cstmer VARCHAR(100),
+        timearrv VARCHAR(20),
+        timedepar VARCHAR(20),
+        oper VARCHAR(50),
+        truckid VARCHAR(50),
+        seal VARCHAR(50),
+        instruc1 TEXT,
+        instruc2 TEXT,
+        amount VARCHAR(10),
+        tablecode VARCHAR(50),
+        trxcode VARCHAR(50),
+        synced_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    );
+"@
+    Execute-NeonQuery $createTableQuery | Out-Null
+    Execute-NeonQuery "TRUNCATE TABLE tpr" | Out-Null
+
+    # Insertar en lotes de 100 registros
+    $batchSize = 100
+    $totalInserted = 0
+    $columns = "drvcode, wono, blno, fecha, fromd, fromcity, fromedo, tod, tocity, toedo, tipmov, status, el, eqpcode, deldate, cstmer, timearrv, timedepar, oper, truckid, seal, instruc1, instruc2, amount, tablecode, trxcode, synced_at"
+
+    for ($i = 0; $i -lt $JsonData.Count; $i += $batchSize) {
+        $countInBatch = [Math]::Min($batchSize, $JsonData.Count - $i)
+        $batch = $JsonData[$i..($i + $countInBatch - 1)]
+        $valuesList = @()
+
+        foreach ($row in $batch) {
+            $vals = @(
+                (Escape-Sql $row.driver_code),
+                (Escape-Sql $row.work_order),
+                (Escape-Sql $row.bill_of_lading),
+                (Escape-Sql $row.fecha_raw),
+                (Escape-Sql $row.from_code),
+                (Escape-Sql $row.from_city),
+                (Escape-Sql $row.from_state),
+                (Escape-Sql $row.to_code),
+                (Escape-Sql $row.to_city),
+                (Escape-Sql $row.to_state),
+                (Escape-Sql $row.movement_type),
+                (Escape-Sql $row.status),
+                (Escape-Sql $row.equipment_type),
+                (Escape-Sql $row.equipment_code),
+                (Escape-Sql $row.deldate_raw),
+                (Escape-Sql $row.customer),
+                (Escape-Sql $row.arrival_time),
+                (Escape-Sql $row.departure_time),
+                (Escape-Sql $row.operator),
+                (Escape-Sql $row.truck_id),
+                (Escape-Sql $row.seal),
+                (Escape-Sql $row.instructions_1),
+                (Escape-Sql $row.instructions_2),
+                (Escape-Sql $row.amount),
+                (Escape-Sql $row.table_code),
+                (Escape-Sql $row.trx_code),
+                "NOW()"
+            ) -join ", "
+
+            $valuesList += "($vals)"
+        }
+
+        $insertQuery = "INSERT INTO tpr ($columns) VALUES " + ($valuesList -join ", ")
+        Execute-NeonQuery $insertQuery | Out-Null
+        $totalInserted += $batch.Count
+        Write-Log "Insertados $totalInserted de $($JsonData.Count) registros en Neon..."
+    }
+
+    Write-Log "Sincronizacion completa: $totalInserted registros insertados en Neon exitosamente"
 
 } catch {
     Write-Log "Error en sincronizacion: $_"
