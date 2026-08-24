@@ -59,11 +59,11 @@ export default async function handler(req, res) {
       addCondition(`fecha = $${paramIdx++}`)
     }
 
-    // Sincronizar registros de los últimos 7 días para mostrar pendientes recientes
+    // Sincronizar registros de los últimos 3 días para mostrar pendientes recientes
     // (permite ver pendientes de fin de semana como sábado y domingo al llegar el lunes)
     // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
     // Usamos zona horaria de Tijuana (America/Tijuana) para consistencia
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '7 days'`)
+    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 

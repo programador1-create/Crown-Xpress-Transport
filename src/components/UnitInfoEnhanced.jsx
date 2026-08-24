@@ -913,7 +913,7 @@ export default function UnitInfoEnhanced({ onContainerChange, onSealChange, onLo
                   {language === 'es' ? `Hoy: ${todayPendingCount}` : `Today: ${todayPendingCount}`}
                 </span>
                 <span className="text-xs font-semibold text-red-600">
-                  {language === 'es' ? `24hrs: ${olderPendingCount}` : `24hrs: ${olderPendingCount}`}
+                  {language === 'es' ? `3 días: ${olderPendingCount}` : `3 days: ${olderPendingCount}` }
                 </span>
               </div>
             </button>

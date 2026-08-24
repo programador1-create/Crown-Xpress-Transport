@@ -56,7 +56,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   const [todayPendingCount, setTodayPendingCount] = useState(0)
   const [olderPendingCount, setOlderPendingCount] = useState(0)
   const [countdown, setCountdown] = useState(60)
-  const [dateFilter, setDateFilter] = useState('last24hrs')
+  const [dateFilter, setDateFilter] = useState('last3days')
   const pollingRef = useRef(null)
   const countdownRef = useRef(null)
 
@@ -75,9 +75,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
         const movementsData = res.data || []
         setMovements(movementsData)
         
-        // Filter by last 24hrs for pending count - separate today vs older
+        // Separar conteo entre hoy y los 2 días anteriores (ventana de 3 días)
         const today = getLocalISODate()
-        const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
 
         const todayPending = movementsData.filter(m => {
           const movementDate = parseMovementDate(m.date || m.fecha_raw)
@@ -165,13 +164,14 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     if (!searchTerm && dateFilter !== 'all') {
       const today = getLocalISODate()
       const yesterday = getLocalISODate(new Date(Date.now() - 86400000))
+      const twoDaysAgo = getLocalISODate(new Date(Date.now() - 2 * 86400000))
       filtered = filtered.filter(m => {
         const movementDate = parseMovementDate(m.date || m.fecha_raw)
         if (!movementDate) return false
         if (dateFilter === 'today') return movementDate === today
         if (dateFilter === 'yesterday') return movementDate === yesterday
-        // last24hrs: hoy + ayer
-        return movementDate === today || movementDate === yesterday
+        if (dateFilter === 'last3days') return movementDate === today || movementDate === yesterday || movementDate === twoDaysAgo
+        return true
       })
     }
 
@@ -353,7 +353,7 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             {[
               { key: 'today', labelEs: 'Hoy', labelEn: 'Today' },
               { key: 'yesterday', labelEs: 'Ayer', labelEn: 'Yesterday' },
-              { key: 'last24hrs', labelEs: '24hrs', labelEn: '24hrs' },
+              { key: 'last3days', labelEs: '3 días', labelEn: '3 days' },
               { key: 'all', labelEs: 'Todos', labelEn: 'All' },
             ].map(opt => (
               <button
@@ -568,8 +568,8 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
             </span>
             <span className="text-red-600 font-medium">
               {language === 'es'
-                ? `24hrs: ${olderPendingCount}`
-                : `24hrs: ${olderPendingCount}`
+                ? `3 días: ${olderPendingCount}`
+                : `3 days: ${olderPendingCount}`
               }
             </span>
             <span className="text-slate-600">
