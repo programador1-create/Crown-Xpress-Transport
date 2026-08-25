@@ -59,7 +59,34 @@ export function AuthProvider({ children }) {
             return
           }
         }
-        setUser(JSON.parse(stored))
+        const parsed = JSON.parse(stored)
+        setUser(parsed)
+        // Refrescar en segundo plano para obtener asignaciones de yarda actualizadas
+        if (parsed?.id) {
+          const API_BASE = import.meta.env.VITE_API_URL || '/api'
+          fetch(`${API_BASE}/employees?id=${parsed.id}`)
+            .then(r => r.json())
+            .then(d => {
+              if (d.data) {
+                const emp = d.data
+                const refreshed = {
+                  id: emp.id,
+                  username: emp.username,
+                  full_name: emp.full_name,
+                  role: emp.role,
+                  location_id: emp.location_id,
+                  location_name: emp.location_name,
+                  location_code: emp.location_code,
+                  yard_assignments: emp.yard_assignments || [],
+                  active: emp.active,
+                  profile_photo: emp.profile_photo
+                }
+                setUser(refreshed)
+                localStorage.setItem('crown_user', JSON.stringify(refreshed))
+              }
+            })
+            .catch(() => {})
+        }
       } catch (e) {
         localStorage.removeItem('crown_user')
         localStorage.removeItem('crown_last_activity')

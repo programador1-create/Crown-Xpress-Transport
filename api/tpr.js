@@ -43,14 +43,39 @@ export default async function handler(req, res) {
     // en sistema antes de la inspección física. El verdadero filtro de pendientes se hace
     // abajo cruzando contra la tabla de inspecciones (already_inspected).
 
-    // Filtro por yarda (origen de salida - soporta múltiples códigos separados por coma)
+    // Filtro por yarda (origen de salida de caseta)
+    // Resuelve automáticamente nombres de yarda (ej: 'YARDA 6 TIJUANA' -> 'CXT6')
+    // y si no se especifica yarda, filtra por las yardas activas de Crown para no traer
+    // movimientos de clientes externos ajenos a casetas de Crown.
+    const activeYards = await sql`SELECT code, name FROM yards WHERE is_active = true`
+    let targetYardCodes = []
+
     if (yardCode && yardCode !== 'all') {
-      const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
-      if (yardCodes.length > 0) {
-        const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
-        params.push(...yardCodes)
-        addCondition(`TRIM(fromd) IN (${placeholders})`)
+      const inputCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
+      const allYards = await sql`SELECT code, name FROM yards`
+      for (const input of inputCodes) {
+        const found = allYards.find(y => 
+          y.code?.toUpperCase() === input || 
+          y.name?.toUpperCase() === input ||
+          input.includes(y.code?.toUpperCase()) ||
+          y.name?.toUpperCase().includes(input)
+        )
+        if (found) {
+          targetYardCodes.push(found.code.toUpperCase())
+        } else {
+          targetYardCodes.push(input)
+        }
       }
+    } else {
+      // Si no se especifica yarda o es 'all', filtrar por todas las yardas activas de Crown
+      targetYardCodes = activeYards.map(y => y.code?.toUpperCase()).filter(Boolean)
+    }
+
+    if (targetYardCodes.length > 0) {
+      const uniqueCodes = [...new Set(targetYardCodes)]
+      const placeholders = uniqueCodes.map(() => `$${paramIdx++}`).join(', ')
+      params.push(...uniqueCodes)
+      addCondition(`UPPER(TRIM(fromd)) IN (${placeholders})`)
     }
 
     // Filtro por fecha exacta
