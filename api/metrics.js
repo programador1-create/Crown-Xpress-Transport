@@ -220,8 +220,8 @@ export default async function handler(req, res) {
     let tprRows = []
     try {
       const tprQuery = isAllYards
-        ? `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE ${tprDateCondition}`
-        : `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE ${tprDateCondition} AND (TRIM(fromd) = $1 OR TRIM(tod) = $1)`
+        ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition}`
+        : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE ${tprDateCondition} AND UPPER(TRIM(fromd)) = UPPER(TRIM($1))`
       const tprParams = isAllYards ? [] : [yardCode]
       tprRows = await sql.query(tprQuery, tprParams)
       console.log('NBCW tprRows count:', tprRows.length, isAllYards ? '(all yards)' : `(yard ${yardCode})`)
@@ -242,8 +242,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`
-          : `SELECT id, sql_id, wono, truckid, fromd, tod, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days' AND (TRIM(fromd) = $1 OR TRIM(tod) = $1)`
+          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`
+          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days' AND UPPER(TRIM(fromd)) = UPPER(TRIM($1))`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))

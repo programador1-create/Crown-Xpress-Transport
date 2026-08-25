@@ -66,10 +66,10 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
     try {
       let refreshedUser = user
       if (refreshUser) refreshedUser = await refreshUser() || user
-      // Si el rol es admin, no filtramos por yarda para que pueda ver todas las salidas
-      const isAdmin = refreshedUser?.role === 'admin'
-      const yardCodes = !isAdmin ? (refreshedUser?.yard_assignments?.map(ya => ya.yard_code).filter(Boolean) || []) : []
-      const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : null
+      // Usar las yardas asignadas del usuario (ej: CXT6). Si no tiene ninguna, no filtra por yarda.
+      const userYards = refreshedUser?.yard_assignments?.filter(ya => ya.is_active !== false) || []
+      const yardCodes = userYards.map(ya => ya.yard_code).filter(Boolean)
+      const yardCode = yardCodes.length > 0 ? yardCodes.join(',') : (refreshedUser?.location_name || null)
       const res = await getTprMovements({ type: 'pending', yardCode })
       if (res.success) {
         const movementsData = res.data || []

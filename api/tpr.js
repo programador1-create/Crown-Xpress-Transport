@@ -43,13 +43,13 @@ export default async function handler(req, res) {
     // en sistema antes de la inspección física. El verdadero filtro de pendientes se hace
     // abajo cruzando contra la tabla de inspecciones (already_inspected).
 
-    // Filtro por yarda (soporta multiples codigos separados por coma)
-    if (yardCode) {
+    // Filtro por yarda (origen de salida - soporta múltiples códigos separados por coma)
+    if (yardCode && yardCode !== 'all') {
       const yardCodes = yardCode.split(',').map(c => c.trim().toUpperCase()).filter(Boolean)
       if (yardCodes.length > 0) {
         const placeholders = yardCodes.map(() => `$${paramIdx++}`).join(', ')
         params.push(...yardCodes)
-        addCondition(`(TRIM(fromd) IN (${placeholders}) OR TRIM(tod) IN (${placeholders}))`)
+        addCondition(`TRIM(fromd) IN (${placeholders})`)
       }
     }
 
