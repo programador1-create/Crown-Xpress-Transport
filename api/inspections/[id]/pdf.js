@@ -1,4 +1,5 @@
 import { getSql } from '../../_lib/db.js'
+import { uploadPdf, downloadPdfBuffer, isBlobConfigured } from '../../_lib/blob.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
       }
 
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_data
+        SELECT pdf_filename, pdf_url, pdf_data
         FROM inspections
         WHERE id = ${parseInt(id)}
       `
@@ -28,16 +29,29 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
-      if (!inspection.pdf_data) {
-        return res.status(404).json({ error: 'PDF not available in database - frontend will generate it' })
+      // Try Blob URL first (new storage), fall back to pdf_data (legacy)
+      if (inspection.pdf_url) {
+        try {
+          const pdfBuffer = await downloadPdfBuffer(inspection.pdf_url)
+          if (pdfBuffer) {
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+            return res.send(pdfBuffer)
+          }
+        } catch (blobErr) {
+          console.error('Blob download failed, trying legacy:', blobErr.message)
+        }
       }
 
-      // pdf_data is already BYTEA (binary)
-      const pdfBuffer = inspection.pdf_data
+      if (inspection.pdf_data) {
+        // Legacy: pdf_data stored as BYTEA in database
+        const pdfBuffer = inspection.pdf_data
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+        return res.send(pdfBuffer)
+      }
 
-      res.setHeader('Content-Type', 'application/pdf')
-      res.setHeader('Content-Disposition', `attachment; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
-      return res.send(pdfBuffer)
+      return res.status(404).json({ error: 'PDF not available - frontend will generate it' })
     } catch (error) {
       console.error('PDF Download Error:', error)
       return res.status(500).json({ error: 'Failed to download PDF' })
@@ -67,12 +81,27 @@ export default async function handler(req, res) {
       const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
       const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
 
-      console.log('PUT /api/inspections/[id]/pdf - size:', pdfBuffer.length, 'bytes')
+      console.log('PUT /api/inspections/[id]/pdf - uploading to Blob, size:', pdfBuffer.length, 'bytes')
+
+      // Upload to Vercel Blob instead of database
+      let pdfUrl = null
+      if (isBlobConfigured()) {
+        try {
+          const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+          pdfUrl = blobResult.url
+        } catch (blobErr) {
+          console.error('Blob upload failed:', blobErr.message)
+          return res.status(500).json({ error: 'Failed to upload PDF to Blob: ' + blobErr.message })
+        }
+      } else {
+        return res.status(500).json({ error: 'Blob storage not configured (BLOB_READ_WRITE_TOKEN missing)' })
+      }
 
       const [updated] = await sql`
         UPDATE inspections
         SET pdf_filename = ${pdfFilename || 'inspection.pdf'},
-            pdf_data = ${pdfBuffer},
+            pdf_url = ${pdfUrl},
+            pdf_data = NULL,
             pdf_size_bytes = ${pdfBuffer.length},
             updated_at = NOW()
         WHERE id = ${parseInt(id)}
@@ -83,7 +112,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
-      return res.status(200).json({ success: true, pdfSize: pdfBuffer.length })
+      return res.status(200).json({ success: true, pdfSize: pdfBuffer.length, pdfUrl })
     } catch (error) {
       console.error('PDF Upload Error:', error)
       return res.status(500).json({ error: 'Failed to upload PDF' })

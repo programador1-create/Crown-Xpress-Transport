@@ -1,4 +1,5 @@
 import { getSql } from '../_lib/db.js'
+import { uploadPdf, downloadPdfBuffer, isBlobConfigured } from '../_lib/blob.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -29,48 +30,51 @@ export default async function handler(req, res) {
       }
 
       const [inspection] = await sql`
-        SELECT pdf_filename, pdf_data::bytea as pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language, tractor_number, container_number, equipment_nomenclature, customer_prefix, odometer, high_security_seal, seal_affixed, wono
+        SELECT pdf_filename, pdf_url, pdf_data::bytea as pdf_data, trailer_number, seal_number, lock_number, driver_name, location, inspection_date, inspection_type, trailer_type, guard_name, guard_signature, guard_signed_at, supervisor_name, supervisor_signature, supervisor_signed_at, operator_name, operator_signature, language, tractor_number, container_number, equipment_nomenclature, customer_prefix, odometer, high_security_seal, seal_affixed, wono
         FROM inspections
         WHERE id = ${inspectionId}
       `
 
-      console.log('Inspection found:', !!inspection, 'Has PDF data:', !!(inspection?.pdf_data))
-      console.log('PDF data type:', typeof inspection?.pdf_data, 'Length:', inspection?.pdf_data?.length || 0)
-      console.log('PDF data is Buffer:', Buffer.isBuffer(inspection?.pdf_data))
+      console.log('Inspection found:', !!inspection, 'Has PDF URL:', !!(inspection?.pdf_url), 'Has PDF data:', !!(inspection?.pdf_data))
 
       if (!inspection) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
+      // Try Blob URL first (new storage), fall back to pdf_data (legacy)
+      if (inspection.pdf_url) {
+        try {
+          const pdfBuffer = await downloadPdfBuffer(inspection.pdf_url)
+          if (pdfBuffer) {
+            res.setHeader('Content-Type', 'application/pdf')
+            res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
+            res.setHeader('Content-Length', pdfBuffer.length)
+            return res.status(200).end(pdfBuffer)
+          }
+        } catch (blobErr) {
+          console.error('Blob download failed, trying legacy pdf_data:', blobErr.message)
+        }
+      }
+
       if (inspection.pdf_data) {
-        // Return stored PDF as binary buffer
+        // Return stored PDF as binary buffer (legacy fallback)
         let pdfData = inspection.pdf_data
-        console.log('pdfData before processing - type:', typeof pdfData, 'isBuffer:', Buffer.isBuffer(pdfData))
-        console.log('pdfData length:', pdfData?.length || 0)
         let pdfBuffer
         if (Buffer.isBuffer(pdfData)) {
           pdfBuffer = pdfData
-          console.log('Using Buffer directly')
         } else if (typeof pdfData === 'string') {
-          // Try to detect if it's base64 or hex
           if (pdfData.startsWith('data:application/pdf')) {
-            console.log('Removing data URI prefix from string PDF')
             pdfData = pdfData.replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
             pdfBuffer = Buffer.from(pdfData, 'base64')
-            console.log('Decoded as base64 after removing prefix')
           } else if (pdfData.match(/^[0-9a-fA-F]+$/)) {
-            console.log('Decoding as hex string')
             pdfBuffer = Buffer.from(pdfData, 'hex')
           } else {
-            console.log('Decoding as base64 string')
             pdfBuffer = Buffer.from(pdfData, 'base64')
           }
         } else {
-          console.log('Unknown type, trying to convert to buffer')
           pdfBuffer = Buffer.from(pdfData)
         }
 
-        console.log('PDF buffer length:', pdfBuffer.length, 'First 20 bytes:', pdfBuffer.slice(0, 20).toString('hex'))
         res.setHeader('Content-Type', 'application/pdf')
         res.setHeader('Content-Disposition', `inline; filename="${inspection.pdf_filename || `inspection-${id}.pdf`}"`)
         res.setHeader('Content-Length', pdfBuffer.length)
@@ -78,7 +82,7 @@ export default async function handler(req, res) {
       }
 
       // PDF not stored - let frontend generate it
-      return res.status(404).json({ error: 'PDF not available in database - frontend will generate it' })
+      return res.status(404).json({ error: 'PDF not available - frontend will generate it' })
     }
 
     if (req.method === 'GET') {
@@ -142,15 +146,27 @@ export default async function handler(req, res) {
       // PDF in the backend here because it is heavy (jsPDF + images) and can time
       // out on serverless, causing the supervisor signature to fail to save.
       // The frontend uploads the regenerated PDF separately via PUT /pdf.
+      // PDFs are now stored in Vercel Blob, NOT in the database.
       let pdfUpdate = {}
       if (pdfBase64) {
         const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
         const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
         console.log('Supervisor sign - PDF provided, size:', pdfBuffer.length)
-        pdfUpdate = {
-          pdf_filename: pdfFilename || 'inspection.pdf',
-          pdf_data: pdfBuffer,
-          pdf_size_bytes: pdfBuffer.length
+
+        if (isBlobConfigured()) {
+          try {
+            const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+            pdfUpdate = {
+              pdf_filename: pdfFilename || 'inspection.pdf',
+              pdf_url: blobResult.url,
+              pdf_size_bytes: blobResult.size
+            }
+            console.log('PDF uploaded to Blob:', blobResult.url)
+          } catch (blobErr) {
+            console.error('Blob upload failed during supervisor sign:', blobErr.message)
+          }
+        } else {
+          console.warn('BLOB_READ_WRITE_TOKEN not configured - PDF not stored')
         }
       }
 
@@ -162,7 +178,7 @@ export default async function handler(req, res) {
             supervisor_signed_at = ${signedAt},
             status = 'completed',
             updated_at = NOW()
-            ${Object.keys(pdfUpdate).length > 0 ? sql`, pdf_filename = ${pdfUpdate.pdf_filename}, pdf_data = ${pdfUpdate.pdf_data}, pdf_size_bytes = ${pdfUpdate.pdf_size_bytes}` : sql``}
+            ${Object.keys(pdfUpdate).length > 0 ? sql`, pdf_filename = ${pdfUpdate.pdf_filename}, pdf_url = ${pdfUpdate.pdf_url}, pdf_data = NULL, pdf_size_bytes = ${pdfUpdate.pdf_size_bytes}` : sql``}
         WHERE id = ${inspectionId}
         RETURNING *
       `
@@ -199,12 +215,27 @@ export default async function handler(req, res) {
       const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
       const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
 
-      console.log('PUT /api/inspections/[id] - Uploading PDF, size:', pdfBuffer.length, 'bytes')
+      console.log('PUT /api/inspections/[id] - Uploading PDF to Blob, size:', pdfBuffer.length, 'bytes')
+
+      // Upload to Vercel Blob instead of database
+      let pdfUrl = null
+      if (isBlobConfigured()) {
+        try {
+          const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+          pdfUrl = blobResult.url
+        } catch (blobErr) {
+          console.error('Blob upload failed:', blobErr.message)
+          return res.status(500).json({ error: 'Failed to upload PDF to Blob: ' + blobErr.message })
+        }
+      } else {
+        return res.status(500).json({ error: 'Blob storage not configured (BLOB_READ_WRITE_TOKEN missing)' })
+      }
 
       const [updated] = await sql`
         UPDATE inspections
         SET pdf_filename = ${pdfFilename || 'inspection.pdf'},
-            pdf_data = ${pdfBuffer},
+            pdf_url = ${pdfUrl},
+            pdf_data = NULL,
             pdf_size_bytes = ${pdfBuffer.length},
             updated_at = NOW()
         WHERE id = ${inspectionId}
@@ -215,7 +246,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Inspection not found' })
       }
 
-      return res.status(200).json({ success: true, pdfSize: pdfBuffer.length })
+      return res.status(200).json({ success: true, pdfSize: pdfBuffer.length, pdfUrl })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })

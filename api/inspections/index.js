@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         auditor_name, auditor_signed_at,
         total_good, total_bad, total_pending,
         status, language, created_at, original_inspection_id, wono, inspection_type, trailer_type,
-        equipment_nomenclature, customer_prefix, crown_fleet
+        equipment_nomenclature, customer_prefix, crown_fleet, pdf_url
       `
 
       let inspections

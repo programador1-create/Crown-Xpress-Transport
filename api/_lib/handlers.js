@@ -1,4 +1,5 @@
 import { getSql, logAudit, getClientIp, readJsonBody } from './db.js'
+import { uploadPdf, downloadPdfBuffer, isBlobConfigured } from './blob.js'
 
 /** POST /api/inspections — create new inspection */
 export async function createInspection(req, res) {
@@ -73,11 +74,23 @@ export async function createInspection(req, res) {
     console.log('createInspection work_order saved:', work_order, 'sql_id:', sql_id, 'raw:', raw_work_order)
 
     // Use PDF from frontend if provided; otherwise save inspection without PDF (client will upload it separately)
-    let pdfBufferToSave = pdfBuffer
+    // PDFs are now stored in Vercel Blob Storage, NOT in the database (Neon has a 512 MB limit)
+    let pdfUrlToSave = null
     let pdfFilenameToSave = pdfFilename || null
-    let pdfSizeToSave = pdfBuffer ? pdfBuffer.length : 0
+    let pdfSizeToSave = 0
 
-    if (!pdfBase64) {
+    if (pdfBuffer && isBlobConfigured()) {
+      try {
+        const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+        pdfUrlToSave = blobResult.url
+        pdfSizeToSave = blobResult.size
+        console.log('PDF uploaded to Blob:', pdfUrlToSave, '- size:', pdfSizeToSave)
+      } catch (blobErr) {
+        console.error('Blob upload failed, continuing without PDF:', blobErr.message)
+      }
+    } else if (pdfBuffer && !isBlobConfigured()) {
+      console.warn('BLOB_READ_WRITE_TOKEN not configured - PDF will not be stored')
+    } else {
       console.log('No PDF provided - saving inspection without PDF (client will upload via PUT /pdf)')
     }
 
@@ -91,7 +104,7 @@ export async function createInspection(req, res) {
         supervisor_name, supervisor_signature, supervisor_signed_at,
         auditor_name, auditor_signed_at,
         status, total_good, total_bad, total_pending,
-        pdf_filename, pdf_data, pdf_size_bytes,
+        pdf_filename, pdf_url, pdf_size_bytes,
         created_ip, created_user_agent,
         equipment_nomenclature, tractor_number, container_number, customer_prefix, crown_fleet,
         inspection_type, trailer_type, wono
@@ -122,7 +135,7 @@ export async function createInspection(req, res) {
         ${counts.bad || 0},
         ${counts.pending || 0},
         ${pdfFilenameToSave || 'inspection.pdf'},
-        ${pdfBufferToSave},
+        ${pdfUrlToSave},
         ${pdfSizeToSave},
         ${ip},
         ${ua},
@@ -228,7 +241,7 @@ export async function listInspections(req, res) {
       supervisor_name, supervisor_signature, supervisor_signed_at,
       auditor_name, auditor_signed_at,
       status, total_good, total_bad, total_pending,
-      pdf_filename, pdf_size_bytes,
+      pdf_filename, pdf_url, pdf_size_bytes,
       equipment_nomenclature, customer_prefix, crown_fleet,
       inspection_type, trailer_type, wono, created_at,
       original_inspection_id, reconfirmation_reason, is_reconfirmation
@@ -304,8 +317,8 @@ export async function getInspection(req, res, id) {
 export async function downloadPdf(req, res, id) {
   try {
     const sql = getSql()
-    const [row] = await sql`SELECT pdf_filename, pdf_data FROM inspections WHERE id = ${id} LIMIT 1`
-    if (!row || !row.pdf_data) return res.status(404).json({ error: 'PDF not found' })
+    const [row] = await sql`SELECT pdf_filename, pdf_url, pdf_data FROM inspections WHERE id = ${id} LIMIT 1`
+    if (!row) return res.status(404).json({ error: 'PDF not found' })
 
     await logAudit({
       inspectionId: parseInt(id, 10),
@@ -314,11 +327,26 @@ export async function downloadPdf(req, res, id) {
       ua: req.headers['user-agent'] || null,
     })
 
-    const buf = Buffer.isBuffer(row.pdf_data) ? row.pdf_data : Buffer.from(row.pdf_data)
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `inline; filename="${row.pdf_filename || 'inspection.pdf'}"`)
-    res.setHeader('Content-Length', buf.length)
-    return res.status(200).end(buf)
+    // Try Blob URL first (new storage), fall back to pdf_data (legacy)
+    if (row.pdf_url) {
+      const buf = await downloadPdfBuffer(row.pdf_url)
+      if (buf) {
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `inline; filename="${row.pdf_filename || 'inspection.pdf'}"`)
+        res.setHeader('Content-Length', buf.length)
+        return res.status(200).end(buf)
+      }
+    }
+
+    if (row.pdf_data) {
+      const buf = Buffer.isBuffer(row.pdf_data) ? row.pdf_data : Buffer.from(row.pdf_data)
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `inline; filename="${row.pdf_filename || 'inspection.pdf'}"`)
+      res.setHeader('Content-Length', buf.length)
+      return res.status(200).end(buf)
+    }
+
+    return res.status(404).json({ error: 'PDF not available - frontend will generate it' })
   } catch (err) {
     console.error('downloadPdf error:', err)
     return res.status(500).json({ error: err.message })
@@ -405,6 +433,21 @@ export async function reconfirmInspection(req, res, originalId) {
     const total_bad = allPoints.filter(p => p.status === 'bad').length
     const total_pending = allPoints.length - total_good - total_bad
 
+    // Upload PDF to Vercel Blob if provided
+    let pdfUrlToSave = null
+    let pdfSizeToSave = 0
+    if (pdfBase64 && isBlobConfigured()) {
+      try {
+        const pdfDataB64 = String(pdfBase64).replace(/^data:application\/pdf(;[^,]*)?;base64,/, '')
+        const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
+        const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+        pdfUrlToSave = blobResult.url
+        pdfSizeToSave = blobResult.size
+      } catch (blobErr) {
+        console.error('Blob upload failed during reconfirm:', blobErr.message)
+      }
+    }
+
     // Insert new inspection (reconfirmation)
     const [newInsp] = await sql`
       INSERT INTO inspections (
@@ -413,7 +456,7 @@ export async function reconfirmInspection(req, res, originalId) {
         operator_name, guard_name, guard_signed_at,
         status, total_good, total_bad, total_pending,
         original_inspection_id, reconfirmation_reason, is_reconfirmation,
-        pdf_filename, pdf_data, pdf_size_bytes,
+        pdf_filename, pdf_url, pdf_size_bytes,
         created_ip, created_user_agent
       ) VALUES (
         ${original.trailer_number}, ${original.seal_number}, ${original.lock_number},
@@ -425,8 +468,8 @@ export async function reconfirmInspection(req, res, originalId) {
         'reconfirmed', ${total_good}, ${total_bad}, ${total_pending},
         ${originalId}, ${reason}, TRUE,
         ${pdfFilename || 'inspection.pdf'},
-        ${pdfBase64 ? Buffer.from(pdfBase64, 'base64') : null},
-        ${pdfBase64 ? Buffer.from(pdfBase64, 'base64').length : null},
+        ${pdfUrlToSave},
+        ${pdfSizeToSave},
         ${ip}, ${ua}
       )
       RETURNING id, uuid, created_at
@@ -501,10 +544,26 @@ export async function updateInspectionPdf(req, res, id) {
     const pdfBuffer = Buffer.from(pdfDataB64, 'base64')
     const sql = getSql()
 
+    // Upload to Vercel Blob instead of storing in database
+    let pdfUrl = null
+    if (isBlobConfigured()) {
+      try {
+        const blobResult = await uploadPdf(pdfBuffer, pdfFilename || 'inspection.pdf')
+        pdfUrl = blobResult.url
+      } catch (blobErr) {
+        console.error('Blob upload failed:', blobErr.message)
+        return res.status(500).json({ error: 'Failed to upload PDF to Blob storage: ' + blobErr.message })
+      }
+    } else {
+      console.error('BLOB_READ_WRITE_TOKEN not configured')
+      return res.status(500).json({ error: 'Blob storage not configured (BLOB_READ_WRITE_TOKEN missing)' })
+    }
+
     const [row] = await sql`
       UPDATE inspections
       SET pdf_filename = ${pdfFilename || 'inspection.pdf'},
-          pdf_data = ${pdfBuffer},
+          pdf_url = ${pdfUrl},
+          pdf_data = NULL,
           pdf_size_bytes = ${pdfBuffer.length},
           updated_at = NOW()
       WHERE id = ${parseInt(id, 10)}
@@ -512,8 +571,8 @@ export async function updateInspectionPdf(req, res, id) {
     `
     if (!row) return res.status(404).json({ error: 'Inspection not found' })
 
-    console.log('PDF updated for inspection', id, '- size:', pdfBuffer.length, 'bytes')
-    return res.status(200).json({ success: true, pdfSize: pdfBuffer.length })
+    console.log('PDF uploaded to Blob for inspection', id, '- size:', pdfBuffer.length, 'bytes, url:', pdfUrl)
+    return res.status(200).json({ success: true, pdfSize: pdfBuffer.length, pdfUrl })
   } catch (err) {
     console.error('updateInspectionPdf error:', err)
     return res.status(500).json({ error: err.message })
