@@ -143,10 +143,16 @@ export default async function handler(req, res) {
     // ============================================================
     // Una sola query obtiene todas las inspecciones de los últimos 7 días.
     // Se procesa todo en JavaScript para minimizar compute time en Neon.
+    //
+    // IMPORTANTE: Solo se usan claves de cruce EXACTAS que identifican un
+    // movimiento único. No se usan fallbacks por wono+fecha o por truckid
+    // porque pueden ocultar movimientos legítimos distintos que comparten
+    // la misma work order o el mismo camión en el mismo día.
+    //   - Clave 1: wono::truckid::fromd::fecha::sql_id (match exacto completo)
+    //   - Clave 2: wono::sql_id (match por work order + ID de movimiento)
+    // Un movimiento con nuevo sql_id siempre aparece como pendiente.
     const inspectedKeys = new Set()
     const inspectedByTprId = new Set()
-    const inspectedByWonoWithDate = new Set()
-    const fallbackTractors = new Set()
     let inspected = []
     try {
       inspected = await sql`
@@ -173,20 +179,14 @@ export default async function handler(req, res) {
           if (tprId) {
             inspectedByTprId.add(`${workOrder}::${tprId.toLowerCase()}`)
           }
-          inspectedByWonoWithDate.add(`${workOrder}::${fecha}`)
-        }
-
-        // Fallback: inspecciones sin wono pero con tractor_number
-        if ((!row.wono || row.wono.trim() === '') && row.truck_id) {
-          fallbackTractors.add(row.truck_id)
         }
       }
-      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size, 'inspectedByWonoWithDate count:', inspectedByWonoWithDate.size, 'fallbackTractors count:', fallbackTractors.size)
+      console.log('TPR inspectedKeys count:', inspectedKeys.size, 'inspectedByTprId count:', inspectedByTprId.size)
     } catch (localErr) {
       console.warn('Cross-filter query failed (non-fatal):', localErr.message)
     }
 
-    // Mark each movement with already_inspected flag (matched by composite key or sql_id)
+    // Mark each movement with already_inspected flag (matched by exact keys only)
     const movements = allMovements.map(m => {
       const wono = m.work_order?.toString().trim().toUpperCase()
       const truck = m.truck_id?.toString().trim().toUpperCase()
@@ -206,14 +206,10 @@ export default async function handler(req, res) {
       const sqlId = m.sql_id?.toString().trim() || ''
       const compositeKey = `${wono || ''}::${truck || ''}::${fromd || ''}::${fecha}::${sqlId}`
       const sqlIdKey = sqlId && wono ? `${wono}::${sqlId.toLowerCase()}` : null
-      const wonoWithDateKey = wono && fecha ? `${wono}::${fecha}` : null
+      // Solo claves exactas: match completo o match por wono+sql_id
       const alreadyByWono = !!(wono && inspectedKeys.has(compositeKey))
       const alreadyBySqlId = !!(sqlIdKey && inspectedByTprId.has(sqlIdKey))
-      const alreadyByWonoOnly = !!(wonoWithDateKey && inspectedByWonoWithDate.has(wonoWithDateKey))
-      const alreadyByTractor = !!(truck && fallbackTractors.has(truck))
-      // No marcar como inspeccionado si el fallback por wono+fecha coincide pero ya hay sql_id match
-      // (el sql_id match es más preciso y ya se evaluó arriba)
-      const already = alreadyByWono || alreadyBySqlId || alreadyByWonoOnly || alreadyByTractor
+      const already = alreadyByWono || alreadyBySqlId
 
       return { ...m, already_inspected: already }
     })
