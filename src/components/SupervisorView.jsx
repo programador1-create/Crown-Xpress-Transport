@@ -6,6 +6,8 @@ import { listInspections, downloadPdf, signSupervisor, getInspection, updateInsp
 import { generateInspectionPDF } from '../utils/pdfGenerator'
 import AuditTrail from './AuditTrail'
 import SignatureCanvas from './SignatureCanvas'
+import PaginationControls from './PaginationControls'
+import { usePagination } from '../hooks/usePagination'
 
 // Format equipment display combining prefix/fleet + nomenclature/number
 const formatEquipment = (insp) => {
@@ -98,17 +100,20 @@ export default function SupervisorView() {
     })
   }, [inspections, filterYard, filterGuard, filterTrailer, filterStatus, filterDateFrom, filterDateTo])
 
-  // Grouped
+  // Paginate the flat filtered list before grouping
+  const { page, pageSize, pageItems, totalPages, setPage, setPageSize } = usePagination(filtered, 'sv_pageSize')
+
+  // Grouped (only from paginated items)
   const grouped = useMemo(() => {
-    if (groupBy === 'none') return { [language === 'es' ? 'Todas' : 'All']: filtered }
+    if (groupBy === 'none') return { [language === 'es' ? 'Todas' : 'All']: pageItems }
     const key = groupBy === 'yard' ? 'location' : groupBy === 'guard' ? 'guard_name' : 'trailer_number'
-    return filtered.reduce((acc, item) => {
+    return pageItems.reduce((acc, item) => {
       const k = item[key] || (language === 'es' ? '(Sin asignar)' : '(Unassigned)')
       if (!acc[k]) acc[k] = []
       acc[k].push(item)
       return acc
     }, {})
-  }, [filtered, groupBy, language])
+  }, [pageItems, groupBy, language])
 
   const clearFilters = () => {
     setFilterYard('')
@@ -677,6 +682,20 @@ export default function SupervisorView() {
             <div className="card-body text-center py-12">
               <FileText className="w-12 h-12 mx-auto text-slate-300 mb-3" />
               <p className="text-slate-500">{language === 'es' ? 'No se encontraron inspecciones' : 'No inspections found'}</p>
+            </div>
+          </div>
+        )}
+        {filtered.length > 0 && (
+          <div className="card">
+            <div className="card-body p-0">
+              <PaginationControls
+                page={page}
+                pageSize={pageSize}
+                total={filtered.length}
+                totalPages={totalPages}
+                setPage={setPage}
+                setPageSize={setPageSize}
+              />
             </div>
           </div>
         )}

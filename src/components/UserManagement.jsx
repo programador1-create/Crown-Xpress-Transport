@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Edit2, Trash2, Save, X, Search, Shield, Eye, UserCheck, Crown, CheckCircle2, AlertTriangle, RefreshCw, Key, EyeOff, Copy, UserX, MapPin, User } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import PaginationControls from './PaginationControls'
+import { usePagination } from '../hooks/usePagination'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -101,6 +103,8 @@ export default function UserManagement() {
     const matchesActive = showInactive || emp.active !== false
     return matchesSearch && matchesRole && matchesActive
   })
+
+  const { page, pageSize, pageItems, totalPages, setPage, setPageSize } = usePagination(filteredEmployees, 'um_pageSize')
 
   const getEmployeeYards = (employeeId) => {
     const employee = employees.find(e => e.id === employeeId)
@@ -381,7 +385,9 @@ export default function UserManagement() {
               {language === 'es' ? 'No hay usuarios' : 'No users found'}
             </div>
           ) : (
-            filteredEmployees.map(emp => {
+            <div>
+            <div className="divide-y divide-slate-100">
+            {pageItems.map(emp => {
               const roleInfo = getRoleInfo(emp.role)
               const RoleIcon = roleInfo.icon
               return (
@@ -446,6 +452,17 @@ export default function UserManagement() {
                 </div>
               )
             })
+            }
+            </div>
+            <PaginationControls
+              page={page}
+              pageSize={pageSize}
+              total={filteredEmployees.length}
+              totalPages={totalPages}
+              setPage={setPage}
+              setPageSize={setPageSize}
+            />
+            </div>
           )}
         </div>
       </div>

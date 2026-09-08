@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { BarChart3, Users, Calendar, CheckCircle, Clock, AlertCircle, RefreshCw, TrendingUp, Award, MapPin, Building2, Truck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import PaginationControls from './PaginationControls'
+import { usePagination } from '../hooks/usePagination'
 
 function getLocalISODate(date = new Date()) {
   const year = date.getFullYear()
@@ -91,6 +93,10 @@ export default function MetricsView() {
     { value: 'week', es: 'Semana', en: 'Week' },
     { value: 'month', es: 'Mes', en: 'Month' },
   ]
+
+  // Pagination for byGuard and byDay lists
+  const guardPagination = usePagination(byGuard, 'mv_guard_pageSize')
+  const dayPagination = usePagination(byDay, 'mv_day_pageSize')
 
   // NOTA: "total" ya incluye las inspecciones en estado 'pending' (el guard
   // ya la realizó y firmó, solo falta la aprobación del supervisor). Por eso
@@ -295,8 +301,9 @@ export default function MetricsView() {
           {byGuard.length === 0 ? (
             <EmptyState language={language} icon={Users} />
           ) : (
+            <div>
             <div className="space-y-2">
-              {byGuard.map((guard, idx) => {
+              {guardPagination.pageItems.map((guard, idx) => {
                 return (
                   <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
                     <div className="flex items-center gap-3 min-w-0">
@@ -324,6 +331,15 @@ export default function MetricsView() {
                 )
               })}
             </div>
+            <PaginationControls
+              page={guardPagination.page}
+              pageSize={guardPagination.pageSize}
+              total={byGuard.length}
+              totalPages={guardPagination.totalPages}
+              setPage={guardPagination.setPage}
+              setPageSize={guardPagination.setPageSize}
+            />
+            </div>
           )}
         </div>
       </div>
@@ -340,8 +356,9 @@ export default function MetricsView() {
           {byDay.length === 0 ? (
             <EmptyState language={language} icon={Calendar} />
           ) : (
+            <div>
             <div className="space-y-2">
-              {byDay.map((day, idx) => {
+              {dayPagination.pageItems.map((day, idx) => {
                 return (
                   <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
                     <div className="flex items-center gap-3 min-w-0">
@@ -367,6 +384,15 @@ export default function MetricsView() {
                   </div>
                 )
               })}
+            </div>
+            <PaginationControls
+              page={dayPagination.page}
+              pageSize={dayPagination.pageSize}
+              total={byDay.length}
+              totalPages={dayPagination.totalPages}
+              setPage={dayPagination.setPage}
+              setPageSize={dayPagination.setPageSize}
+            />
             </div>
           )}
         </div>

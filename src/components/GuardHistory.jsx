@@ -7,6 +7,8 @@ import { generateInspectionPDF } from '../utils/pdfGenerator'
 import { INSPECTION_TYPES } from '../data/inspectionPoints'
 import AuditTrail from './AuditTrail'
 import ReconfirmModal from './ReconfirmModal'
+import PaginationControls from './PaginationControls'
+import { usePagination } from '../hooks/usePagination'
 
 // Localized labels for trailer types
 const TRAILER_TYPE_LABELS = {
@@ -158,6 +160,8 @@ export default function GuardHistory() {
   }
   
   const hasActiveFilters = search || filters.dateFrom || filters.dateTo || filters.status || filters.inspectionType
+
+  const { page, pageSize, pageItems, totalPages, setPage, setPageSize } = usePagination(filteredGroups, 'gh_pageSize')
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
 
@@ -580,8 +584,9 @@ export default function GuardHistory() {
               <p>{search ? (language === 'es' ? 'Sin resultados' : 'No results') : (language === 'es' ? 'Sin inspecciones aún' : 'No inspections yet')}</p>
             </div>
           ) : (
+            <div>
             <div className="space-y-3">
-              {filteredGroups.map(group => (
+              {pageItems.map(group => (
                 <div key={group.original.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
                   {/* Header - Click to expand */}
                   <div
@@ -731,6 +736,15 @@ export default function GuardHistory() {
                   )}
                 </div>
               ))}
+            </div>
+            <PaginationControls
+              page={page}
+              pageSize={pageSize}
+              total={filteredGroups.length}
+              totalPages={totalPages}
+              setPage={setPage}
+              setPageSize={setPageSize}
+            />
             </div>
           )}
         </div>

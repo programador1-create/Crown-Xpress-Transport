@@ -4,6 +4,8 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { listInspections, downloadPdf } from '../utils/api'
 import AuditTrail from './AuditTrail'
+import PaginationControls from './PaginationControls'
+import { usePagination } from '../hooks/usePagination'
 
 export default function InspectionHistory() {
   const { t, language } = useLanguage()
@@ -56,6 +58,8 @@ export default function InspectionHistory() {
     i.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
     i.location?.toLowerCase().includes(search.toLowerCase())
   )
+
+  const { page, pageSize, pageItems, totalPages, setPage, setPageSize } = usePagination(filtered, 'ih_pageSize')
 
   const toggle = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
 
@@ -123,8 +127,9 @@ export default function InspectionHistory() {
             <p>{search ? (language === 'es' ? 'Sin resultados' : 'No results') : (language === 'es' ? 'Sin inspecciones' : 'No inspections')}</p>
           </div>
         ) : (
+          <div>
           <div className="space-y-2">
-            {filtered.map(insp => (
+            {pageItems.map(insp => (
               <div key={insp.id} className="border border-slate-200 rounded-lg overflow-hidden hover:border-crown-navy/30 transition-colors">
                 {/* Header */}
                 <div
@@ -203,6 +208,15 @@ export default function InspectionHistory() {
                 )}
               </div>
             ))}
+          </div>
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            total={filtered.length}
+            totalPages={totalPages}
+            setPage={setPage}
+            setPageSize={setPageSize}
+          />
           </div>
         )}
       </div>
