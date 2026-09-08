@@ -51,6 +51,13 @@ export default function MetricsView() {
     fetchMetrics()
   }, [period, selectedYard])
 
+  // Hooks de paginación deben ir ANTES de cualquier return condicional.
+  // Se inicializan con arrays vacíos y se alimentan cuando metrics llega.
+  const byGuardData = metrics?.byGuard || []
+  const byDayData = metrics?.byDay || []
+  const guardPagination = usePagination(byGuardData, 'mv_guard_pageSize')
+  const dayPagination = usePagination(byDayData, 'mv_day_pageSize')
+
   if (loading) {
     return (
       <div className="card animate-slide-up">
@@ -93,10 +100,6 @@ export default function MetricsView() {
     { value: 'week', es: 'Semana', en: 'Week' },
     { value: 'month', es: 'Mes', en: 'Month' },
   ]
-
-  // Pagination for byGuard and byDay lists
-  const guardPagination = usePagination(byGuard, 'mv_guard_pageSize')
-  const dayPagination = usePagination(byDay, 'mv_day_pageSize')
 
   // NOTA: "total" ya incluye las inspecciones en estado 'pending' (el guard
   // ya la realizó y firmó, solo falta la aprobación del supervisor). Por eso
