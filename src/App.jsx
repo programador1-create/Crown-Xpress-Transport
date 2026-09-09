@@ -2,10 +2,17 @@ import { useEffect } from 'react'
 import Header from './components/Header'
 import Router from './components/Router'
 import Login from './components/Login'
+import OfflineIndicator from './components/OfflineIndicator'
 import { useAuth } from './context/AuthContext'
+import { initSyncManager } from './utils/syncManager'
 
 export default function App() {
   const { user, loading } = useAuth()
+
+  // Inicializar sync manager al cargar la app
+  useEffect(() => {
+    initSyncManager()
+  }, [])
 
   if (loading) {
     return (
@@ -23,9 +30,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-12">
       <Header />
       <Router />
+      <OfflineIndicator />
     </div>
   )
 }

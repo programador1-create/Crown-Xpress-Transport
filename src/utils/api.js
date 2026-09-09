@@ -1,5 +1,6 @@
 /** Simple API client for Crown Xpress Inspection */
 import { getApplicablePoints } from '../data/inspectionPoints'
+import { addPendingInspection, isOnline, getTprMovements as getCachedTprMovements, saveTprMovements } from './offlineDB'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -37,8 +38,23 @@ async function fetchJson(url, options = {}) {
   }
 }
 
-/** Upload inspection + PDF to backend */
-export async function createInspection(payload) {
+/** Upload inspection + PDF to backend (or queue offline) */
+export async function createInspection(payload, pdfBase64 = null, pdfFilename = null) {
+  // Si no hay internet, guardar en IndexedDB para sincronizar después
+  if (!isOnline()) {
+    console.log('Offline: guardando inspección en cola local')
+    const localId = await addPendingInspection({
+      payload,
+      pdfBase64,
+      pdfFilename,
+    })
+    return {
+      success: true,
+      offline: true,
+      localId,
+      message: 'Inspección guardada localmente. Se sincronizará cuando haya conexión.',
+    }
+  }
   const res = await fetchJson(`${API_BASE}/inspections`, {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -107,13 +123,33 @@ export async function healthCheck() {
   return await fetchJson(`${API_BASE}/health`)
 }
 
-/** Get TPR movements (empty loads) */
+/** Get TPR movements (empty loads) - with offline cache */
 export async function getTprMovements({ type = 'empty', date = null, yardCode = null } = {}) {
-  const params = new URLSearchParams({ type })
-  if (date) params.append('date', date)
-  if (yardCode) params.append('yardCode', yardCode)
-  const res = await fetchJson(`${API_BASE}/tpr?${params}`)
-  return res // { success, data, count }
+  // Si hay internet, intentar online y guardar en cache
+  if (isOnline()) {
+    try {
+      const params = new URLSearchParams({ type })
+      if (date) params.append('date', date)
+      if (yardCode) params.append('yardCode', yardCode)
+      const res = await fetchJson(`${API_BASE}/tpr?${params}`)
+      // Guardar en cache local para uso offline
+      if (res?.data) {
+        await saveTprMovements(res.data)
+      }
+      return res // { success, data, count }
+    } catch (err) {
+      console.warn('TPR online failed, falling back to cache:', err.message)
+    }
+  }
+  // Offline o fallo online: usar cache local
+  const cached = await getCachedTprMovements()
+  return {
+    success: true,
+    data: cached,
+    count: cached.length,
+    offline: true,
+    message: 'Mostrando movimientos precargados (sin conexión)',
+  }
 }
 
 /** Search operator by employee number */

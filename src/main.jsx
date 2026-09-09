@@ -17,3 +17,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </React.StrictMode>,
 )
+
+// Registrar Service Worker para PWA (offline)
+import { registerSW } from 'virtual:pwa-register'
+registerSW({
+  onNeedRefresh() {
+    console.log('Nueva versión disponible - recarga para actualizar')
+  },
+  onOfflineReady() {
+    console.log('App lista para funcionar offline')
+  },
+})

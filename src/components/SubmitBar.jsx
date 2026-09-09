@@ -74,12 +74,16 @@ export default function SubmitBar({ onSuccess }) {
       const pdfBase64 = pdfResult.doc.output('datauristring')
 
       // 2. Save inspection WITHOUT pdf first (to avoid 413)
+      //    Pass pdfBase64 + filename so offline queue can upload them later
       const payload = await buildPayload({ ...ctx, operatorSignature: operatorSig }, null, null)
-      const uploadResult = await createInspection(payload)
+      const uploadResult = await createInspection(payload, pdfBase64, pdfFilename)
       const inspectionId = uploadResult?.id
 
       // 3. Upload PDF separately (blocking - needed for supervisor view)
-      if (inspectionId) {
+      //    Skip if offline (already queued in IndexedDB)
+      if (uploadResult?.offline) {
+        console.log('Inspección guardada offline - se sincronizará después')
+      } else if (inspectionId) {
         try {
           await updateInspectionPdf(inspectionId, pdfBase64, pdfFilename)
           console.log('PDF uploaded successfully for inspection', inspectionId)
