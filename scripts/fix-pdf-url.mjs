@@ -1,4 +1,6 @@
 import { neon } from '@neondatabase/serverless'
+// Note: This utility still uses Neon driver for one-time maintenance on Neon DB
+// If running against IONOS, use: import pg from 'pg' and new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } })
 
 const sql = neon('postgresql://neondb_owner:npg_1FhPVkX3wISq@ep-polished-queen-axrtw0ec-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
 

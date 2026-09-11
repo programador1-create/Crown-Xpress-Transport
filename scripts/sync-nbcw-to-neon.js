@@ -1,5 +1,5 @@
 import sql from 'mssql'
-import { Client } from '@neondatabase/serverless'
+import pg from 'pg'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
@@ -54,7 +54,7 @@ console.error = (...args) => {
 }
 
 // ============================================================
-// Script de sincronizacion NBCW (SQL Server) -> Neon (PostgreSQL)
+// Script de sincronizacion NBCW (SQL Server) -> PostgreSQL (IONOS)
 // Corre este script cada 1 minuto con cron en una PC/Raspberry Pi
 // ubicada en la red donde esta SQL Server de NBCW.
 // ============================================================
@@ -176,10 +176,13 @@ async function syncTprToNeon() {
       return
     }
 
-    // 3. Conectar a Neon
-    neonClient = new Client(NEON_URL)
+    // 3. Conectar a PostgreSQL
+    neonClient = new pg.Client({
+      connectionString: NEON_URL,
+      ssl: { rejectUnauthorized: false }
+    })
     await neonClient.connect()
-    console.log('Conectado a Neon')
+    console.log('Conectado a PostgreSQL')
 
     // 4. Asegurar que la tabla exista
     await neonClient.query(`

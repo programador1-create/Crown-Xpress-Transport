@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: crown-postgres
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+      - ./tls:/etc/postgresql/tls:ro
+    command: >
+      postgres
+        -c ssl=on
+        -c ssl_cert_file=/etc/postgresql/tls/server.crt
+        -c ssl_key_file=/etc/postgresql/tls/server.key
+        -c listen_addresses=*
+        -c max_connections=50
+        -c shared_buffers=256MB
+        -c effective_cache_size=512MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crown -d crownxpress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crown-network
+
+volumes:
+  pgdata:
+
+networks:
+  crown-network:
+    driver: bridge
