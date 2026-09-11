@@ -3,7 +3,7 @@ import pg from 'pg'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { createWriteStream } from 'fs'
+import { createWriteStream, existsSync, mkdirSync } from 'fs'
 import { createHash } from 'crypto'
 
 // Cargar .env desde la carpeta donde esta este script
@@ -11,9 +11,11 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '.env') })
 
-// Setup logging to file with timestamp to avoid lock conflicts
+// Setup logging to file in logs/ subdirectory
+const LOG_DIR = join(__dirname, 'logs')
+if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR)
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0]
-const logFile = join(__dirname, `sync-${timestamp}.log`)
+const logFile = join(LOG_DIR, `sync-${timestamp}.log`)
 let logStream = null
 
 try {
