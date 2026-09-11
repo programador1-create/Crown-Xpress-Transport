@@ -24,9 +24,12 @@ export default function OfflineIndicator() {
       setSyncing(syncing)
       setPendingCount(pending)
     })
+    // Listener de nueva inspeccion agregada a la cola
+    const onPendingAdded = () => getPendingCount().then(setPendingCount)
+    window.addEventListener('pending-inspection-added', onPendingAdded)
     // Conteo inicial
     getPendingCount().then(setPendingCount)
-    return () => { unsubConn(); unsubSync() }
+    return () => { unsubConn(); unsubSync(); window.removeEventListener('pending-inspection-added', onPendingAdded) }
   }, [])
 
   // No mostrar nada si hay internet y no hay pendientes

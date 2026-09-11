@@ -3,7 +3,7 @@
  * pendientes creadas offline.
  */
 import { getPendingInspections, markPendingSyncing, markPendingSynced, markPendingFailed, clearSyncedPending, isOnline } from './offlineDB'
-import { createInspection, updateInspectionPdf } from './api'
+import { updateInspectionPdf } from './api'
 
 let syncing = false
 let listeners = []
@@ -38,9 +38,22 @@ export async function syncPendingInspections() {
   for (const item of pending) {
     try {
       await markPendingSyncing(item.localId)
-      // Crear la inspección en el servidor
-      const res = await createInspection(item.payload)
-      const serverId = res?.id
+      // Crear la inspección directamente via fetch (no usar createInspection
+      // porque eso encolaria de nuevo si isOnline() falla)
+      const API_BASE = import.meta.env.VITE_API_URL || '/api'
+      const res = await fetch(`${API_BASE}/inspections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.payload),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        let errMsg = `HTTP ${res.status}`
+        try { errMsg = JSON.parse(text)?.error || errMsg } catch {}
+        throw new Error(errMsg)
+      }
+      const result = await res.json()
+      const serverId = result?.id
 
       // Si trae PDF, subirlo aparte
       if (item.pdfBase64 && serverId) {

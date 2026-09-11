@@ -77,6 +77,27 @@ export async function clearTprMovements() {
   return promisifyReq(tx(db, STORE_TPR, 'readwrite').clear())
 }
 
+// Marcar un movimiento TPR como inspeccionado localmente (para no duplicar)
+const INSPECTED_KEY = 'crown-inspected-sql-ids'
+
+export async function markTprInspected(sqlIds) {
+  if (!sqlIds || sqlIds.length === 0) return
+  const existing = JSON.parse(localStorage.getItem(INSPECTED_KEY) || '[]')
+  const set = new Set(existing)
+  for (const id of sqlIds) {
+    if (id) set.add(String(id))
+  }
+  localStorage.setItem(INSPECTED_KEY, JSON.stringify([...set]))
+}
+
+export async function getInspectedSqlIds() {
+  return new Set(JSON.parse(localStorage.getItem(INSPECTED_KEY) || '[]'))
+}
+
+export async function clearInspectedSqlIds() {
+  localStorage.removeItem(INSPECTED_KEY)
+}
+
 // ============================================================
 // Pending Inspections (cola de sincronización)
 // ============================================================
@@ -91,6 +112,8 @@ export async function addPendingInspection(inspection) {
     attempts: 0,
   }
   const result = await promisifyReq(store.add(record))
+  // Notificar que se agrego a la cola
+  window.dispatchEvent(new CustomEvent('pending-inspection-added'))
   return result // localId
 }
 

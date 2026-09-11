@@ -1,6 +1,6 @@
 /** Simple API client for Crown Xpress Inspection */
 import { getApplicablePoints } from '../data/inspectionPoints'
-import { addPendingInspection, isOnline, getTprMovements as getCachedTprMovements, saveTprMovements } from './offlineDB'
+import { addPendingInspection, isOnline, getTprMovements as getCachedTprMovements, saveTprMovements, markTprInspected, getInspectedSqlIds } from './offlineDB'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -40,6 +40,12 @@ async function fetchJson(url, options = {}) {
 
 /** Upload inspection + PDF to backend (or queue offline) */
 export async function createInspection(payload, pdfBase64 = null, pdfFilename = null) {
+  // Marcar el movimiento TPR como inspeccionado localmente
+  const sqlId = payload?.sql_id || payload?.unitInfo?.sqlId
+  if (sqlId) {
+    await markTprInspected([sqlId])
+  }
+
   // Si no hay internet, guardar en IndexedDB para sincronizar después
   if (!isOnline()) {
     console.log('Offline: guardando inspección en cola local')
@@ -125,6 +131,9 @@ export async function healthCheck() {
 
 /** Get TPR movements (empty loads) - with offline cache */
 export async function getTprMovements({ type = 'empty', date = null, yardCode = null } = {}) {
+  // Obtener IDs inspeccionados localmente
+  const localInspectedIds = await getInspectedSqlIds()
+
   // Si hay internet, intentar online y guardar en cache
   if (isOnline()) {
     try {
@@ -134,7 +143,13 @@ export async function getTprMovements({ type = 'empty', date = null, yardCode = 
       const res = await fetchJson(`${API_BASE}/tpr?${params}`)
       // Guardar en cache local para uso offline
       if (res?.data) {
-        await saveTprMovements(res.data)
+        // Marcar los inspeccionados localmente
+        const data = res.data.map(m => ({
+          ...m,
+          already_inspected: m.already_inspected || localInspectedIds.has(m.sql_id),
+        }))
+        await saveTprMovements(data)
+        return { ...res, data }
       }
       return res // { success, data, count }
     } catch (err) {
@@ -143,10 +158,15 @@ export async function getTprMovements({ type = 'empty', date = null, yardCode = 
   }
   // Offline o fallo online: usar cache local
   const cached = await getCachedTprMovements()
+  // Marcar los inspeccionados localmente
+  const data = cached.map(m => ({
+    ...m,
+    already_inspected: m.already_inspected || localInspectedIds.has(m.sql_id),
+  }))
   return {
     success: true,
-    data: cached,
-    count: cached.length,
+    data,
+    count: data.length,
     offline: true,
     message: 'Mostrando movimientos precargados (sin conexión)',
   }
