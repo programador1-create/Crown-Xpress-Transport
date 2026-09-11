@@ -199,11 +199,11 @@ export default async function handler(req, res) {
     // por lo que esta comparación es más precisa para period=day.
     let tprDateCondition = ''
     if (period === 'day') {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') = ${tprDateLiteral}`
+      tprDateCondition = `TO_DATE(fecha, 'YYYY-MM-DD') = ${tprDateLiteral}`
     } else if (period === 'week') {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('week', ${tprDateLiteral})`
+      tprDateCondition = `TO_DATE(fecha, 'YYYY-MM-DD') >= DATE_TRUNC('week', ${tprDateLiteral})`
     } else {
-      tprDateCondition = `TO_DATE(fecha, 'MM/DD/YYYY') >= DATE_TRUNC('month', ${tprDateLiteral})`
+      tprDateCondition = `TO_DATE(fecha, 'YYYY-MM-DD') >= DATE_TRUNC('month', ${tprDateLiteral})`
     }
 
     // Solo contar movimientos no cerrados/cancelados (pendientes reales).
@@ -233,7 +233,11 @@ export default async function handler(req, res) {
     // los últimos 3 días igual que tpr.js y filtramos en JS para evitar falsos 0.
     function parseMdyToIso(mdy) {
       if (!mdy) return null
-      const parts = String(mdy).split('/').map(Number)
+      const str = String(mdy).trim()
+      // Ya está en formato YYYY-MM-DD (nuevo sync script)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+      // Formato MM/DD/YYYY (legacy)
+      const parts = str.split('/').map(Number)
       if (parts.length !== 3 || parts.some(Number.isNaN)) return null
       const [m, d, y] = parts
       return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -242,8 +246,8 @@ export default async function handler(req, res) {
     if (period === 'day' && tprRows.length === 0) {
       try {
         const fallbackQuery = isAllYards
-          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`
-          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days' AND UPPER(TRIM(fromd)) = UPPER(TRIM($1))`
+          ? `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'YYYY-MM-DD') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`
+          : `SELECT id, sql_id, wono, truckid, fromd, fecha FROM tpr WHERE TO_DATE(fecha, 'YYYY-MM-DD') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days' AND UPPER(TRIM(fromd)) = UPPER(TRIM($1))`
         const fallbackParams = isAllYards ? [] : [yardCode]
         const fallbackRows = await sql.query(fallbackQuery, fallbackParams)
         const targetDate = anchorDate || parseMdyToIso(new Date().toLocaleDateString('en-US'))

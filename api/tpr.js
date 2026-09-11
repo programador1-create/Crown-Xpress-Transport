@@ -86,9 +86,9 @@ export default async function handler(req, res) {
 
     // Sincronizar registros de los últimos 3 días para mostrar pendientes recientes
     // (permite ver pendientes de fin de semana como sábado y domingo al llegar el lunes)
-    // Formato de fecha es MM/DD/YYYY (ej: 6/26/2026)
+    // El sync script guarda fecha en formato YYYY-MM-DD (normalizado)
     // Usamos zona horaria de Tijuana (America/Tijuana) para consistencia
-    addCondition(`TO_DATE(fecha, 'MM/DD/YYYY') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`)
+    addCondition(`TO_DATE(fecha, 'YYYY-MM-DD') >= (NOW() AT TIME ZONE 'America/Tijuana')::date - INTERVAL '3 days'`)
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
         synced_at
       FROM tpr
       ${whereClause}
-      ORDER BY TO_DATE(fecha, 'MM/DD/YYYY') DESC, timearrv DESC
+      ORDER BY TO_DATE(fecha, 'YYYY-MM-DD') DESC, timearrv DESC
     `
 
     const allMovements = await sql.query(query, params)
