@@ -25,16 +25,45 @@ function getPool() {
 /**
  * Tagged template literal SQL function (compatible with @neondatabase/serverless interface).
  * Usage: const rows = await sql`SELECT * FROM users WHERE id = ${userId}`
+ * Also supports raw queries: const rows = await sql.query('SELECT * FROM users WHERE id = $1', [id])
+ * Also supports unsafe interpolation: const rows = await sql`SELECT ${sql.unsafe('col')} FROM t`
  */
+
+// Wrapper for raw SQL fragments that should not be parameterized
+class UnsafeValue {
+  constructor(value) {
+    this.value = value
+  }
+}
+
 function sql(strings, ...values) {
   let text = ''
+  const params = []
+  let paramIdx = 1
   for (let i = 0; i < strings.length; i++) {
     text += strings[i]
     if (i < values.length) {
-      text += `$${i + 1}`
+      const v = values[i]
+      if (v instanceof UnsafeValue) {
+        // Insert raw SQL fragment without parameterization
+        text += v.value
+      } else {
+        text += `$${paramIdx++}`
+        params.push(v)
+      }
     }
   }
-  return getPool().query(text, values).then(res => res.rows)
+  return getPool().query(text, params).then(res => res.rows)
+}
+
+// Raw query method for parameterized SQL strings
+sql.query = function(text, params) {
+  return getPool().query(text, params || []).then(res => res.rows)
+}
+
+// Unsafe interpolation method for raw SQL fragments
+sql.unsafe = function(value) {
+  return new UnsafeValue(value)
 }
 
 export function getSql() {

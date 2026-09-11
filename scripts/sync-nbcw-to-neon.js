@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { createWriteStream } from 'fs'
+import { createHash } from 'crypto'
 
 // Cargar .env desde la carpeta donde esta este script
 const __filename = fileURLToPath(import.meta.url)
@@ -20,7 +21,6 @@ try {
   console.log(`Logging to: ${logFile}`)
 } catch (err) {
   console.error('Error opening log file:', err.message)
-  // Continue without file logging if file is locked
 }
 
 // Override console.log and console.error to write to file
@@ -55,17 +55,32 @@ console.error = (...args) => {
 
 // ============================================================
 // Script de sincronizacion NBCW (SQL Server) -> PostgreSQL (IONOS)
-// Corre este script cada 1 minuto con cron en una PC/Raspberry Pi
+// Corre este script cada 1 minuto con Task Scheduler en una PC
 // ubicada en la red donde esta SQL Server de NBCW.
 // ============================================================
 
+// Generar sql_id estable desde columnas clave
+function generateSqlId(row) {
+  const key = `${row.wono || ''}|${row.truckid || ''}|${row.fecha || ''}|${row.fromd || ''}|${row.tod || ''}|${row.timearrv || ''}`
+  return createHash('md5').update(key).digest('hex')
+}
+
+const SQLSERVER_PORT = process.env.SQLSERVER_PORT
+  ? parseInt(process.env.SQLSERVER_PORT, 10)
+  : null
+
+const SQLSERVER_HOST = process.env.SQLSERVER_HOST
+const SQLSERVER_DATABASE = process.env.SQLSERVER_DATABASE || 'GPSActivity'
+const SQLSERVER_USER = process.env.SQLSERVER_USER
+const SQLSERVER_PASSWORD = process.env.SQLSERVER_PASSWORD ? process.env.SQLSERVER_PASSWORD.trim() : process.env.SQLSERVER_PASSWORD
+const SQLSERVER_INSTANCE = process.env.SQLSERVER_INSTANCE
+
 const SQLSERVER_CONFIG = {
-  server: process.env.SQLSERVER_HOST,
-  database: process.env.SQLSERVER_DATABASE || 'GPSActivity',
-  user: process.env.SQLSERVER_USER,
-  password: process.env.SQLSERVER_PASSWORD,
+  server: SQLSERVER_HOST,
+  database: SQLSERVER_DATABASE,
+  user: SQLSERVER_USER,
+  password: SQLSERVER_PASSWORD,
   options: {
-    instanceName: process.env.SQLSERVER_INSTANCE || 'BKUPEXEC',
     encrypt: false,
     trustServerCertificate: true,
     enableArithAbort: true
@@ -74,40 +89,65 @@ const SQLSERVER_CONFIG = {
   requestTimeout: 60000
 }
 
-const NEON_URL = process.env.DATABASE_URL
+// Si se configura SQLSERVER_PORT, se conecta directo por puerto TCP.
+// Si no, se intenta con la instancia nombrada (requiere SQL Server Browser).
+if (SQLSERVER_PORT) {
+  SQLSERVER_CONFIG.port = SQLSERVER_PORT
+} else if (SQLSERVER_INSTANCE) {
+  SQLSERVER_CONFIG.options.instanceName = SQLSERVER_INSTANCE
+}
+
+const PG_URL = process.env.DATABASE_URL
+const DATE_FORMAT = (process.env.SQLSERVER_DATE_FORMAT || 'MDY').toUpperCase()
 
 /**
- * Parsea fechas de SQL Server (varchar) a formato ISO YYYY-MM-DD.
- * Soporta formatos comunes: MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, MMDDYYYY, DDMMYYYY
+ * Parsea fechas de SQL Server a formato ISO YYYY-MM-DD.
+ * Soporta MDY, DMY y ISO. Si el servidor esta en español, configura
+ * SQLSERVER_DATE_FORMAT=DMY en el .env.
  */
 function parseSqlDate(dateStr) {
-  if (!dateStr || dateStr.trim() === '') return null
-  const str = dateStr.trim()
+  if (!dateStr || String(dateStr).trim() === '') return null
+  const str = String(dateStr).trim()
 
-  // Formato YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    return str
-  }
+  // ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
 
-  // Formato MM/DD/YYYY o DD/MM/YYYY
+  // MM/DD/YYYY o DD/MM/YYYY
   const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (slashMatch) {
     const [, p1, p2, year] = slashMatch
-    // Asumir MM/DD/YYYY (formato 101 de SQL Server)
-    const month = p1.padStart(2, '0')
-    const day = p2.padStart(2, '0')
+    let month, day
+    if (DATE_FORMAT === 'DMY') {
+      day = p1.padStart(2, '0')
+      month = p2.padStart(2, '0')
+    } else {
+      month = p1.padStart(2, '0')
+      day = p2.padStart(2, '0')
+    }
+    if (parseInt(month) > 12) {
+      // Si el mes resultante es invalido, invertir interpretacion
+      const temp = month
+      month = day
+      day = temp
+    }
     return `${year}-${month}-${day}`
   }
 
-  // Formato MMDDYYYY o DDMMYYYY (sin separadores)
+  // MMDDYYYY o DDMMYYYY sin separadores
   if (/^\d{8}$/.test(str)) {
-    const month = str.substring(0, 2)
-    const day = str.substring(2, 4)
+    let month, day
+    if (DATE_FORMAT === 'DMY') {
+      day = str.substring(0, 2)
+      month = str.substring(2, 4)
+    } else {
+      month = str.substring(0, 2)
+      day = str.substring(2, 4)
+    }
     const year = str.substring(4, 8)
     return `${year}-${month}-${day}`
   }
 
-  // Intentar parse con Date nativo
+  // Intentar Date nativo como ultimo recurso
   const parsed = new Date(str)
   if (!isNaN(parsed.getTime())) {
     return parsed.toISOString().split('T')[0]
@@ -116,54 +156,56 @@ function parseSqlDate(dateStr) {
   return null
 }
 
-async function syncTprToNeon() {
+async function syncTpr() {
   const startTime = new Date()
-  console.log(`[${startTime.toISOString()}] Iniciando sincronizacion tpr...`)
+  console.log('Iniciando sincronizacion TPR...')
+  console.log('Configuracion:', {
+    sqlServer: SQLSERVER_HOST,
+    port: SQLSERVER_PORT || 'default',
+    instance: SQLSERVER_INSTANCE || 'none',
+    database: SQLSERVER_DATABASE,
+    dateFormat: DATE_FORMAT,
+    syncDays: process.env.TPR_SYNC_DAYS || 30
+  })
 
   let sqlPool = null
-  let neonClient = null
+  let pgClient = null
 
   try {
     // 1. Conectar a SQL Server
-    console.log('Intentando conectar a SQL Server:', {
-      server: SQLSERVER_CONFIG.server,
-      database: SQLSERVER_CONFIG.database,
-      user: SQLSERVER_CONFIG.user,
-      instanceName: SQLSERVER_CONFIG.options.instanceName
-    })
+    console.log('Conectando a SQL Server...')
     sqlPool = await sql.connect(SQLSERVER_CONFIG)
     console.log('Conectado a SQL Server NBCW')
 
     // 2. Leer todos los datos de tpr
-    // El filtro de fecha se hace en Node.js porque SQL Server es version antigua (sin TRY_CONVERT)
     const result = await sqlPool.request().query(`
       SELECT
-        RTRIM(DRVCODE)   AS driver_code,
-        RTRIM(WONO)      AS work_order,
-        RTRIM(BLNO)      AS bill_of_lading,
-        RTRIM(FECHA)     AS fecha_raw,
-        RTRIM(FROMD)     AS from_code,
-        RTRIM(FROMCITY)  AS from_city,
-        RTRIM(FROMEDO)   AS from_state,
-        RTRIM(TOD)       AS to_code,
-        RTRIM(TOCITY)    AS to_city,
-        RTRIM(TOEDO)     AS to_state,
-        RTRIM(TIPMOV)    AS movement_type,
+        RTRIM(DRVCODE)   AS drvcode,
+        RTRIM(WONO)      AS wono,
+        RTRIM(BLNO)      AS blno,
+        RTRIM(FECHA)     AS fecha,
+        RTRIM(FROMD)     AS fromd,
+        RTRIM(FROMCITY)  AS fromcity,
+        RTRIM(FROMEDO)   AS fromedo,
+        RTRIM(TOD)       AS tod,
+        RTRIM(TOCITY)    AS tocity,
+        RTRIM(TOEDO)     AS toedo,
+        RTRIM(TIPMOV)    AS tipmov,
         RTRIM(STATUS)    AS status,
-        RTRIM(EL)        AS equipment_type,
-        RTRIM(EQPCODE)   AS equipment_code,
-        RTRIM(DELDATE)   AS deldate_raw,
-        RTRIM(CSTMER)    AS customer,
-        RTRIM(TIMEARRV)  AS arrival_time,
-        RTRIM(TIMEDEPAR) AS departure_time,
-        RTRIM(OPER)      AS operator,
-        RTRIM(TRUCKID)   AS truck_id,
+        RTRIM(EL)        AS el,
+        RTRIM(EQPCODE)   AS eqpcode,
+        RTRIM(DELDATE)   AS deldate,
+        RTRIM(CSTMER)    AS cstmer,
+        RTRIM(TIMEARRV)  AS timearrv,
+        RTRIM(TIMEDEPAR) AS timedepar,
+        RTRIM(OPER)      AS oper,
+        RTRIM(TRUCKID)   AS truckid,
         RTRIM(SEAL)      AS seal,
-        RTRIM(INSTRUC1)  AS instructions_1,
-        RTRIM(INSTRUC2)  AS instructions_2,
+        RTRIM(INSTRUC1)  AS instruc1,
+        RTRIM(INSTRUC2)  AS instruc2,
         RTRIM(AMOUNT)    AS amount,
-        RTRIM(TABLECODE) AS table_code,
-        RTRIM(TRXCODE)   AS trx_code
+        RTRIM(TABLECODE) AS tablecode,
+        RTRIM(TRXCODE)   AS trxcode
       FROM tpr
       ORDER BY FECHA DESC, TIMEARRV DESC
     `)
@@ -177,64 +219,88 @@ async function syncTprToNeon() {
     }
 
     // 3. Conectar a PostgreSQL
-    neonClient = new pg.Client({
-      connectionString: NEON_URL,
+    console.log('Conectando a PostgreSQL IONOS...')
+    pgClient = new pg.Client({
+      connectionString: PG_URL,
       ssl: { rejectUnauthorized: false }
     })
-    await neonClient.connect()
+    await pgClient.connect()
     console.log('Conectado a PostgreSQL')
 
-    // 4. Asegurar que la tabla exista
-    await neonClient.query(`
+    // 4. Asegurar que la tabla exista con el esquema correcto
+    let recreateTable = false
+    try {
+      const tableCheck = await pgClient.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'tpr' AND column_name IN ('drvcode', 'sql_id')
+      `)
+      if (tableCheck.rows.length < 2) {
+        recreateTable = true
+        await pgClient.query('DROP TABLE IF EXISTS tpr')
+      } else {
+        // Verificar si existe restriccion UNIQUE en sql_id
+        const constraintCheck = await pgClient.query(`
+          SELECT constraint_name
+          FROM information_schema.table_constraints
+          WHERE table_name = 'tpr' AND constraint_type = 'UNIQUE'
+        `)
+        if (constraintCheck.rows.length > 0) {
+          recreateTable = true
+          await pgClient.query('DROP TABLE IF EXISTS tpr')
+        }
+      }
+    } catch (checkErr) {
+      recreateTable = true
+      await pgClient.query('DROP TABLE IF EXISTS tpr')
+    }
+
+    await pgClient.query(`
       CREATE TABLE IF NOT EXISTS tpr (
         id SERIAL PRIMARY KEY,
-        driver_code VARCHAR(50),
-        work_order VARCHAR(50),
-        bill_of_lading VARCHAR(50),
-        fecha_raw VARCHAR(12),
-        date DATE,
-        from_code VARCHAR(50),
-        from_city VARCHAR(100),
-        from_state VARCHAR(50),
-        to_code VARCHAR(50),
-        to_city VARCHAR(100),
-        to_state VARCHAR(50),
-        movement_type VARCHAR(50),
+        sql_id VARCHAR(50),
+        drvcode VARCHAR(50),
+        wono VARCHAR(50),
+        blno VARCHAR(50),
+        fecha VARCHAR(12),
+        fromd VARCHAR(50),
+        fromcity VARCHAR(100),
+        fromedo VARCHAR(50),
+        tod VARCHAR(50),
+        tocity VARCHAR(100),
+        toedo VARCHAR(50),
+        tipmov VARCHAR(50),
         status VARCHAR(50),
-        equipment_type VARCHAR(50),
-        equipment_code VARCHAR(100),
-        deldate_raw VARCHAR(12),
-        delivery_date DATE,
-        customer VARCHAR(100),
-        arrival_time VARCHAR(20),
-        departure_time VARCHAR(20),
-        operator VARCHAR(50),
-        truck_id VARCHAR(50),
+        el VARCHAR(50),
+        eqpcode VARCHAR(100),
+        deldate VARCHAR(12),
+        cstmer VARCHAR(100),
+        timearrv VARCHAR(20),
+        timedepar VARCHAR(20),
+        oper VARCHAR(50),
+        truckid VARCHAR(50),
         seal VARCHAR(50),
-        instructions_1 TEXT,
-        instructions_2 TEXT,
+        instruc1 TEXT,
+        instruc2 TEXT,
         amount VARCHAR(10),
-        table_code VARCHAR(50),
-        trx_code VARCHAR(50),
-        synced_at TIMESTAMP DEFAULT NOW(),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        tablecode VARCHAR(50),
+        trxcode VARCHAR(50),
+        synced_at TIMESTAMP DEFAULT NOW()
       )
     `)
 
-    // 5. Crear indices si no existen
-    await neonClient.query(`
-      CREATE INDEX IF NOT EXISTS idx_tpr_from_code ON tpr(from_code);
+    await pgClient.query(`
+      CREATE INDEX IF NOT EXISTS idx_tpr_fromd ON tpr(fromd);
       CREATE INDEX IF NOT EXISTS idx_tpr_status ON tpr(status);
-      CREATE INDEX IF NOT EXISTS idx_tpr_equipment_type ON tpr(equipment_type);
-      CREATE INDEX IF NOT EXISTS idx_tpr_date ON tpr(date);
-      CREATE INDEX IF NOT EXISTS idx_tpr_work_order ON tpr(work_order);
-      CREATE INDEX IF NOT EXISTS idx_tpr_bill_of_lading ON tpr(bill_of_lading);
-      CREATE INDEX IF NOT EXISTS idx_tpr_truck_id ON tpr(truck_id);
+      CREATE INDEX IF NOT EXISTS idx_tpr_el ON tpr(el);
+      CREATE INDEX IF NOT EXISTS idx_tpr_fecha ON tpr(fecha);
+      CREATE INDEX IF NOT EXISTS idx_tpr_wono ON tpr(wono);
+      CREATE INDEX IF NOT EXISTS idx_tpr_blno ON tpr(blno);
+      CREATE INDEX IF NOT EXISTS idx_tpr_truckid ON tpr(truckid);
       CREATE INDEX IF NOT EXISTS idx_tpr_synced_at ON tpr(synced_at);
     `)
 
-    // 6. Filtrar registros en Node.js por fecha (SQL Server es antiguo y no tiene TRY_CONVERT)
+    // 5. Filtrar registros por fecha
     const syncDays = parseInt(process.env.TPR_SYNC_DAYS) || 30
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - syncDays)
@@ -242,8 +308,16 @@ async function syncTprToNeon() {
     console.log(`Filtrando registros desde ${cutoffStr} (ultimos ${syncDays} dias)`)
 
     const filteredRows = rows.filter(row => {
-      const rowDate = parseSqlDate(row.fecha_raw)
+      const rowDate = parseSqlDate(row.fecha)
       return rowDate && rowDate >= cutoffStr
+    }).map(row => {
+      // Normalizar fecha a formato YYYY-MM-DD antes de generar sql_id
+      const normalizedFecha = parseSqlDate(row.fecha)
+      return {
+        ...row,
+        fecha: normalizedFecha,
+        sql_id: generateSqlId({ ...row, fecha: normalizedFecha })
+      }
     })
     console.log(`${filteredRows.length} registros dentro del rango de sincronizacion`)
 
@@ -252,17 +326,21 @@ async function syncTprToNeon() {
       return
     }
 
-    // 7. Limpiar e insertar todos los registros (sin duplicados, sin clave natural en tpr SQL Server)
-    // Usamos DELETE en lugar de TRUNCATE para poder hacer rollback en caso de error
-    await neonClient.query('BEGIN')
-    await neonClient.query('DELETE FROM tpr')
+    // 6. Limpiar e insertar todos los registros
+    await pgClient.query('BEGIN')
+    if (recreateTable) {
+      console.log('Recreando tabla tpr (DROP TABLE)')
+    } else {
+      console.log('Limpiando datos tpr (DELETE FROM)')
+      await pgClient.query('DELETE FROM tpr')
+    }
 
-    // 8. Bulk insert en lotes de 1000 para mejor rendimiento
+    // 7. Bulk insert en lotes de 1000
     const columns = [
-      'driver_code', 'work_order', 'bill_of_lading', 'fecha_raw', 'date', 'from_code', 'from_city', 'from_state',
-      'to_code', 'to_city', 'to_state', 'movement_type', 'status', 'equipment_type', 'equipment_code',
-      'deldate_raw', 'delivery_date', 'customer', 'arrival_time', 'departure_time', 'operator', 'truck_id', 'seal',
-      'instructions_1', 'instructions_2', 'amount', 'table_code', 'trx_code', 'synced_at'
+      'sql_id', 'drvcode', 'wono', 'blno', 'fecha', 'fromd', 'fromcity', 'fromedo',
+      'tod', 'tocity', 'toedo', 'tipmov', 'status', 'el', 'eqpcode',
+      'deldate', 'cstmer', 'timearrv', 'timedepar', 'oper', 'truckid', 'seal',
+      'instruc1', 'instruc2', 'amount', 'tablecode', 'trxcode', 'synced_at'
     ].join(', ')
 
     const batchSize = 1000
@@ -275,67 +353,69 @@ async function syncTprToNeon() {
       let paramIndex = 1
 
       for (const row of batch) {
-        const safeDate = parseSqlDate(row.fecha_raw)
-        const safeDeliveryDate = parseSqlDate(row.deldate_raw)
-        const placeholders = Array.from({ length: 28 }, (_, j) => `$${paramIndex + j}`).join(', ')
+        const placeholders = Array.from({ length: 27 }, (_, j) => `$${paramIndex + j}`).join(', ')
         values.push(`(${placeholders}, NOW())`)
 
         params.push(
-          row.driver_code || null,
-          row.work_order || null,
-          row.bill_of_lading || null,
-          row.fecha_raw || null,
-          safeDate,
-          row.from_code || null,
-          row.from_city || null,
-          row.from_state || null,
-          row.to_code || null,
-          row.to_city || null,
-          row.to_state || null,
-          row.movement_type || null,
+          row.sql_id || null,
+          row.drvcode || null,
+          row.wono || null,
+          row.blno || null,
+          row.fecha || null,
+          row.fromd || null,
+          row.fromcity || null,
+          row.fromedo || null,
+          row.tod || null,
+          row.tocity || null,
+          row.toedo || null,
+          row.tipmov || null,
           row.status || null,
-          row.equipment_type || null,
-          row.equipment_code || null,
-          row.deldate_raw || null,
-          safeDeliveryDate,
-          row.customer || null,
-          row.arrival_time || null,
-          row.departure_time || null,
-          row.operator || null,
-          row.truck_id || null,
+          row.el || null,
+          row.eqpcode || null,
+          row.deldate || null,
+          row.cstmer || null,
+          row.timearrv || null,
+          row.timedepar || null,
+          row.oper || null,
+          row.truckid || null,
           row.seal || null,
-          row.instructions_1 || null,
-          row.instructions_2 || null,
+          row.instruc1 || null,
+          row.instruc2 || null,
           row.amount || null,
-          row.table_code || null,
-          row.trx_code || null
+          row.tablecode || null,
+          row.trxcode || null
         )
-        paramIndex += 28
+        paramIndex += 27
       }
 
       const query = `INSERT INTO tpr (${columns}) VALUES ${values.join(', ')}`
-      await neonClient.query(query, params)
+      await pgClient.query(query, params)
       inserted += batch.length
       console.log(`Insertados ${inserted} de ${filteredRows.length} registros...`)
     }
 
-    await neonClient.query('COMMIT')
+    await pgClient.query('COMMIT')
 
     const endTime = new Date()
     const duration = endTime - startTime
-    console.log(`[${endTime.toISOString()}] Sincronizacion completa: ${inserted} insertados, ${rows.length} total, ${duration}ms`)
+    console.log(`Sincronizacion completa: ${inserted} insertados, ${rows.length} total, ${duration}ms`)
 
   } catch (error) {
-    console.error('Error en sincronizacion:', error)
+    console.error('Error en sincronizacion:', error?.message || error)
+    console.error('Error detalle:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack
+    })
     try {
-      if (neonClient) await neonClient.query('ROLLBACK')
+      if (pgClient) await pgClient.query('ROLLBACK')
     } catch (rollbackErr) {
-      // Ignorar error de rollback si no hay transaccion activa
+      // ignorar
     }
     process.exit(1)
   } finally {
-    if (neonClient) {
-      await neonClient.end().catch(() => {})
+    if (pgClient) {
+      await pgClient.end().catch(() => {})
     }
     if (sqlPool) {
       await sqlPool.close().catch(() => {})
@@ -347,4 +427,4 @@ async function syncTprToNeon() {
 }
 
 // Ejecutar sincronizacion
-syncTprToNeon()
+syncTpr()
