@@ -27,76 +27,47 @@ Sistema profesional de inspección de 20 puntos para tractores y remolques de Cr
 | Firmas | react-signature-canvas |
 | PWA | vite-plugin-pwa |
 | Backend | Vercel Serverless Functions (Node.js) |
-| Base de datos app | PostgreSQL (Neon → migrando a IONOS Docker) |
+| Base de datos app | PostgreSQL 16 (IONOS Docker) |
 | Base de datos TPR | SQL Server on-premise (NBCW GPSActivity) |
 | PDFs | Vercel Blob Storage |
+| Proxy TLS | Caddy + layer4 (IONOS) |
 | Sync NBCW | Node.js script (cada 1 min en PC on-premise) |
+
+## Documentación
+
+Toda la documentación está en [`docs/`](docs/):
+
+| Documento | Descripción |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura completa del sistema, diagrama y flujo de datos |
+| [docs/MIGRATION-IONOS.md](docs/MIGRATION-IONOS.md) | Migración de Neon a IONOS PostgreSQL, infraestructura y rollback |
+| [docs/SYNC-NBCW.md](docs/SYNC-NBCW.md) | Sincronización NBCW → PostgreSQL, sql_id, Task Scheduler |
+| [docs/CADDY-LAYER4.md](docs/CADDY-LAYER4.md) | Configuración de Caddy con layer4 para proxy TCP/TLS |
+| [docs/OFFLINE-PWA.md](docs/OFFLINE-PWA.md) | Modo offline, IndexedDB, Service Worker, sync manager |
+| [docs/ENV-VARIABLES.md](docs/ENV-VARIABLES.md) | Variables de entorno de Vercel, PC on-premise y VPS |
+| [docs/SETUP.md](docs/SETUP.md) | Guía de instalación local y despliegue |
+| [docs/MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md) | Manual de usuario final |
+| [docs/REPORTE_DESARROLLO.md](docs/REPORTE_DESARROLLO.md) | Reporte de desarrollo del proyecto |
 
 ## Arquitectura
 
 ```
 Vercel (frontend + API serverless)
   ├── React SPA (PWA)
-  ├── /api/inspections    → PostgreSQL (inspecciones)
-  ├── /api/tpr            → PostgreSQL (cache TPR sincronizada)
-  ├── /api/auth           → PostgreSQL (login)
-  ├── /api/employees      → PostgreSQL (usuarios)
-  ├── /api/yard-management → PostgreSQL (yardas)
-  ├── /api/metrics        → PostgreSQL (métricas)
-  └── Vercel Blob         → PDFs
+  ├── /api/* → PostgreSQL IONOS (via Caddy TLS)
+  └── Vercel Blob → PDFs
+
+IONOS VPS (74.208.37.187)
+  ├── Caddy + layer4 (:443 HTTP + PostgreSQL TLS)
+  ├── PostgreSQL 16 Docker (:5433 local)
+  └── CRM existente (sin cambios)
 
 PC on-premise (Task Scheduler cada 1 min)
-  └── scripts/sync-nbcw-to-neon.js
-       SQL Server GPSActivity → PostgreSQL (tabla tpr)
+  └── sync-nbcw.js
+       SQL Server NBCW → PostgreSQL IONOS (tabla tpr)
 ```
 
-## Estructura del proyecto
-
-```
-├── api/                        # Endpoints serverless (Vercel)
-│   ├── _lib/
-│   │   ├── db.js               # Conexión PostgreSQL (Neon)
-│   │   ├── blob.js             # Vercel Blob Storage
-│   │   ├── handlers.js         # Lógica de endpoints
-│   │   └── pdfGenerator.js     # Generador de PDF (backend)
-│   ├── inspections/
-│   │   ├── index.js            # POST/GET inspecciones
-│   │   ├── [id].js             # GET/PUT inspección por ID
-│   │   └── [id]/
-│   │       └── pdf.js          # Download/upload PDF
-│   ├── auth.js                 # Login
-│   ├── employees.js            # CRUD usuarios
-│   ├── yard-management.js     # CRUD yardas
-│   ├── tpr.js                  # Movimientos TPR (lee PostgreSQL)
-│   └── metrics.js              # Métricas
-├── db/
-│   ├── schema.sql              # Schema PostgreSQL completo (v2.0)
-│   ├── schema-sqlserver.sql    # Schema SQL Server equivalente
-│   ├── schema-nbcw.sql         # Schema NBCW (tabla tpr standalone)
-│   ├── seeds.sql               # Datos iniciales
-│   └── create_users.sql        # Script para crear usuarios
-├── scripts/
-│   ├── sync-nbcw-to-neon.js    # Sync principal (SQL Server → PostgreSQL)
-│   ├── sync-nbcw-to-neon.ps1   # Versión PowerShell
-│   ├── run-sync.bat            # Launcher Windows
-│   ├── sync-standalone/        # Versión standalone (PC on-premise)
-│   ├── extract-schema.mjs      # Utilidad: extraer schema de Neon
-│   └── fix-pdf-url.mjs         # Utilidad: corregir pdf_url
-├── src/
-│   ├── components/             # Componentes React
-│   ├── context/                # AuthContext, InspectionContext, LanguageContext
-│   ├── data/                   # Puntos de inspección + errores
-│   ├── hooks/                  # usePagination
-│   ├── i18n/                   # Traducciones es/en
-│   ├── utils/                  # api.js, pdfGenerator.js, offlineDB.js, syncManager.js
-│   ├── App.jsx
-│   └── main.jsx
-├── public/                     # Assets estáticos (favicon, logos)
-├── server.js                   # Express server local (mirror de Vercel)
-├── vite.config.js
-├── vercel.json
-└── package.json
-```
+Ver diagrama completo en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Instalación local
 
@@ -105,17 +76,10 @@ npm install
 npm run dev
 ```
 
-Frontend: http://localhost:5173
-API local: http://localhost:3001 (requiere `server.js`)
+- Frontend: http://localhost:5173
+- API local: http://localhost:3001 (`node server.js`)
 
-## Variables de entorno
-
-```env
-DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
-BLOB_READ_WRITE_TOKEN=<vercel_blob_token>
-BLOB_STORE_ID=<vercel_blob_store_id>
-API_PORT=3001
-```
+Ver guía completa en [docs/SETUP.md](docs/SETUP.md).
 
 ## Build de producción
 
@@ -127,6 +91,8 @@ npm run preview
 ## Despliegue en Vercel
 
 El proyecto se despliega automáticamente al hacer push a `main`.
+
+Variables de entorno necesarias: ver [docs/ENV-VARIABLES.md](docs/ENV-VARIABLES.md).
 
 ---
 
