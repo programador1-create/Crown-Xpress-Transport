@@ -15,6 +15,12 @@ function getLocalISODate(date = new Date()) {
 function parseMovementDate(dateStr) {
   if (!dateStr) return null
   const trimmed = dateStr.toString().trim()
+  // Formato YYYY-MM-DD (nuevo sync script)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-').map(Number)
+    return getLocalISODate(new Date(year, month - 1, day))
+  }
+  // Formato MM/DD/YYYY (legacy)
   const parts = trimmed.split('/')
   if (parts.length === 3) {
     const month = parseInt(parts[0], 10)
