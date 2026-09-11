@@ -11,15 +11,14 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '.env') })
 
-// Setup logging to file in logs/ subdirectory
+// Setup logging to a single file in logs/ subdirectory (overwritten each run)
 const LOG_DIR = join(__dirname, 'logs')
 if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR)
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').split('Z')[0]
-const logFile = join(LOG_DIR, `sync-${timestamp}.log`)
+const logFile = join(LOG_DIR, 'sync.log')
 let logStream = null
 
 try {
-  logStream = createWriteStream(logFile, { flags: 'a' })
+  logStream = createWriteStream(logFile, { flags: 'w' })
   console.log(`Logging to: ${logFile}`)
 } catch (err) {
   console.error('Error opening log file:', err.message)
