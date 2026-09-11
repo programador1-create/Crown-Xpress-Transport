@@ -4,6 +4,9 @@ import { addPendingInspection, isOnline, getTprMovements as getCachedTprMovement
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
+// Modo offline solo activo en preproduccion
+const OFFLINE_ENABLED = import.meta.env.VITE_OFFLINE_MODE === 'true'
+
 /** Get supervisors by yard code */
 export async function getSupervisorsByYard(yardCode) {
   const res = await fetchJson(`${API_BASE}/employees?role=supervisor`)
@@ -40,14 +43,14 @@ async function fetchJson(url, options = {}) {
 
 /** Upload inspection + PDF to backend (or queue offline) */
 export async function createInspection(payload, pdfBase64 = null, pdfFilename = null) {
-  // Marcar el movimiento TPR como inspeccionado localmente
+  // Marcar el movimiento TPR como inspeccionado localmente (solo si offline está activo)
   const sqlId = payload?.sql_id || payload?.unitInfo?.sqlId
-  if (sqlId) {
+  if (OFFLINE_ENABLED && sqlId) {
     await markTprInspected([sqlId])
   }
 
-  // Si no hay internet, guardar en IndexedDB para sincronizar después
-  if (!isOnline()) {
+  // Si offline está activo y no hay internet, guardar en IndexedDB
+  if (OFFLINE_ENABLED && !isOnline()) {
     console.log('Offline: guardando inspección en cola local')
     const localId = await addPendingInspection({
       payload,
@@ -134,29 +137,34 @@ export async function getTprMovements({ type = 'empty', date = null, yardCode = 
   // Obtener IDs inspeccionados localmente
   const localInspectedIds = await getInspectedSqlIds()
 
-  // Si hay internet, intentar online y guardar en cache
-  if (isOnline()) {
+  // Si offline está activo y hay internet, intentar online y guardar en cache
+  if (!OFFLINE_ENABLED || isOnline()) {
     try {
       const params = new URLSearchParams({ type })
       if (date) params.append('date', date)
       if (yardCode) params.append('yardCode', yardCode)
       const res = await fetchJson(`${API_BASE}/tpr?${params}`)
-      // Guardar en cache local para uso offline
+      // Guardar en cache local para uso offline (solo si offline está activo)
       if (res?.data) {
-        // Marcar los inspeccionados localmente
-        const data = res.data.map(m => ({
-          ...m,
-          already_inspected: m.already_inspected || localInspectedIds.has(m.sql_id),
-        }))
-        await saveTprMovements(data)
+        const data = OFFLINE_ENABLED
+          ? res.data.map(m => ({
+              ...m,
+              already_inspected: m.already_inspected || localInspectedIds.has(m.sql_id),
+            }))
+          : res.data
+        if (OFFLINE_ENABLED) await saveTprMovements(data)
         return { ...res, data }
       }
       return res // { success, data, count }
     } catch (err) {
+      if (!OFFLINE_ENABLED) throw err
       console.warn('TPR online failed, falling back to cache:', err.message)
     }
   }
-  // Offline o fallo online: usar cache local
+  // Offline o fallo online: usar cache local (solo si offline está activo)
+  if (!OFFLINE_ENABLED) {
+    return { success: false, data: [], count: 0, error: 'No connection' }
+  }
   const cached = await getCachedTprMovements()
   // Marcar los inspeccionados localmente
   const data = cached.map(m => ({

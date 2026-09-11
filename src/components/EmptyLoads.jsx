@@ -123,13 +123,13 @@ export default function EmptyLoads({ onSelectMovement, onClose }) {
   useEffect(() => { loadMovementsRef.current = loadMovements }, [loadMovements])
 
   useEffect(() => {
-    setCountdown(60)
+    setCountdown(30)
     pollingRef.current = setInterval(() => {
       loadMovementsRef.current(true)
-      setCountdown(60)
-    }, 60000)
+      setCountdown(30)
+    }, 30000)
     countdownRef.current = setInterval(() => {
-      setCountdown(prev => (prev <= 1 ? 60 : prev - 1))
+      setCountdown(prev => (prev <= 1 ? 30 : prev - 1))
     }, 1000)
     return () => {
       clearInterval(pollingRef.current)

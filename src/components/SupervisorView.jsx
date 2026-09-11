@@ -61,8 +61,8 @@ export default function SupervisorView() {
 
   useEffect(() => {
     load()
-    async function load() {
-      setLoading(true)
+    async function load(silent = false) {
+      if (!silent) setLoading(true)
       setError(null)
       try {
         // Admin ve todas las inspecciones de todas las yardas.
@@ -81,6 +81,9 @@ export default function SupervisorView() {
         setLoading(false)
       }
     }
+    // Polling cada 30 segundos
+    const interval = setInterval(() => load(true), 30000)
+    return () => clearInterval(interval)
   }, [user?.yard_assignments, user?.location_name, user?.role])
 
   // Unique values for filter dropdowns

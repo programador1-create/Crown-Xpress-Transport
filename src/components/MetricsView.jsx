@@ -19,8 +19,8 @@ export default function MetricsView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchMetrics = async () => {
-    setLoading(true)
+  const fetchMetrics = async (silent = false) => {
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const now = new Date()
@@ -35,7 +35,6 @@ export default function MetricsView() {
       const data = await res.json()
       
       if (data.success) {
-        console.log('Metrics response:', data)
         setMetrics(data)
       } else {
         setError(data.error || 'Error loading metrics')
@@ -49,6 +48,9 @@ export default function MetricsView() {
 
   useEffect(() => {
     fetchMetrics()
+    // Polling cada 30 segundos
+    const interval = setInterval(() => fetchMetrics(true), 30000)
+    return () => clearInterval(interval)
   }, [period, selectedYard])
 
   // Hooks de paginación deben ir ANTES de cualquier return condicional.

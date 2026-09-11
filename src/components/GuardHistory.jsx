@@ -88,10 +88,13 @@ export default function GuardHistory() {
 
   useEffect(() => {
     load()
+    // Polling cada 30 segundos
+    const interval = setInterval(() => load(true), 30000)
+    return () => clearInterval(interval)
   }, [user])
 
-  async function load() {
-    setLoading(true)
+  async function load(silent = false) {
+    if (!silent) setLoading(true)
     setError(null)
     try {
       // Use yard_assignments from user to filter inspections
