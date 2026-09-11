@@ -7,8 +7,6 @@ import authHandler from './api/auth.js'
 import employeesHandler from './api/employees.js'
 import yardManagementHandler from './api/yard-management.js'
 import tprHandler from './api/tpr.js'
-import tprV2Handler from './api/tpr-v2.js'
-import verifyImageHandler from './api/verify-image.js'
 import inspectionIdHandler from './api/inspections/[id].js'
 import metricsHandler from './api/metrics.js'
 
@@ -40,9 +38,7 @@ app.get('/api/yard-management', adaptHandler(yardManagementHandler))
 app.post('/api/yard-management', adaptHandler(yardManagementHandler))
 app.delete('/api/yard-management', adaptHandler(yardManagementHandler))
 app.get('/api/tpr', adaptHandler(tprHandler))
-app.get('/api/tpr-v2', adaptHandler(tprV2Handler))
 app.get('/api/metrics', adaptHandler(metricsHandler))
-app.post('/api/verify-image', adaptHandler(verifyImageHandler))
 app.post('/api/inspections', adaptHandler(createInspection))
 app.get('/api/inspections', adaptHandler(listInspections))
 app.all('/api/inspections/:id', adaptHandler(inspectionIdHandler))

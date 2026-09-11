@@ -186,16 +186,6 @@ export default function InspectionPoint({ point, displayNumber }) {
         onConfirm={(photo) => setPointPhoto(point.id, photo)}
         title={`${point.id}. ${point[language]}`}
         point={point}
-        onAiSuggestion={(suggestedIssues) => {
-          // If AI suggests issues and no issue is selected yet, auto-select the first one
-          if (suggestedIssues.length > 0 && !state.issueId) {
-            const pointIssues = getIssuesForPoint(point.id)
-            const matchingIssue = pointIssues.find((_, idx) => suggestedIssues.includes(idx + 1))
-            if (matchingIssue) {
-              setPointIssue(point.id, matchingIssue.id)
-            }
-          }
-        }}
       />
       <PhotoViewerModal
         open={viewerOpen}
